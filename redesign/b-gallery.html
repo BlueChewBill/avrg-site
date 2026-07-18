@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AVRG — Direction B: Night Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter+Tight:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #131010;
+    --bg2: #171313;
+    --bone: #e9e1d3;
+    --dim: #8f857a;
+    --hair: #2b2523;
+    --disp: "Fraunces", Georgia, serif;
+    --body: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--bone);
+    font-family: var(--body); font-weight: 300;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  ::selection { background: #e9e1d3; color: #131010; }
+  img { display: block; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px clamp(18px, 3.5vw, 40px);
+    font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--dim);
+    background: linear-gradient(to bottom, rgba(19,16,16,.92), rgba(19,16,16,0));
+  }
+  .bar b { color: var(--bone); font-weight: 500; }
+
+  /* ---- hero: the tagline IS the hero ---- */
+  .hero {
+    min-height: 92svh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 90px 20px 40px; position: relative;
+  }
+  .hero .mark { width: 74px; height: 74px; border-radius: 50%; margin-bottom: 42px;
+    box-shadow: 0 0 0 1px #2e2926, 0 18px 50px rgba(0,0,0,.55); }
+  .hero .statement {
+    font-family: var(--disp); font-weight: 380; font-style: italic;
+    font-size: clamp(44px, 8.5vw, 116px);
+    line-height: 1.02; letter-spacing: -0.015em;
+    max-width: 12ch; min-height: 2.1em;
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .hero .statement.out { opacity: 0; transform: translateY(10px); }
+  .hero .sub {
+    margin-top: 40px; font-size: 12px; letter-spacing: .28em; text-transform: uppercase; color: var(--dim);
+  }
+  .hero .scroll-cue {
+    position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: #57504a;
+  }
+
+  /* ---- intro strip ---- */
+  .intro {
+    max-width: 640px; margin: 0 auto; padding: 4vh 24px 12vh;
+    text-align: center; font-size: 15px; line-height: 2; color: #b5aa9c;
+  }
+
+  /* ---- collection shelves ---- */
+  section.shelf { padding: 7vh 0 3vh; }
+  .shelf-head {
+    display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap;
+    padding: 0 clamp(18px, 3.5vw, 40px) 26px;
+  }
+  .shelf-head h2 {
+    font-family: var(--disp); font-weight: 500; font-size: clamp(30px, 4.6vw, 54px);
+    line-height: 1; letter-spacing: -0.01em;
+  }
+  .shelf-head .tick { width: 9px; height: 9px; border-radius: 50%; align-self: center; }
+  .shelf-head .meta { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+  .shelf-head .about {
+    flex-basis: 100%; max-width: 60ch; font-size: 13.5px; line-height: 1.9; color: #a1968a; padding-top: 8px;
+  }
+
+  .rail {
+    display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x proximity;
+    padding: 6px clamp(18px, 3.5vw, 40px) 26px;
+    scrollbar-width: thin; scrollbar-color: #332d2a transparent;
+  }
+  .rail::-webkit-scrollbar { height: 4px; }
+  .rail::-webkit-scrollbar-thumb { background: #332d2a; border-radius: 2px; }
+  .piece { flex: 0 0 auto; width: min(255px, 68vw); scroll-snap-align: start; }
+  .piece .frame {
+    aspect-ratio: 4/5; overflow: hidden; border-radius: 3px;
+    background: var(--bg2);
+    box-shadow: 0 0 0 1px #262020, 0 24px 50px -18px rgba(0,0,0,.7);
+    position: relative;
+  }
+  .piece .frame::after {
+    content: ""; position: absolute; inset: 0; border-radius: 3px;
+    box-shadow: inset 0 0 60px rgba(19,16,16,.5);
+    pointer-events: none; transition: opacity .4s ease;
+  }
+  .piece:hover .frame::after { opacity: 0; }
+  .piece img {
+    width: 100%; height: 100%; object-fit: cover;
+    filter: brightness(.94); transition: filter .4s ease, transform .55s cubic-bezier(.22,1,.36,1);
+  }
+  .piece:hover img { filter: brightness(1.05); transform: scale(1.03); }
+  .placard { padding: 13px 2px 0; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .placard .nm { font-family: var(--disp); font-style: italic; font-weight: 400; font-size: 17px; color: var(--bone); }
+  .placard .rf { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: #6d645c; white-space: nowrap; }
+
+  .empty {
+    margin: 0 clamp(18px, 3.5vw, 40px);
+    padding: 52px 0; text-align: center;
+    border: 1px dashed #2e2825; border-radius: 4px;
+    font-family: var(--disp); font-style: italic; font-size: 19px; color: #6d645c;
+  }
+
+  .hr { border: none; border-top: 1px solid var(--hair); margin: 6vh clamp(18px, 3.5vw, 40px); }
+
+  /* ---- footer ---- */
+  footer { text-align: center; padding: 12vh 24px 14vh; }
+  footer .big {
+    font-family: var(--disp); font-weight: 380; font-style: italic;
+    font-size: clamp(30px, 6vw, 62px); line-height: 1.1;
+  }
+  footer .big a { border-bottom: 1px solid #4d443e; transition: border-color .3s ease; }
+  footer .big a:hover { border-color: var(--bone); }
+  footer .fine { margin-top: 34px; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: #57504a; }
+</style>
+</head>
+<body>
+  <div class="bar"><span><b>AVRG</b></span><span>Hand-shaped fingerboards</span></div>
+
+  <header class="hero">
+    <img class="mark" id="mark" src="" alt="AVRG" />
+    <h1 class="statement" id="statement"></h1>
+    <div class="sub">AVRG · no two the same</div>
+    <div class="scroll-cue">scroll</div>
+  </header>
+
+  <p class="intro" id="intro"></p>
+
+  <main id="shelves"></main>
+
+  <footer>
+    <div class="big" id="dm"></div>
+    <div class="fine">AVRG · hand-made · <span id="yr">2026</span></div>
+  </footer>
+
+<script src="../site/data.js"></script>
+<script>
+(function () {
+  const IMG = p => p ? "../site/" + p : "";
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+
+  document.getElementById("mark").src = IMG(SITE.logo);
+  document.getElementById("intro").textContent = SITE.brandText;
+
+  const handle = (typeof CONTACT === "object" && CONTACT.reddit) || "u/avrg";
+  const rurl = "https://www.reddit.com/user/" + encodeURIComponent(handle.replace(/^\/?u\//i, ""));
+  document.getElementById("dm").innerHTML =
+    'Want one? DM <a href="' + rurl + '" target="_blank" rel="noopener">' + esc(handle) + '</a>.';
+
+  document.getElementById("shelves").innerHTML = COLLECTIONS.map((c, i) => {
+    const body = c.boards.length
+      ? '<div class="rail">' + c.boards.map((b, k) => {
+          const ref = b.ref || String(k + 1).padStart(2, "0");
+          return '<a class="piece" href="' + IMG(b.photos[0]) + '" target="_blank" rel="noopener">' +
+            '<div class="frame"><img loading="lazy" src="' + IMG(b.thumb) + '" alt="' + esc(b.name || ref) + '"></div>' +
+            '<div class="placard">' +
+              '<span class="nm">' + esc(b.name || ref) + '</span>' +
+              (b.name ? '<span class="rf">' + esc(ref) + '</span>' : '') +
+            '</div>' +
+          '</a>';
+        }).join("") + '</div>'
+      : '<div class="empty">Nothing hanging — restocking.</div>';
+    return '<section class="shelf">' +
+      '<div class="shelf-head">' +
+        '<span class="tick" style="background:' + c.accent + '"></span>' +
+        '<h2>' + esc(c.title.replace(/ - /g, " — ")) + '</h2>' +
+        '<span class="meta">' + (c.boards.length ? c.boards.length + " pieces" : "empty") + '</span>' +
+        '<p class="about">' + esc(c.description.replace(/ Hover.*$/, "")) + '</p>' +
+      '</div>' + body +
+    '</section>' + (i < COLLECTIONS.length - 1 ? '<hr class="hr" />' : "");
+  }).join("");
+
+  /* giant cycling statement */
+  const tags = (SITE.taglines || []).map(t => t.replace(/,\s*/g, ", "));
+  const node = document.getElementById("statement");
+  let ti = 0;
+  node.textContent = tags[0] || "No two the same";
+  setInterval(() => {
+    node.classList.add("out");
+    setTimeout(() => { ti = (ti + 1) % tags.length; node.textContent = tags[ti]; node.classList.remove("out"); }, 500);
+  }, 4600);
+})();
+</script>
+</body>
+</html>

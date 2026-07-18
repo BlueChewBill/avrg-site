@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AVRG — Fingerboards</title>
+  <meta name="description" content="AVRG fingerboards. No two the same — hand-shaped wooden decks for the most serious of FB nerds." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta property="og:title" content="AVRG — Fingerboards" />
+  <meta property="og:description" content="No two the same. Hand-shaped wooden fingerboards." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="img/hero.jpg" />
+
+  <link rel="icon" href="img/logo-circle.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=15" />
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- Lightbox -->
+  <div class="lb" id="lb" hidden>
+    <button class="lb-close" id="lb-close" aria-label="Close">&times;</button>
+    <button class="lb-nav lb-prev" id="lb-prev" aria-label="Previous">&#8249;</button>
+    <div class="lb-stage" id="lb-stage">
+      <img class="lb-img" id="lb-img" src="" alt="" />
+      <div class="lb-caption" id="lb-caption"></div>
+      <div class="lb-dots" id="lb-dots"></div>
+      <div class="lb-desc" id="lb-desc"></div>
+    </div>
+    <button class="lb-nav lb-next" id="lb-next" aria-label="Next">&#8250;</button>
+  </div>
+
+  <script src="data.js?v=18"></script>
+  <script src="app.js?v=10"></script>
+</body>
+</html>

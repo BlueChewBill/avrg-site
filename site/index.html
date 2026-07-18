@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AVRG — Fingerboards</title>
+  <meta name="description" content="AVRG fingerboards. One of a kind hand-shaped wooden decks." />
+  <meta name="theme-color" content="#3e4044" />
+  <meta property="og:title" content="AVRG — Fingerboards" />
+  <meta property="og:description" content="One of a kind hand-shaped wooden fingerboards." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="img/hero.jpg" />
+
+  <link rel="icon" href="img/logo-circle.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=24" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand" id="home-link"><img id="logo" src="" alt="" /><span>AVRG</span></div>
+    <div class="mono">Semi-unique fingerboards,<br />for finger skating</div>
+  </header>
+
+  <div id="home">
+    <div class="hero">
+      <hr class="divider" />
+      <div class="tick label" id="tick"></div>
+    </div>
+    <main id="cols"></main>
+  </div>
+
+  <div id="colpage" hidden></div>
+
+  <footer>
+    <div class="inner">
+      <h3>Want one?</h3>
+      <a class="dm-btn" id="dm" href="#" target="_blank" rel="noopener"></a>
+      <div class="fine label">AVRG · hand-made · © 2026</div>
+    </div>
+  </footer>
+
+  <!-- lightbox: card pulled forward -->
+  <div class="lb" id="lb" hidden>
+    <div class="lb-scrim" id="lb-scrim"></div>
+    <button class="lb-close label" id="lb-close" type="button">Close ✕</button>
+    <button class="lb-nav lb-prev" id="lb-prev" type="button" aria-label="Previous deck">‹</button>
+    <button class="lb-nav lb-next" id="lb-next" type="button" aria-label="Next deck">›</button>
+    <div class="lb-card" id="lb-card">
+      <div class="frame"><img id="lb-big" src="" alt="" title="View the whole collection" /></div>
+      <div class="lb-rest">
+        <div class="lb-thumbs" id="lb-thumbs"></div>
+        <p class="lb-desc" id="lb-desc"></p>
+        <div class="lb-product">
+          <div class="lb-prod-info">
+            <span class="nm" id="lb-nm"></span>
+            <span class="rf" id="lb-rf"></span>
+          </div>
+          <div class="lb-cta">
+            <span class="lb-cta-ask label">Interested?</span>
+            <a class="lb-dm-btn label" id="lb-dm" href="#" target="_blank" rel="noopener"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lb-count label" id="lb-count"></div>
+  </div>
+
+  <script src="data.js?v=21"></script>
+  <script src="app.js?v=23"></script>
+</body>
+</html>

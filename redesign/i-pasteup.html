@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AVRG — Direction I: Paste-Up (skeleton)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=League+Gothic&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  /* I — "Paste-Up" (skeleton)
+     The no-scroll frame for design work: H's split layout on the paper
+     skin, cards removed — section text + dividing lines only. The full
+     card version is saved as i-pasteup-mailer.html (mailer idea).
+     League Gothic stands in for Field Gothic. */
+  :root {
+    --paper: #ece5d3;
+    --paper-2: #f4efe2;
+    --ink: #16130f;
+    --soft: #5c554a;
+    --red: #d8511f;
+    --goth: "League Gothic", "Field Gothic", Impact, sans-serif;
+    --mono: "Space Mono", ui-monospace, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--mono);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--ink); color: var(--paper); }
+  img, video { display: block; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+  /* one screen, no scroll (desktop) */
+  @media (min-width: 941px) {
+    body { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
+    .wrap { flex: 1; min-height: 0; display: flex; }
+    .split { flex: 1; min-height: 0; }
+  }
+
+  /* photocopy grain over everything */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 9000; pointer-events: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.5"/></svg>');
+    opacity: .16; mix-blend-mode: multiply;
+  }
+
+  .label {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase;
+  }
+  .goth { font-family: var(--goth); font-weight: 400; text-transform: uppercase; line-height: .9; }
+
+  /* ---- buttons: corner brackets (Uiverse.io by Cevorob) ---- */
+  .btn {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    height: 44px; padding: 0 22px;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink); background: var(--paper);
+    border: 2px solid var(--ink);
+    user-select: none; white-space: nowrap;
+    transition: all .05s linear;
+  }
+  .btn::before, .btn::after { content: ""; position: absolute; background: var(--paper); transition: all .2s linear; }
+  .btn::before { width: calc(100% + 6px); height: calc(100% - 16px); top: 8px; left: -3px; }
+  .btn::after { width: calc(100% - 16px); height: calc(100% + 6px); top: -3px; left: 8px; }
+  .btn:hover { cursor: crosshair; }
+  .btn:active { transform: scale(.95); }
+  .btn:hover::before { height: calc(100% - 32px); top: 16px; }
+  .btn:hover::after { width: calc(100% - 32px); left: 16px; }
+  .btn .txt { position: relative; z-index: 3; }
+
+  /* ---- top bar: logo | centered tabs | contact ---- */
+  .topbar {
+    display: flex; align-items: center; gap: clamp(10px, 1.6vw, 20px);
+    padding: 10px clamp(16px, 3vw, 40px);
+    background: var(--paper); border-bottom: 3px solid var(--ink);
+  }
+  .bar-brand { display: flex; align-items: center; cursor: pointer; }
+  .bar-brand img { width: 36px; height: 36px; border-radius: 50%; }
+  .topbar nav { display: flex; gap: clamp(10px, 1.6vw, 22px); margin: 0 auto; }
+  .topbar .btn { height: 38px; padding: 0 15px; font-size: 10px; }
+
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 0 clamp(16px, 3vw, 40px); width: 100%; }
+
+  /* ---- the split: spine | shop ---- */
+  .split {
+    display: grid; grid-template-columns: 324px 1fr;
+    gap: 0 clamp(28px, 3.4vw, 56px);
+    padding-top: clamp(10px, 1.8vh, 22px);
+  }
+  .spine { text-align: center; display: flex; flex-direction: column; min-height: 0; }
+
+  /* ---- spine, tightened to fit ---- */
+  .spine .brush { width: clamp(48px, 7vh, 84px); margin: 0 auto; mix-blend-mode: multiply; transform: rotate(-4deg); }
+  .tick { margin-top: clamp(8px, 1.6vh, 18px); line-height: 1.7; color: var(--ink); transition: opacity .45s ease; }
+  .tick.out { opacity: 0; }
+
+  .paste { transform: rotate(var(--tilt, 0deg)); }
+  .paste .ph {
+    position: relative; background: var(--paper-2);
+    border: 3px solid var(--ink); padding: 8px 8px 0;
+    box-shadow: 6px 7px 0 0 rgba(22, 19, 15, .85);
+  }
+  .paste .ph .tape {
+    position: absolute; top: -11px; left: 50%; width: 78px; height: 22px; z-index: 2;
+    transform: translateX(-50%) rotate(var(--tapetilt, -2deg));
+    background: rgba(216, 202, 160, .8); border: 1px solid rgba(22, 19, 15, .18);
+  }
+  .paste figcaption { padding: 7px 4px 8px; font-size: 9.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+  .paste figcaption em { display: block; margin-top: 2px; font-style: italic; font-weight: 400; letter-spacing: .02em; text-transform: none; color: var(--soft); }
+
+  /* video sizes off the viewport height so the page never scrolls */
+  .video-paste { margin: clamp(10px, 2vh, 20px) auto 0; }
+  .video-paste .ph { display: inline-block; }
+  .video-paste video {
+    height: clamp(180px, 30vh, 460px); width: auto;
+    aspect-ratio: 9/14; object-fit: cover; background: #16130f;
+  }
+
+  .made-note { margin-top: clamp(10px, 2.2vh, 24px); text-align: left; font-size: 12px; font-style: italic; color: var(--soft); }
+  .made-row { display: flex; align-items: flex-start; gap: 14px; margin-top: 8px; text-align: left; }
+  .made-row .paste { flex: 0 0 40%; }
+  .made-row .paste .ph { padding: 6px; }
+  .made-row .paste img { width: 100%; aspect-ratio: 5/4; object-fit: cover; }
+  .pitch { flex: 1; font-size: 12.5px; line-height: 1.7; color: var(--ink); }
+
+  .spine-cta { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: clamp(8px, 1.8vh, 24px); padding-bottom: 8px; }
+  .spine-cta .ask { color: var(--soft); }
+
+  /* ---- shop: section text + dividing lines only ---- */
+  .shop { min-width: 0; display: flex; flex-direction: column; }
+  section.col { flex: 1; min-height: 0; padding: clamp(14px, 2.4vh, 26px) 0; }
+  section.col + section.col { border-top: 3px solid var(--ink); }
+  .colhead { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 18px; }
+  .colhead h2 { font-size: clamp(40px, 5.6vh, 64px); letter-spacing: .01em; }
+  .colhead .sub { color: var(--acc, var(--soft)); }
+  .colhead .count { margin-left: auto; color: var(--soft); }
+
+  footer {
+    background: var(--ink); color: var(--paper);
+    padding: 12px clamp(16px, 3vw, 40px);
+    display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between;
+  }
+  footer .label { color: #9b9284; }
+
+  /* narrower desktops: slim the spine */
+  @media (max-width: 1260px) and (min-width: 941px) {
+    .split { grid-template-columns: 284px 1fr; }
+  }
+
+  /* ---- mobile: stacked and scrollable (the skeleton is desktop-first) ---- */
+  @media (max-width: 940px) {
+    .topbar nav { display: none; }
+    .topbar { justify-content: space-between; }
+    .split { display: block; }
+    .spine { max-width: 420px; margin: 0 auto; }
+    .video-paste video { height: auto; width: 100%; }
+    section.col:first-child { margin-top: clamp(24px, 4vh, 40px); border-top: 3px solid var(--ink); }
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="bar-brand" id="bar-brand" title="AVRG"><img id="bar-logo" src="" alt="AVRG" /></div>
+    <nav id="topnav"></nav>
+    <a class="btn" id="nav-dm" href="#" target="_blank" rel="noopener"><span class="txt">Contact me →</span></a>
+  </header>
+
+  <div class="wrap">
+    <div class="split">
+      <section class="spine">
+        <img class="brush" src="media/logo-brush.png" alt="AVRG brush mark" />
+        <div class="tick label" id="tick"></div>
+
+        <figure class="paste video-paste" style="--tilt: -.7deg; --tapetilt: -3deg">
+          <div class="ph"><span class="tape"></span>
+            <video id="spinevid" src="media/covercard.mp4" poster="media/covercard-poster.jpg"
+                   autoplay muted loop playsinline preload="metadata"></video>
+          </div>
+          <figcaption>Field footage <em>all shredding in the above video was performed on originals</em></figcaption>
+        </figure>
+
+        <p class="made-note">originals, made like this</p>
+        <div class="made-row">
+          <figure class="paste" style="--tilt: .9deg; --tapetilt: 2deg">
+            <div class="ph"><span class="tape"></span><img src="media/story-clamps.jpg" alt="A deck clamped up with every clamp in the shop" /></div>
+          </figure>
+          <p class="pitch">all proceeds to fund the tools / R&amp;D for advanced dorking in v2</p>
+        </div>
+
+        <div class="spine-cta">
+          <span class="ask label">Interested?</span>
+          <a class="btn" id="spine-dm" href="#" target="_blank" rel="noopener"><span class="txt"></span></a>
+        </div>
+      </section>
+
+      <main class="shop" id="cols"></main>
+    </div>
+  </div>
+
+  <footer>
+    <span class="label">AVRG — handmade fingerboards</span>
+    <span class="label">no two the same</span>
+  </footer>
+
+  <script src="../site/data.js"></script>
+  <script>
+  /* I — Paste-Up skeleton. Section headers only — the card grids live in
+     i-pasteup-mailer.html. */
+  (function () {
+    "use strict";
+
+    const IMG = p => (p ? "../site/" + p : p);
+    const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    document.getElementById("bar-logo").src = IMG(SITE.logo);
+
+    const ACC = { originals: "#d8511f", "hand-shaped": "#1f6fb8", classic: "#c98a12", resale: "#6d4fa3" };
+    const SHORT = { originals: "Original", "hand-shaped": "Shaped", classic: "Routed", resale: "Resale" };
+    const SUB = {
+      originals: "no mold, lots of clamping and a little luck",
+      "hand-shaped": "pressed in the nfb mold, shaped by hand",
+      classic: "pressed in the nfb mold, shaped with a router",
+      resale: "pre-owned, still proper"
+    };
+    const accOf = c => ACC[c.id] || c.accent;
+
+    /* rotating taglines, minus the "middle" one; single fixed line */
+    const tags = (SITE.taglines || []).filter(t => !/^by no means the m/i.test(t));
+    const tick = document.getElementById("tick");
+    let ti = 0;
+    tick.textContent = tags[0] || "";
+    if (!reduced && tags.length > 1) setInterval(() => {
+      tick.classList.add("out");
+      setTimeout(() => { ti = (ti + 1) % tags.length; tick.textContent = tags[ti]; tick.classList.remove("out"); }, 450);
+    }, 4400);
+
+    /* contact */
+    const handle = (typeof CONTACT === "object" && CONTACT && CONTACT.reddit) || "u/avrg";
+    const rurl = "https://www.reddit.com/user/" + encodeURIComponent(handle.replace(/^\/?u\//i, ""));
+    document.getElementById("nav-dm").href = rurl;
+    const spineDm = document.getElementById("spine-dm");
+    spineDm.href = rurl;
+    spineDm.querySelector(".txt").textContent = "DM " + handle + " →";
+
+    /* sections: header text + dividing lines, no cards */
+    const HOME = COLLECTIONS.map((c, i) => ({ c, i })).filter(x => x.c.boards.length);
+
+    document.getElementById("topnav").innerHTML = HOME.map(({ c }) =>
+      '<a class="btn" href="#' + c.id + '"><span class="txt">' + esc(SHORT[c.id] || c.title) + "</span></a>"
+    ).join("");
+
+    document.getElementById("cols").innerHTML = HOME.map(({ c }) =>
+      '<section class="col" id="' + c.id + '" style="--acc:' + accOf(c) + '">' +
+        '<div class="colhead">' +
+          '<h2 class="goth">' + esc(SHORT[c.id] || c.title) + "</h2>" +
+          '<span class="sub label">' + esc(SUB[c.id] || c.tagline || "") + "</span>" +
+          '<span class="count label">×' + c.boards.length + "</span>" +
+        "</div>" +
+      "</section>"
+    ).join("");
+
+    document.getElementById("bar-brand").addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  })();
+  </script>
+</body>
+</html>

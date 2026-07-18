@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AVRG — Direction I: Paste-Up (mailer keeper)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=League+Gothic&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  /* I — "Paste-Up"
+     H's split layout (video spine | three collection sections) on the
+     zine paper skin: creme bg, photocopy grain, League Gothic headers
+     (Field Gothic stand-in), corner-bracket buttons, static product-photo
+     grids instead of conveyor belts. First page only. */
+  :root {
+    --paper: #ece5d3;
+    --paper-2: #f4efe2;
+    --ink: #16130f;
+    --soft: #5c554a;
+    --red: #d8511f;
+    --goth: "League Gothic", "Field Gothic", Impact, sans-serif;
+    --mono: "Space Mono", ui-monospace, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--mono);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  ::selection { background: var(--ink); color: var(--paper); }
+  img, video { display: block; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+  /* photocopy grain over everything */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 9000; pointer-events: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.5"/></svg>');
+    opacity: .16; mix-blend-mode: multiply;
+  }
+
+  .label {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase;
+  }
+  .goth { font-family: var(--goth); font-weight: 400; text-transform: uppercase; line-height: .9; }
+
+  /* ---- buttons: corner brackets (Dylan's ref — Uiverse.io by Cevorob) ----
+     paper-colored covers hide the middle of each border edge so only the
+     corners show; hovering shrinks the covers and reveals the full frame */
+  .btn {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    height: 44px; padding: 0 22px;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink); background: var(--paper);
+    border: 2px solid var(--ink);
+    user-select: none; white-space: nowrap;
+    transition: all .05s linear;
+  }
+  .btn::before, .btn::after { content: ""; position: absolute; background: var(--paper); transition: all .2s linear; }
+  .btn::before { width: calc(100% + 6px); height: calc(100% - 16px); top: 8px; left: -3px; }
+  .btn::after { width: calc(100% - 16px); height: calc(100% + 6px); top: -3px; left: 8px; }
+  .btn:hover { cursor: crosshair; }
+  .btn:active { transform: scale(.95); }
+  .btn:hover::before { height: calc(100% - 32px); top: 16px; }
+  .btn:hover::after { width: calc(100% - 32px); left: 16px; }
+  .btn .txt { position: relative; z-index: 3; }
+
+  /* ---- top bar: logo | centered tabs | contact ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 1000;
+    display: flex; align-items: center; gap: clamp(10px, 1.6vw, 20px);
+    padding: 12px clamp(16px, 3vw, 40px);
+    background: var(--paper); border-bottom: 3px solid var(--ink);
+  }
+  .bar-brand { display: flex; align-items: center; cursor: pointer; }
+  .bar-brand img { width: 38px; height: 38px; border-radius: 50%; }
+  .topbar nav {
+    display: flex; gap: clamp(10px, 1.6vw, 22px);
+    margin: 0 auto;
+  }
+  .topbar .btn { height: 38px; padding: 0 15px; font-size: 10px; }
+
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 0 clamp(16px, 3vw, 40px); }
+
+  /* ---- the split: spine | shop ---- */
+  .split {
+    display: grid; grid-template-columns: 324px 1fr;
+    gap: 0 clamp(28px, 3.4vw, 56px);
+    padding-top: clamp(22px, 3.6vh, 44px);
+  }
+  .spine { align-self: start; text-align: center; }
+
+  /* ---- spine ---- */
+  .spine .brush { width: 120px; margin: 4px auto 0; mix-blend-mode: multiply; transform: rotate(-4deg); }
+  .tick {
+    margin-top: clamp(26px, 5vh, 56px); height: 36px;
+    line-height: 1.8; color: var(--ink);
+    transition: opacity .45s ease;
+  }
+  .tick.out { opacity: 0; }
+
+  .paste { transform: rotate(var(--tilt, 0deg)); }
+  .paste .ph {
+    position: relative; background: var(--paper-2);
+    border: 3px solid var(--ink); padding: 10px 10px 0;
+    box-shadow: 6px 7px 0 0 rgba(22, 19, 15, .85);
+  }
+  .paste .ph .tape {
+    position: absolute; top: -12px; left: 50%; width: 92px; height: 26px; z-index: 2;
+    transform: translateX(-50%) rotate(var(--tapetilt, -2deg));
+    background: rgba(216, 202, 160, .8); border: 1px solid rgba(22, 19, 15, .18);
+  }
+  .paste figcaption { padding: 9px 4px 10px; font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+  .paste figcaption em { display: block; margin-top: 3px; font-style: italic; font-weight: 400; letter-spacing: .02em; text-transform: none; color: var(--soft); }
+
+  .video-paste { margin-top: 18px; }
+  .video-paste video { width: 100%; aspect-ratio: 9/14; object-fit: cover; background: #16130f; }
+
+  .made-note { margin-top: clamp(26px, 4.5vh, 44px); text-align: left; font-size: 12.5px; font-style: italic; color: var(--soft); }
+  .made-row { display: flex; align-items: flex-start; gap: 16px; margin-top: 12px; text-align: left; }
+  .made-row .paste { flex: 0 0 47%; }
+  .made-row .paste .ph { padding: 7px 7px 7px; }
+  .made-row .paste img { width: 100%; aspect-ratio: 5/4; object-fit: cover; }
+  .pitch { flex: 1; font-size: 13px; line-height: 1.8; color: var(--ink); }
+
+  .spine-cta { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 24px; }
+  .spine-cta .ask { color: var(--soft); }
+
+  /* ---- shop: static product-photo sections ---- */
+  .shop { min-width: 0; }
+  section.col { padding: 0 0 clamp(30px, 5vh, 54px); }
+  section.col + section.col { border-top: 3px solid var(--ink); padding-top: clamp(22px, 3.6vh, 38px); }
+  .colhead { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 18px; }
+  .colhead h2 { font-size: clamp(44px, 4.6vw, 64px); letter-spacing: .01em; }
+  .colhead .sub { color: var(--acc, var(--soft)); }
+  .colhead .count { margin-left: auto; color: var(--soft); }
+
+  .cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(min(176px, 44vw), 1fr));
+    gap: clamp(20px, 3vw, 34px) clamp(14px, 2vw, 26px);
+    margin-top: clamp(16px, 2.8vh, 26px);
+  }
+  .bcard { transform: rotate(var(--tilt, 0deg)); transition: transform .18s ease; }
+  .bcard:hover { transform: rotate(0deg) translateY(-5px); }
+  .bcard .ph {
+    background: var(--paper-2); border: 3px solid var(--ink); padding: 8px 8px 0;
+    box-shadow: 5px 6px 0 0 rgba(22, 19, 15, .85);
+  }
+  .bcard .ph img { width: 100%; aspect-ratio: 4/5; object-fit: cover; filter: saturate(.92) contrast(1.04); }
+  .bcard .cap { padding: 8px 2px 9px; text-align: center; }
+  .bcard .cap .nm { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .bcard .cap .rf { display: block; margin-top: 3px; font-size: 8.5px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--acc, var(--red)); }
+
+  /* ---- footer CTA: marquee in a corner-bracket frame ---- */
+  .outro { border-top: 6px solid var(--ink); padding: clamp(34px, 6vh, 64px) 0 clamp(44px, 8vh, 80px); text-align: center; }
+  .outro .label { color: var(--soft); }
+  .cta {
+    position: relative; display: block; margin: 18px auto 0; max-width: 780px;
+    background: var(--paper); color: var(--ink);
+    border: 2px solid var(--ink);
+    user-select: none; white-space: nowrap;
+    transition: all .05s linear;
+  }
+  .cta::before, .cta::after { content: ""; position: absolute; background: var(--paper); transition: all .2s linear; }
+  .cta::before { width: calc(100% + 6px); height: calc(100% - 24px); top: 12px; left: -3px; }
+  .cta::after { width: calc(100% - 24px); height: calc(100% + 6px); top: -3px; left: 12px; }
+  .cta:hover { cursor: crosshair; }
+  .cta:active { transform: scale(.97); }
+  .cta:hover::before { height: calc(100% - 48px); top: 24px; }
+  .cta:hover::after { width: calc(100% - 48px); left: 24px; }
+  .cta .clip { position: relative; z-index: 3; overflow: hidden; padding: 15px 0; }
+  .cta .track { display: inline-block; animation: strip 14s linear infinite; }
+  .cta span { font-family: var(--goth); font-size: clamp(22px, 3.4vw, 34px); text-transform: uppercase; letter-spacing: .06em; }
+  .cta .sep { color: var(--red); margin: 0 .8em; }
+  @keyframes strip { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .cta .track { animation: none; } }
+
+  footer {
+    background: var(--ink); color: var(--paper);
+    padding: 16px clamp(16px, 3vw, 40px);
+    display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between;
+  }
+  footer .label { color: #9b9284; }
+
+  /* narrower desktops: slim the spine */
+  @media (max-width: 1260px) and (min-width: 941px) {
+    .split { grid-template-columns: 284px 1fr; }
+  }
+
+  /* ---- mobile: stack the spine over the sections ---- */
+  @media (max-width: 940px) {
+    .topbar nav { display: none; }
+    .topbar { justify-content: space-between; }
+    .split { display: block; }
+    .spine { max-width: 420px; margin: 0 auto; }
+    section.col:first-child { margin-top: clamp(30px, 5vh, 48px); border-top: 3px solid var(--ink); padding-top: clamp(22px, 3.6vh, 38px); }
+    .colhead .count { margin-left: 0; flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="bar-brand" id="bar-brand" title="AVRG"><img id="bar-logo" src="" alt="AVRG" /></div>
+    <nav id="topnav"></nav>
+    <a class="btn" id="nav-dm" href="#" target="_blank" rel="noopener"><span class="txt">Contact me →</span></a>
+  </header>
+
+  <div class="wrap">
+    <div class="split">
+      <section class="spine">
+        <img class="brush" src="media/logo-brush.png" alt="AVRG brush mark" />
+        <div class="tick label" id="tick"></div>
+
+        <figure class="paste video-paste" style="--tilt: -.7deg; --tapetilt: -3deg">
+          <div class="ph"><span class="tape"></span>
+            <video id="spinevid" src="media/covercard.mp4" poster="media/covercard-poster.jpg"
+                   autoplay muted loop playsinline preload="metadata"></video>
+          </div>
+          <figcaption>Field footage <em>all shredding in the above video was performed on originals</em></figcaption>
+        </figure>
+
+        <p class="made-note">originals, made like this</p>
+        <div class="made-row">
+          <figure class="paste" style="--tilt: .9deg; --tapetilt: 2deg">
+            <div class="ph"><span class="tape"></span><img src="media/story-clamps.jpg" alt="A deck clamped up with every clamp in the shop" /></div>
+          </figure>
+          <p class="pitch">all proceeds to fund the tools / R&amp;D for advanced dorking in v2</p>
+        </div>
+
+        <div class="spine-cta">
+          <span class="ask label">Interested?</span>
+          <a class="btn" id="spine-dm" href="#" target="_blank" rel="noopener"><span class="txt"></span></a>
+        </div>
+      </section>
+
+      <main class="shop" id="cols"></main>
+    </div>
+
+    <section class="outro">
+      <span class="label">Interested in anything?</span>
+      <a class="cta" id="cta" href="#" target="_blank" rel="noopener" aria-label="DM on reddit"><div class="clip"><div class="track" id="cta-track"></div></div></a>
+    </section>
+  </div>
+
+  <footer>
+    <span class="label">AVRG — handmade fingerboards</span>
+    <span class="label">no two the same</span>
+  </footer>
+
+  <script src="../site/data.js"></script>
+  <script>
+  /* I — Paste-Up. H's split layout, static grids from data.js — no
+     conveyor, no collection pages, no lightbox. */
+  (function () {
+    "use strict";
+
+    const IMG = p => (p ? "../site/" + p : p);
+    const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    document.getElementById("bar-logo").src = IMG(SITE.logo);
+
+    /* per-collection accents — shuffled onto the paper skin, tweak freely */
+    const ACC = { originals: "#d8511f", "hand-shaped": "#1f6fb8", classic: "#c98a12", resale: "#6d4fa3" };
+    const SHORT = { originals: "Original", "hand-shaped": "Shaped", classic: "Routed", resale: "Resale" };
+    const SUB = {
+      originals: "no mold, lots of clamping and a little luck",
+      "hand-shaped": "pressed in the nfb mold, shaped by hand",
+      classic: "pressed in the nfb mold, shaped with a router",
+      resale: "pre-owned, still proper"
+    };
+    const accOf = c => ACC[c.id] || c.accent;
+    const refOf = (b, k) => b.ref || "#" + String(k + 1).padStart(2, "0");
+
+    /* rotating taglines, minus the "middle" one; fixed box height */
+    const tags = (SITE.taglines || []).filter(t => !/^by no means the m/i.test(t));
+    const tick = document.getElementById("tick");
+    let ti = 0;
+    tick.textContent = tags[0] || "";
+    if (!reduced && tags.length > 1) setInterval(() => {
+      tick.classList.add("out");
+      setTimeout(() => { ti = (ti + 1) % tags.length; tick.textContent = tags[ti]; tick.classList.remove("out"); }, 450);
+    }, 4400);
+
+    /* contact */
+    const handle = (typeof CONTACT === "object" && CONTACT && CONTACT.reddit) || "u/avrg";
+    const rurl = "https://www.reddit.com/user/" + encodeURIComponent(handle.replace(/^\/?u\//i, ""));
+    document.getElementById("nav-dm").href = rurl;
+    document.getElementById("cta").href = rurl;
+    const spineDm = document.getElementById("spine-dm");
+    spineDm.href = rurl;
+    spineDm.querySelector(".txt").textContent = "DM " + handle + " →";
+
+    /* CTA marquee */
+    const ctaSeg = ('<span>DM ' + esc(handle) + '</span><span class="sep">★</span><span>everything must go</span><span class="sep">★</span>').repeat(3);
+    document.getElementById("cta-track").innerHTML = ctaSeg + ctaSeg;
+
+    /* collections: static product-photo grids */
+    const HOME = COLLECTIONS.map((c, i) => ({ c, i })).filter(x => x.c.boards.length);
+
+    document.getElementById("topnav").innerHTML = HOME.map(({ c }) =>
+      '<a class="btn" href="#' + c.id + '"><span class="txt">' + esc(SHORT[c.id] || c.title) + "</span></a>"
+    ).join("");
+
+    const tilts = [-1.1, .9, -.5, 1.2, -.8, .6];
+    document.getElementById("cols").innerHTML = HOME.map(({ c }, s) =>
+      '<section class="col" id="' + c.id + '" style="--acc:' + accOf(c) + '">' +
+        '<div class="colhead">' +
+          '<h2 class="goth">' + esc(SHORT[c.id] || c.title) + "</h2>" +
+          '<span class="sub label">' + esc(SUB[c.id] || c.tagline || "") + "</span>" +
+          '<span class="count label">×' + c.boards.length + "</span>" +
+        "</div>" +
+        '<div class="cards">' +
+          c.boards.map((b, k) =>
+            '<figure class="bcard" style="--tilt:' + tilts[(s + k) % tilts.length] + 'deg">' +
+              '<div class="ph"><img loading="lazy" src="' + IMG(b.thumb) + '" alt="' + esc(b.name || refOf(b, k)) + '"></div>' +
+              '<figcaption class="cap"><span class="nm">' + esc(b.name || refOf(b, k)) + "</span>" +
+              (b.name ? '<span class="rf">' + esc(refOf(b, k)) + "</span>" : "") + "</figcaption>" +
+            "</figure>"
+          ).join("") +
+        "</div>" +
+      "</section>"
+    ).join("");
+
+    document.getElementById("bar-brand").addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AVRG — Redesign Directions</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111; color: #eee;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    min-height: 100svh; display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .box { max-width: 560px; width: 100%; }
+  h1 { font-size: 15px; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 6px; }
+  p.sub { font-size: 12px; color: #888; margin-bottom: 34px; line-height: 1.6; }
+  a.dir {
+    display: block; text-decoration: none; color: inherit;
+    border: 1px solid #333; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px;
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  a.dir:hover { border-color: #eee; transform: translateX(4px); }
+  a.dir b { display: block; font-size: 14px; margin-bottom: 5px; }
+  a.dir span { font-size: 12px; color: #999; line-height: 1.55; display: block; font-family: -apple-system, sans-serif; }
+  .a b i { font-style: normal; color: #d9c9a3; }
+  .b b i { font-style: normal; color: #b09df0; }
+  .c b i { font-style: normal; color: #f08a4b; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>AVRG — three directions</h1>
+    <p class="sub">Same real content (your data.js + photos), three different websites. Open each, judge on phone width too.</p>
+    <a class="dir a" href="a-ledger.html"><b>A — <i>The Ledger</i></b>
+      <span>Warm paper, ink rules, serif headlines, boards catalogued like museum specimens with reference numbers. Quiet, archival, lets the wood colors carry everything.</span></a>
+    <a class="dir b" href="b-gallery.html"><b>B — <i>Night Gallery</i></b>
+      <span>Near-black, the deadpan taglines become the giant hero. Boards hang in horizontal shelves with placards, photos melting into the dark like the marble they were shot on.</span></a>
+    <a class="dir c" href="c-dyelot.html"><b>C — <i>Dye Lot</i></b>
+      <span>Bone + ink poster energy: chunky uppercase type, hard offset shadows, tagline ticker tape, collection color highlights. Loud but tidy — skate-brand, not startup.</span></a>
+    <a class="dir c" href="d-dyelot-shelves.html"><b>D — <i>Dye Lot, Shelved</i></b>
+      <span>C's look with B's layout: every collection is a horizontal shelf of cards that bleeds off the page edge, so all decks live on one scannable page.</span></a>
+    <a class="dir b" href="e-conveyor.html"><b>E — <i>The Conveyor</i></b>
+      <span>Warm charcoal + grain + huge bone wordmark + terracotta accents. Everything centered; each collection is a slow auto-rotating carousel — center two cards big and clear, the rest dim away. Hover a side to steer, drag on touch.</span></a>
+    <a class="dir c" href="f-dyelot-conveyor.html"><b>F — <i>Dye Lot Conveyor</i> (current pick)</b>
+      <span>The conveyor on bone with E-style cards, hardened up. Click a deck to open an inline inspector (all angles + DM link) with the full D-style shelf revealed beneath it; click a section title to toggle the shelf on its own.</span></a>
+    <a class="dir b" href="g-workshop.html"><b>G — <i>Workshop Split</i></b>
+      <span>F's dark look and conveyors, restructured to tell the story: process column (mold, plies, clamps) | riding video + the sell-off pitch | three shelf bands (Original / Shaped / Routed). On phones the shelves become a 2×2 grid — video plus one beauty shot per collection.</span></a>
+    <a class="dir b" href="h-blackout.html"><b>H — <i>Blackout</i></b>
+      <span>G stripped down on pure black: no process column, no subtitle, one-line pitch. Band titles are plain white bold, and shelf cards dissolve to nothing at the edges instead of hitting a clip line.</span></a>
+  </div>
+</body>
+</html>

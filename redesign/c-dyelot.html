@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AVRG — Direction C: Dye Lot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bone: #ede6d8;
+    --ink: #201a15;
+    --disp: "Bricolage Grotesque", -apple-system, sans-serif;
+    --mono: "Space Mono", ui-monospace, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bone); color: var(--ink);
+    font-family: var(--disp); font-weight: 400;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  ::selection { background: var(--ink); color: var(--bone); }
+  img { display: block; }
+  a { color: inherit; text-decoration: none; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(16px, 3.5vw, 40px); }
+
+  /* ---- header ---- */
+  .top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; border-bottom: 3px solid var(--ink);
+  }
+  .top .brand { display: flex; align-items: center; gap: 12px; }
+  .top .brand img { width: 44px; height: 44px; border-radius: 50%; }
+  .top .brand span { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+  .top .mono { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; text-align: right; }
+
+  /* ---- hero ---- */
+  .hero { padding: clamp(40px, 7vh, 84px) 0 0; }
+  .hero h1 {
+    font-weight: 800; letter-spacing: -0.035em; line-height: .92;
+    font-size: clamp(64px, 13vw, 172px);
+    text-transform: uppercase;
+  }
+  .hero h1 .o { color: #d8511f; }
+  .hero .row {
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 24px;
+    padding: 22px 0 30px; flex-wrap: wrap;
+  }
+  .hero .blurb { max-width: 44ch; font-size: 14.5px; line-height: 1.7; font-weight: 400; }
+  .hero .stamp {
+    font-family: var(--mono); font-size: 11px; line-height: 1.9; text-align: right;
+    text-transform: uppercase; letter-spacing: .08em;
+  }
+  .hero-strip {
+    height: clamp(200px, 34vh, 320px); overflow: hidden;
+    border: 3px solid var(--ink); border-radius: 14px;
+    box-shadow: 7px 7px 0 var(--ink);
+  }
+  .hero-strip img { width: 100%; height: 100%; object-fit: cover; object-position: center 45%; }
+
+  /* ---- ticker ---- */
+  .ticker {
+    margin: clamp(36px, 6vh, 64px) 0 0;
+    background: var(--ink); color: var(--bone);
+    overflow: hidden; white-space: nowrap;
+    border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink);
+  }
+  .ticker .track {
+    display: inline-block; padding: 11px 0;
+    font-family: var(--mono); font-size: 13px; letter-spacing: .1em; text-transform: lowercase;
+    animation: tick 38s linear infinite;
+  }
+  @keyframes tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .ticker i { font-style: normal; margin: 0 22px; }
+  .ticker em { font-style: normal; color: #e8a13c; margin: 0 22px; }
+
+  /* ---- collection bands ---- */
+  section.band { padding: clamp(48px, 9vh, 100px) 0 8px; }
+  .band-head { border-top: 3px solid var(--acc, var(--ink)); padding-top: 14px; }
+  .band-head .num {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+  }
+  .band-head .num b { color: var(--acc); }
+  .band-head h2 {
+    font-weight: 800; text-transform: uppercase; letter-spacing: -0.025em; line-height: .95;
+    font-size: clamp(38px, 7.5vw, 92px); margin: 6px 0 4px;
+  }
+  .band-head h2 .hl {
+    background: var(--acc); color: var(--bone);
+    padding: 0 .14em; border-radius: .08em;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone;
+  }
+  .band-head .desc { max-width: 56ch; font-size: 13.5px; line-height: 1.75; padding: 10px 0 32px; }
+
+  .deck-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 26px 20px; padding-bottom: 20px;
+  }
+  @media (max-width: 560px) { .deck-grid { grid-template-columns: 1fr 1fr; gap: 20px 12px; } }
+  .deck {
+    background: #f4efe4; border: 2.5px solid var(--ink); border-radius: 12px;
+    overflow: hidden; box-shadow: 5px 5px 0 var(--ink);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .deck:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
+  .deck:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+  .deck .ph { aspect-ratio: 4/5; overflow: hidden; border-bottom: 2.5px solid var(--ink); background: #16120e; }
+  .deck .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .deck .tag {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 9px 12px;
+  }
+  .deck .tag .nm { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; line-height: 1.2; }
+  .deck .tag .rf {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+    background: var(--acc); color: var(--bone); padding: 3px 7px; border-radius: 99px; white-space: nowrap;
+  }
+
+  .restock {
+    border: 2.5px dashed var(--ink); border-radius: 12px; opacity: .55;
+    padding: 46px 20px; text-align: center; margin-bottom: 20px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+  }
+
+  /* ---- footer ---- */
+  footer { margin-top: clamp(48px, 9vh, 90px); background: var(--ink); color: var(--bone); }
+  footer .inner { max-width: 1180px; margin: 0 auto; padding: 60px clamp(16px, 3.5vw, 40px) 80px; }
+  footer .cta {
+    font-weight: 800; text-transform: uppercase; letter-spacing: -0.025em; line-height: .95;
+    font-size: clamp(34px, 7vw, 84px);
+  }
+  footer .cta a { color: #e8a13c; text-decoration: underline; text-decoration-thickness: 4px; text-underline-offset: 7px; }
+  footer .cta a:hover { color: var(--bone); }
+  footer .fine { font-family: var(--mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; opacity: .55; margin-top: 30px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand"><img id="logo" src="" alt="" /><span>AVRG</span></div>
+      <div class="mono">Hand-shaped<br />fingerboards</div>
+    </header>
+
+    <div class="hero">
+      <h1>N<span class="o">o</span> two<br />the same</h1>
+      <div class="row">
+        <p class="blurb" id="blurb"></p>
+        <div class="stamp">Hand-dyed · hand-pressed<br />no molds · no templates<br />lot <span id="yr">2026</span></div>
+      </div>
+      <div class="hero-strip"><img id="hero-img" src="" alt="Dye-stack of hand-shaped decks" /></div>
+    </div>
+  </div>
+
+  <div class="ticker"><div class="track" id="ticker"></div></div>
+
+  <main class="wrap" id="bands"></main>
+
+  <footer>
+    <div class="inner">
+      <div class="cta" id="dm"></div>
+      <div class="fine">AVRG · every deck hand-shaped from scratch · © 2026</div>
+    </div>
+  </footer>
+
+<script src="../site/data.js"></script>
+<script>
+(function () {
+  const IMG = p => p ? "../site/" + p : "";
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+
+  document.getElementById("logo").src = IMG(SITE.logo);
+  document.getElementById("hero-img").src = IMG(SITE.heroImage);
+  document.getElementById("blurb").textContent =
+    SITE.brandText.replace(/^No two the same\.\s*/i, "");
+
+  const handle = (typeof CONTACT === "object" && CONTACT.reddit) || "u/avrg";
+  const rurl = "https://www.reddit.com/user/" + encodeURIComponent(handle.replace(/^\/?u\//i, ""));
+  document.getElementById("dm").innerHTML =
+    'Want one?<br />DM <a href="' + rurl + '" target="_blank" rel="noopener">' + esc(handle) + '</a> on Reddit';
+
+  /* ticker: taglines twice for a seamless loop */
+  const seq = (SITE.taglines || []).map(t => "<i>" + esc(t) + "</i><em>✳</em>").join("");
+  document.getElementById("ticker").innerHTML = seq + seq;
+
+  /* recalibrated accents that sit well on bone */
+  const ACC = { originals: "#d8511f", "hand-shaped": "#1f6fb8", classic: "#c98a12", resale: "#6d4fa3" };
+
+  document.getElementById("bands").innerHTML = COLLECTIONS.map((c, i) => {
+    const acc = ACC[c.id] || c.accent;
+    const title = c.title.replace(/ - /g, " ");
+    const words = title.split(" ");
+    const last = words.pop();
+    const h = esc(words.join(" ")) + (words.length ? " " : "") + '<span class="hl">' + esc(last) + '</span>';
+    const body = c.boards.length
+      ? '<div class="deck-grid">' + c.boards.map((b, k) => {
+          const ref = b.ref || "#" + String(k + 1).padStart(2, "0");
+          return '<a class="deck" href="' + IMG(b.photos[0]) + '" target="_blank" rel="noopener">' +
+            '<div class="ph"><img loading="lazy" src="' + IMG(b.thumb) + '" alt="' + esc(b.name || ref) + '"></div>' +
+            '<div class="tag"><span class="nm">' + esc(b.name || ref) + '</span>' +
+            (b.name ? '<span class="rf">' + esc(ref) + '</span>' : '') + '</div>' +
+          '</a>';
+        }).join("") + '</div>'
+      : '<div class="restock">Restocking — check back</div>';
+    return '<section class="band" style="--acc:' + acc + '">' +
+      '<div class="band-head">' +
+        '<div class="num"><b>0' + (i + 1) + '</b> / ' + (c.boards.length ? c.boards.length + " boards" : "empty") + '</div>' +
+        '<h2>' + h + '</h2>' +
+        '<p class="desc">' + esc(c.description.replace(/ Hover.*$/, "")) + '</p>' +
+      '</div>' + body +
+    '</section>';
+  }).join("");
+})();
+</script>
+</body>
+</html>
