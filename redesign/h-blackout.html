@@ -520,9 +520,17 @@
     }, 4400);
 
     const handle = (typeof CONTACT === "object" && CONTACT && CONTACT.reddit) || "u/avrg";
-    const rurl = "https://www.reddit.com/user/" + encodeURIComponent(handle.replace(/^\/?u\//i, ""));
+    const rname = handle.replace(/^\/?u\//i, "");
+    /* primed PM compose: recipient + subject + body prefilled (classic messages,
+       not chat — chat has no prefill URL). Lands in reddit.com/message/inbox. */
+    const composeUrl = (subject, body) =>
+      "https://www.reddit.com/message/compose/?to=" + encodeURIComponent(rname) +
+      "&subject=" + encodeURIComponent(subject) +
+      "&message=" + encodeURIComponent(body);
+    const siteUrl = () => location.href.split("#")[0];
+    const genericDm = () => composeUrl("AVRG inquiry", "hey! coming from the AVRG site — ");
     [["spine-dm", "DM " + handle + " →"], ["lb-dm", "DM " + handle + " →"], ["nav-dm", "Contact me"]].forEach(([id, txt]) => {
-      const el = document.getElementById(id); el.href = rurl; el.textContent = txt;
+      const el = document.getElementById(id); el.href = genericDm(); el.textContent = txt;
     });
 
     /* home band naming: short titles + one-line "how" subs */
@@ -732,6 +740,7 @@
     const lbBig = document.getElementById("lb-big");
     const lbThumbs = document.getElementById("lb-thumbs");
     const lbNm = document.getElementById("lb-nm");
+    const lbDm = document.getElementById("lb-dm");
     const lbPillRef = document.getElementById("lb-pill-ref");
     const lbPillDims = document.getElementById("lb-pill-dims");
     /* pill identifier: collection prefix + zero-padded number (HS 04, CL 12, OG 01) */
@@ -763,6 +772,10 @@
       lbPillRef.textContent = fmtRef(c, b, k);
       lbPillDims.textContent = b.dims || "";
       lbPillDims.style.display = b.dims ? "" : "none";
+      /* the DM button carries this exact board into the primed message */
+      const label = b.name ? b.name + " (" + fmtRef(c, b, k) + ")" : fmtRef(c, b, k);
+      lbDm.href = composeUrl("Interested in " + label,
+        "hey! interested in " + label + " from the AVRG site → " + siteUrl() + "#" + c.id);
       const d = b.description || "";
       lbDesc.textContent = (!d || /^Replace this/m.test(d)) ? cleanDesc(c.description) : d;
       lbCount.textContent = (k + 1) + " / " + c.boards.length + " — " + dispTitle(c);
