@@ -128,7 +128,7 @@ const COLLECTIONS = [
     "title": "Hand Shaped",
     "tagline": "shaped by hand, no stencil no router",
     "accent": "#4a9eff",
-    "description": "Hand shaped decks that were pressed in NHB mold. No stencils, no router.",
+    "description": "way too much time was spent hand sanding these",
     "layout": "pairs",
     "cover": "img/thumb/hand-shaped-10-1.jpg",
     "boards": [
@@ -349,7 +349,7 @@ const COLLECTIONS = [
     "title": "Router Shaped",
     "tagline": "pressed in a NFB aluminum mold and shaped with a router",
     "accent": "#f5c842",
-    "description": "Pressed in an NFB aluminum mold and shaped with a router.",
+    "description": "shapers that match the mold, rounding, countersink, and finishing practice",
     "layout": "pairs",
     "cover": "img/cover-classic.jpg",
     "boards": [
