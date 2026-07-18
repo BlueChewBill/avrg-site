@@ -15,7 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 REDDIT_HANDLE = "u/AVRG_FB"
 CONTACT_EMAIL = "avrg.fb@gmail.com"   # inquiry inbox (form submissions land here)
 
-ROOT  = "/Users/dylan/Desktop/AVRG"
+ROOT  = os.path.dirname(os.path.abspath(__file__))
 BOARDS = os.path.join(ROOT, "boards")
 SITE  = os.path.join(ROOT, "site")
 THUMB = os.path.join(SITE, "img", "thumb")

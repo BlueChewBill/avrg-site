@@ -9,7 +9,7 @@ After this, MANAGE PHOTOS IN  boards/  — then run  build_site.py.
 """
 import os, shutil
 
-ROOT = "/Users/dylan/Desktop/AVRG"
+ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC_PARENT = os.path.join(ROOT, "completes:routed:shaped")
 SRC_CLEAN = os.path.join(ROOT, "clean shots")
 BOARDS = os.path.join(ROOT, "boards")
