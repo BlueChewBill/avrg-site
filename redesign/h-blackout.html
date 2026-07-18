@@ -165,6 +165,9 @@
     box-shadow: 0 0 0 2px var(--ink), 7px 9px 0 -1px rgba(32, 26, 21, .34);
   }
   .frame img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  /* dual card: both sides of one board in a single frame */
+  .frame.dual { display: flex; gap: 2px; }
+  .frame.dual img { width: calc(50% - 1px); }
   /* belt cards: shadow x tracks position on the shelf (virtual light above shelf
      center) — --shx is set per-frame by the conveyor engine */
   .card .frame {
@@ -536,9 +539,17 @@
       const last = words.pop();
       return esc(words.join(" ")) + (words.length ? " " : "") + '<span class="hl">' + esc(last) + '</span>';
     };
-    const cardInner = (b, k) => {
+    /* dual: collections whose grid cards show both sides of the board at once */
+    const DUAL = { "hand-shaped": true, classic: true };
+    const cardInner = (b, k, dual) => {
       const ref = refOf(b, k);
-      return '<div class="frame"><img loading="lazy" src="' + IMG(b.thumb) + '" alt="' + esc(b.name || ref) + '"></div>' +
+      const alt = esc(b.name || ref);
+      const th = j => IMG((b.thumbs && b.thumbs[j]) || b.thumb);
+      const imgs = (dual && b.thumbs && b.thumbs.length > 1)
+        ? '<img loading="lazy" src="' + th(0) + '" alt="' + alt + ' — side one">' +
+          '<img loading="lazy" src="' + th(1) + '" alt="' + alt + ' — side two">'
+        : '<img loading="lazy" src="' + IMG(b.thumb) + '" alt="' + alt + '">';
+      return '<div class="frame' + ((dual && b.thumbs && b.thumbs.length > 1) ? " dual" : "") + '">' + imgs + '</div>' +
         '<div class="cap"><span class="nm">' + esc(b.name || ref) + '</span>' +
         (b.name ? '<span class="rf">' + esc(ref) + '</span>' : '') + '</div>';
     };
@@ -631,7 +642,7 @@
         '<p class="desc">' + esc(cleanDesc(c.description)) + '</p>' +
         (c.boards.length
           ? '<div class="shelfgrid">' +
-              c.boards.map((b, k) => '<div class="scard" data-k="' + k + '" role="button" tabindex="0">' + cardInner(b, k) + '</div>').join("") +
+              c.boards.map((b, k) => '<div class="scard" data-k="' + k + '" role="button" tabindex="0">' + cardInner(b, k, DUAL[c.id]) + '</div>').join("") +
             '</div>'
           : '<div class="restock label">Restocking — check back</div>');
     }
@@ -722,16 +733,17 @@
     const lbCount = document.getElementById("lb-count");
     let cur = null;
 
-    function populate(ci, k) {
+    function populate(ci, k, j) {
+      j = j || 0;
       const c = COLLECTIONS[ci];
       const b = c.boards[k];
       const ref = refOf(b, k);
       lb.style.setProperty("--acc", accOf(c));
-      lbBig.src = IMG(b.photos[0]);
+      lbBig.src = IMG(b.photos[j]);
       lbBig.alt = b.name || ref;
       lbThumbs.innerHTML = b.photos.length > 1
-        ? b.photos.map((p, j) =>
-            '<img class="' + (j === 0 ? "on" : "") + '" src="' + IMG((b.thumbs && b.thumbs[j]) || p) + '" data-j="' + j + '" alt="angle ' + (j + 1) + '">'
+        ? b.photos.map((p, tj) =>
+            '<img class="' + (tj === j ? "on" : "") + '" src="' + IMG((b.thumbs && b.thumbs[tj]) || p) + '" data-j="' + tj + '" alt="angle ' + (tj + 1) + '">'
           ).join("")
         : "";
       lbNm.textContent = b.name || ref;
@@ -739,7 +751,7 @@
       const d = b.description || "";
       lbDesc.textContent = (!d || /^Replace this/m.test(d)) ? cleanDesc(c.description) : d;
       lbCount.textContent = (k + 1) + " / " + c.boards.length + " — " + dispTitle(c);
-      cur = { ci, k };
+      cur = { ci, k, j };
     }
 
     function sourceFrame() {
@@ -803,13 +815,22 @@
     function step(dir) {
       if (!cur) return;
       const c = COLLECTIONS[cur.ci];
-      const k = (cur.k + dir + c.boards.length) % c.boards.length;
+      /* walk the current board's photos first; only cross to the
+         next/previous board once you run off either end */
+      let k = cur.k, j = cur.j + dir;
+      if (j < 0 || j >= c.boards[k].photos.length) {
+        k = (cur.k + dir + c.boards.length) % c.boards.length;
+        j = dir > 0 ? 0 : c.boards[k].photos.length - 1;
+      }
+      /* same board, different angle: swap in place — the slide/fade is
+         reserved for moving between boards */
+      if (k === cur.k) { populate(cur.ci, k, j); return; }
       if (!reduced) {
         lbCard.style.transition = "transform .18s ease, opacity .18s ease";
         lbCard.style.opacity = "0";
         lbCard.style.transform = "translateX(" + (-dir * 30) + "px)";
         setTimeout(() => {
-          populate(cur.ci, k);
+          populate(cur.ci, k, j);
           lbCard.style.transition = "none";
           lbCard.style.transform = "translateX(" + (dir * 30) + "px)";
           void lbCard.offsetWidth;
@@ -819,7 +840,7 @@
           setTimeout(() => { lbCard.style.transition = ""; }, 240);
         }, 180);
       } else {
-        populate(cur.ci, k);
+        populate(cur.ci, k, j);
       }
     }
 
@@ -839,6 +860,7 @@
       if (j == null || !cur) return;
       const b = COLLECTIONS[cur.ci].boards[cur.k];
       lbBig.src = IMG(b.photos[+j]);
+      cur.j = +j;
       lbThumbs.querySelectorAll("img").forEach(t => t.classList.toggle("on", t.dataset.j === j));
     });
     document.addEventListener("keydown", e => {
