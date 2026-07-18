@@ -331,6 +331,62 @@
   .lb-pill .ref { color: var(--acc, #d8511f); }
   .lb-pill .dims { color: var(--bone); border-left: 2px solid rgba(221, 209, 182, .55); }
   .lb-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .lb-list-btn {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--soft); border: 1.5px dashed rgba(221, 209, 182, .45);
+    border-radius: 999px; padding: 9px 14px;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .lb-list-btn:hover { color: #fff; border-color: #fff; }
+  .lb-list-btn.on { color: var(--acc, #d8511f); border-style: solid; border-color: currentColor; }
+
+  /* ---- my lisst page + inquiry form ---- */
+  .lisst-empty {
+    max-width: 420px; margin: 38px auto 0; padding: 40px 20px;
+    border: 2.5px dashed var(--bone); border-radius: 14px; opacity: .5;
+  }
+  .lisst-card { position: relative; }
+  .lisst-remove {
+    position: absolute; top: -10px; right: -10px; z-index: 3;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--bone); color: var(--ink);
+    font-family: var(--mono); font-size: 13px; font-weight: 700; line-height: 1;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+    transition: transform .15s ease;
+  }
+  .lisst-remove:hover { transform: scale(1.12); }
+  .inq {
+    max-width: 460px; margin: clamp(36px, 6vh, 60px) auto 0; padding: 0 20px;
+    text-align: left;
+  }
+  .inq-head { text-align: center; color: #fff; }
+  .inq-sub { margin-top: 10px; text-align: center; font-size: 12.5px; font-style: italic; color: var(--hint); }
+  .inq label {
+    display: block; margin: 18px 0 7px;
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--soft);
+  }
+  .inq input, .inq select, .inq textarea {
+    width: 100%; background: transparent; color: var(--bone);
+    border: 2px solid rgba(221, 209, 182, .4); border-radius: 8px;
+    font-family: var(--disp); font-size: 14px; padding: 12px 13px;
+    transition: border-color .15s ease;
+  }
+  .inq input:focus, .inq select:focus, .inq textarea:focus { outline: none; border-color: #fff; }
+  .inq select { -webkit-appearance: none; appearance: none; cursor: pointer; }
+  .inq select option { background: #111; color: var(--bone); }
+  .inq textarea { resize: vertical; min-height: 90px; }
+  .inq-send {
+    display: block; margin: 24px auto 0;
+    background: transparent; color: #fff;
+    border: 2px solid #fff; border-radius: 8px; padding: 13px 22px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .inq-send:hover { background: #fff; color: #000; }
+  .inq-status { margin-top: 14px; text-align: center; font-size: 13px; color: var(--soft); min-height: 1.4em; }
+  .inq-or { margin-top: 26px; text-align: center; }
+  .inq-or .dm-mini { margin-top: 10px; }
   .lb-cta-ask { color: var(--bone); }
   .lb-dm-btn {
     flex: 0 0 auto; background: transparent; color: #fff;
@@ -460,6 +516,7 @@
             <span class="seg ref" id="lb-pill-ref"></span>
             <span class="seg dims" id="lb-pill-dims"></span>
           </div>
+          <button class="lb-list-btn" id="lb-list-btn" type="button"></button>
           <div class="lb-cta">
             <span class="lb-cta-ask label">Interested?</span>
             <a class="lb-dm-btn label" id="lb-dm" href="#" target="_blank" rel="noopener"></a>
@@ -575,7 +632,8 @@
       '<a class="tab" href="#shop-all">Shop All</a>' +
       HOME.map(({ c }) =>
         '<a class="tab" href="#' + c.id + '">' + esc(SHORT[c.id] || c.title) + '</a>'
-      ).join("");
+      ).join("") +
+      '<a class="tab" href="#my-lisst" id="nav-lisst"></a>';
     document.getElementById("cols").innerHTML = HOME.map(({ c, i }) =>
       '<section class="band" data-col="' + i + '" style="--acc:' + accOf(c) + '">' +
         '<div class="bandhead">' +
@@ -703,12 +761,108 @@
       bindScards();
     }
 
+    /* ---- my lisst page: picked boards + one inquiry about all of them ---- */
+    function renderLisst() {
+      const entries = myLisst.map(id => BOARD_INDEX[id]);
+      const cards = entries.length
+        ? '<div class="shelfgrid">' + entries.map(({ c, ci, b, k }) =>
+            '<div class="scard lisst-card" data-ci="' + ci + '" data-k="' + k + '" role="button" tabindex="0">' +
+              '<button class="lisst-remove" type="button" data-id="' + b.id + '" title="Remove from lisst" aria-label="Remove from lisst">✕</button>' +
+              cardInner(b, k, DUAL[c.id]) +
+            '</div>'
+          ).join("") + '</div>'
+        : '<div class="lisst-empty label">Nothing on the lisst yet — open a board and hit “+ add to my lisst”</div>';
+      const refs = myLisst.map(lisstLabel);
+      const dmLisst = refs.length
+        ? '<div class="inq-or"><span class="label" style="color:var(--soft)">reddit person?</span><br>' +
+          '<a class="dm-mini label" target="_blank" rel="noopener" href="' +
+            composeUrl("Interested in " + refs.join(", "),
+              "hey! interested in these from the AVRG site: " + refs.join(", ") + " → " + siteUrl()) +
+          '">DM the lisst →</a></div>'
+        : "";
+      colpage.innerHTML =
+        '<section class="colpage-inner" style="--acc:#d8511f">' +
+          '<h2>My <span class="hl">Lisst</span></h2>' +
+          '<div class="colpage-links">' +
+            '<a class="back label" href="#">← Back to collections</a>' +
+            '<a class="back label" href="#shop-all">Shop all collections →</a>' +
+          '</div>' +
+          cards +
+          '<div class="inq">' +
+            '<h3 class="inq-head label" style="font-size:12px">Send one message about ' + (refs.length ? "the lisst" : "anything") + '</h3>' +
+            '<p class="inq-sub">' + (refs.length ? "your picks ride along automatically: " + esc(refs.join(", ")) : "no picks attached — just say hi") + '</p>' +
+            '<form id="inq-form">' +
+              '<label for="inq-name">Name / alias</label>' +
+              '<input id="inq-name" name="name" type="text" autocomplete="name" placeholder="optional">' +
+              '<label for="inq-method">Preferred contact</label>' +
+              '<select id="inq-method" name="preferred_method">' +
+                '<option value="email">Email</option>' +
+                '<option value="reddit">Reddit</option>' +
+                '<option value="instagram">Instagram</option>' +
+              '</select>' +
+              '<label for="inq-handle">Where do we reach you</label>' +
+              '<input id="inq-handle" name="contact" type="text" required placeholder="address or handle">' +
+              '<label for="inq-msg">Message</label>' +
+              '<textarea id="inq-msg" name="message" placeholder="optional"></textarea>' +
+              '<button class="inq-send label" type="submit">Send it →</button>' +
+              '<p class="inq-status" id="inq-status"></p>' +
+            '</form>' +
+            dmLisst +
+          '</div>' +
+          colnavHtml(-1, true) +
+        '</section>';
+      colpage.querySelectorAll(".lisst-remove").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.stopPropagation();
+          toggleLisst(btn.dataset.id);
+          renderLisst();
+        });
+      });
+      colpage.querySelectorAll(".lisst-card").forEach(s => {
+        const go = () => openLb(+s.dataset.ci, +s.dataset.k, s);
+        s.addEventListener("click", go);
+        s.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+        });
+      });
+      const form = document.getElementById("inq-form");
+      const status = document.getElementById("inq-status");
+      form.addEventListener("submit", async e => {
+        e.preventDefault();
+        if (/^PASTE-/.test(SPLITFORMS_KEY)) {
+          status.textContent = "form isn’t wired up yet — use the DM button for now";
+          return;
+        }
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.access_key = SPLITFORMS_KEY;
+        data.lisst = refs.join(", ") || "none";
+        data.subject = "AVRG inquiry — " + (refs.length ? refs.join(", ") : "general");
+        data.page = siteUrl();
+        status.textContent = "sending…";
+        try {
+          const r = await fetch("https://splitforms.com/api/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify(data)
+          });
+          if (r.ok) { status.textContent = "sent — talk soon ✓"; form.reset(); }
+          else { status.textContent = "something broke — try the DM button instead"; }
+        } catch (err) {
+          status.textContent = "something broke — try the DM button instead";
+        }
+      });
+    }
+
     function route() {
       if (!lb.hidden) closeLb(true);
       const id = (location.hash || "").replace(/^#/, "");
       const i = COLLECTIONS.findIndex(c => c.id === id);
       if (id === "shop-all") {
         renderShopAll();
+        home.hidden = true; colpage.hidden = false;
+        vid.pause();
+      } else if (id === "my-lisst") {
+        renderLisst();
         home.hidden = true; colpage.hidden = false;
         vid.pause();
       } else if (i >= 0) {
@@ -741,6 +895,7 @@
     const lbThumbs = document.getElementById("lb-thumbs");
     const lbNm = document.getElementById("lb-nm");
     const lbDm = document.getElementById("lb-dm");
+    const lbListBtn = document.getElementById("lb-list-btn");
     const lbPillRef = document.getElementById("lb-pill-ref");
     const lbPillDims = document.getElementById("lb-pill-dims");
     /* pill identifier: collection prefix + zero-padded number (HS 04, CL 12, OG 01) */
@@ -750,6 +905,29 @@
       const n = m ? +m[0] : k + 1;
       return (PREFIX[c.id] || "#") + " " + String(n).padStart(2, "0");
     };
+
+    /* ---- my lisst: localStorage cart ---- */
+    const SPLITFORMS_KEY = "PASTE-SPLITFORMS-ACCESS-KEY-HERE";
+    const LIST_KEY = "avrg-lisst";
+    const BOARD_INDEX = {};
+    COLLECTIONS.forEach((c, ci) => c.boards.forEach((b, k) => { BOARD_INDEX[b.id] = { c, ci, b, k }; }));
+    let myLisst = [];
+    try { myLisst = (JSON.parse(localStorage.getItem(LIST_KEY)) || []).filter(id => BOARD_INDEX[id]); } catch (e) {}
+    const lisstSave = () => { try { localStorage.setItem(LIST_KEY, JSON.stringify(myLisst)); } catch (e) {} };
+    const inLisst = id => myLisst.includes(id);
+    const lisstLabel = id => {
+      const { c, b, k } = BOARD_INDEX[id];
+      return b.name ? b.name + " (" + fmtRef(c, b, k) + ")" : fmtRef(c, b, k);
+    };
+    const navLisst = document.getElementById("nav-lisst");
+    function lisstTab() {
+      navLisst.textContent = "My Lisst" + (myLisst.length ? " (" + myLisst.length + ")" : "");
+    }
+    lisstTab();
+    function toggleLisst(id) {
+      myLisst = inLisst(id) ? myLisst.filter(x => x !== id) : myLisst.concat(id);
+      lisstSave(); lisstTab();
+    }
     const lbDesc = document.getElementById("lb-desc");
     const lbCount = document.getElementById("lb-count");
     let cur = null;
@@ -776,6 +954,9 @@
       const label = b.name ? b.name + " (" + fmtRef(c, b, k) + ")" : fmtRef(c, b, k);
       lbDm.href = composeUrl("Interested in " + label,
         "hey! interested in " + label + " from the AVRG site → " + siteUrl() + "#" + c.id);
+      lbListBtn.dataset.id = b.id;
+      lbListBtn.textContent = inLisst(b.id) ? "✓ on the lisst" : "+ add to my lisst";
+      lbListBtn.classList.toggle("on", inLisst(b.id));
       const d = b.description || "";
       lbDesc.textContent = (!d || /^Replace this/m.test(d)) ? cleanDesc(c.description) : d;
       lbCount.textContent = (k + 1) + " / " + c.boards.length + " — " + dispTitle(c);
@@ -837,6 +1018,8 @@
         lbCard.style.transform = "none";
         document.body.style.overflow = "";
         cur = null;
+        /* lisst membership may have changed while the lightbox was open */
+        if (location.hash.replace(/^#/, "") === "my-lisst") renderLisst();
       }, (reduced || instant) ? 0 : 430);
     }
 
@@ -872,6 +1055,13 @@
       }
     }
 
+    lbListBtn.addEventListener("click", () => {
+      const id = lbListBtn.dataset.id;
+      if (!id) return;
+      toggleLisst(id);
+      lbListBtn.textContent = inLisst(id) ? "✓ on the lisst" : "+ add to my lisst";
+      lbListBtn.classList.toggle("on", inLisst(id));
+    });
     document.getElementById("lb-close").addEventListener("click", () => closeLb());
     lbScrim.addEventListener("click", () => closeLb());
     document.getElementById("lb-prev").addEventListener("click", () => step(-1));
