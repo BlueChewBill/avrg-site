@@ -310,24 +310,27 @@
   }
   .lb-desc:empty { display: none; }
   .lb-product {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px;
-    margin-top: 16px; padding: 14px 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    margin-top: 16px; padding: 18px 16px;
     background: rgba(221, 209, 182, .08);
     border: 1px solid rgba(221, 209, 182, .28);
-    border-radius: 10px; text-align: left;
+    border-radius: 10px; text-align: center;
   }
-  .lb-prod-info { min-width: 0; }
   .lb-product .nm {
     display: block; color: var(--bone);
     font-size: 14px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
   }
-  .lb-product .rf {
-    display: block; margin-top: 5px;
-    font-family: var(--mono); font-size: 9px; font-weight: 700;
-    letter-spacing: .24em; text-transform: uppercase; color: var(--acc, #d8511f);
+  /* spec pill: identifier | dimensions */
+  .lb-pill {
+    display: inline-flex; align-items: stretch; overflow: hidden;
+    border: 2px solid rgba(221, 209, 182, .55); border-radius: 999px;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase; line-height: 1;
   }
-  .lb-product .rf:empty { display: none; }
-  .lb-cta { display: flex; align-items: center; gap: 11px; flex: 0 0 auto; }
+  .lb-pill .seg { padding: 10px 16px 9px; }
+  .lb-pill .ref { color: var(--acc, #d8511f); }
+  .lb-pill .dims { color: var(--bone); border-left: 2px solid rgba(221, 209, 182, .55); }
+  .lb-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
   .lb-cta-ask { color: var(--bone); }
   .lb-dm-btn {
     flex: 0 0 auto; background: transparent; color: #fff;
@@ -452,9 +455,10 @@
         <div class="lb-thumbs" id="lb-thumbs"></div>
         <p class="lb-desc" id="lb-desc"></p>
         <div class="lb-product">
-          <div class="lb-prod-info">
-            <span class="nm" id="lb-nm"></span>
-            <span class="rf" id="lb-rf"></span>
+          <span class="nm" id="lb-nm"></span>
+          <div class="lb-pill">
+            <span class="seg ref" id="lb-pill-ref"></span>
+            <span class="seg dims" id="lb-pill-dims"></span>
           </div>
           <div class="lb-cta">
             <span class="lb-cta-ask label">Interested?</span>
@@ -728,7 +732,15 @@
     const lbBig = document.getElementById("lb-big");
     const lbThumbs = document.getElementById("lb-thumbs");
     const lbNm = document.getElementById("lb-nm");
-    const lbRf = document.getElementById("lb-rf");
+    const lbPillRef = document.getElementById("lb-pill-ref");
+    const lbPillDims = document.getElementById("lb-pill-dims");
+    /* pill identifier: collection prefix + zero-padded number (HS 04, CL 12, OG 01) */
+    const PREFIX = { originals: "OG", "hand-shaped": "HS", classic: "CL", resale: "RS" };
+    const fmtRef = (c, b, k) => {
+      const m = String(b.ref || "").match(/\d+/);
+      const n = m ? +m[0] : k + 1;
+      return (PREFIX[c.id] || "#") + " " + String(n).padStart(2, "0");
+    };
     const lbDesc = document.getElementById("lb-desc");
     const lbCount = document.getElementById("lb-count");
     let cur = null;
@@ -746,8 +758,11 @@
             '<img class="' + (tj === j ? "on" : "") + '" src="' + IMG((b.thumbs && b.thumbs[tj]) || p) + '" data-j="' + tj + '" alt="angle ' + (tj + 1) + '">'
           ).join("")
         : "";
-      lbNm.textContent = b.name || ref;
-      lbRf.textContent = b.name ? ref : "";
+      lbNm.textContent = b.name || "";
+      lbNm.style.display = b.name ? "" : "none";
+      lbPillRef.textContent = fmtRef(c, b, k);
+      lbPillDims.textContent = b.dims || "";
+      lbPillDims.style.display = b.dims ? "" : "none";
       const d = b.description || "";
       lbDesc.textContent = (!d || /^Replace this/m.test(d)) ? cleanDesc(c.description) : d;
       lbCount.textContent = (k + 1) + " / " + c.boards.length + " — " + dispTitle(c);
