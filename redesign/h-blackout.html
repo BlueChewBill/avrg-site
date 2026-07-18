@@ -68,7 +68,9 @@
   }
   .bar-brand img { width: 38px; height: 38px; border-radius: 50%; }
   @media (max-width: 560px) {
-    .topbar { justify-content: flex-start; gap: 8px; }
+    .topbar { justify-content: flex-start; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .topbar::-webkit-scrollbar { display: none; }
+    .topbar .tab, .topbar .dm-mini, .topbar .bar-brand { flex: 0 0 auto; white-space: nowrap; }
     .topbar .tab { font-size: 8.5px; letter-spacing: .08em; padding: 8px 8px; }
     .topbar .dm-mini { position: static; margin-left: auto; padding: 8px 8px; font-size: 8.5px; letter-spacing: .08em; }
     .bar-brand { position: static; }
@@ -209,20 +211,17 @@
   /* ---- collection page (unchanged from the current site) ---- */
   #colpage { max-width: 1240px; margin: 0 auto; }
   .colpage-inner { text-align: center; padding: clamp(30px, 5vh, 56px) 0 0; }
-  .colpage-inner .back {
-    display: inline-block; color: var(--hint); margin-bottom: clamp(20px, 3.5vh, 36px);
-    transition: color .15s ease;
-  }
+  .colpage-inner .back { display: inline-block; color: var(--hint); transition: color .15s ease; }
   .colpage-inner .back:hover { color: var(--bone); }
+  /* the two small options under the centered title */
+  .colpage-links {
+    display: flex; justify-content: center; flex-wrap: wrap;
+    gap: 12px 32px; margin-top: 18px; padding: 0 20px;
+  }
   .colpage-inner h2 {
-    display: inline-block;
+    display: inline-block; color: #fff;
     font-weight: 800; text-transform: uppercase; letter-spacing: -0.025em; line-height: 1.04;
     font-size: clamp(34px, 6vw, 68px); margin: 8px 0 0; padding: 0 16px;
-  }
-  .colpage-inner h2 .hl {
-    background: var(--acc); color: var(--bone);
-    padding: 0 .16em .04em; border-radius: .09em;
-    box-decoration-break: clone; -webkit-box-decoration-break: clone;
   }
   .colpage-inner .desc {
     max-width: 52ch; margin: 18px auto 0; padding: 0 20px;
@@ -266,6 +265,12 @@
     transition: background .15s ease, color .15s ease;
   }
   .colnav-btn:hover { background: #fff; color: #000; }
+
+  /* ---- shop all: collection pages stitched into one scroll ---- */
+  .shopall-head { padding-bottom: 0; }
+  .shopall-sec { padding-top: clamp(40px, 7vh, 80px); }
+  .shopall-foot { padding-top: 0; }
+  .shopall-foot .colnav { margin-top: clamp(28px, 5vh, 52px); padding-bottom: clamp(36px, 6vh, 64px); }
 
   /* ---- lightbox (unchanged) ---- */
   .lb { position: fixed; inset: 0; z-index: 5000; }
@@ -524,8 +529,10 @@
     };
     const accOf = c => ACC[c.id] || c.accent;
     const refOf = (b, k) => b.ref || "#" + String(k + 1).padStart(2, "0");
+    /* display title: no "Completes" suffix, dashes flattened */
+    const dispTitle = c => c.title.replace(/\s*-\s*Completes/i, "").replace(/ - /g, " ");
     const titleHtml = c => {
-      const words = c.title.replace(/ - /g, " ").split(" ");
+      const words = dispTitle(c).split(" ");
       const last = words.pop();
       return esc(words.join(" ")) + (words.length ? " " : "") + '<span class="hl">' + esc(last) + '</span>';
     };
@@ -541,9 +548,11 @@
     const HOME = COLLECTIONS.map((c, i) => ({ c, i })).filter(x => x.c.boards.length);
 
     /* top bar tabs, one per section */
-    document.getElementById("topnav").innerHTML = HOME.map(({ c }) =>
-      '<a class="tab" href="#' + c.id + '">' + esc(SHORT[c.id] || c.title) + '</a>'
-    ).join("");
+    document.getElementById("topnav").innerHTML =
+      '<a class="tab" href="#shop-all">Shop All</a>' +
+      HOME.map(({ c }) =>
+        '<a class="tab" href="#' + c.id + '">' + esc(SHORT[c.id] || c.title) + '</a>'
+      ).join("");
     document.getElementById("cols").innerHTML = HOME.map(({ c, i }) =>
       '<section class="band" data-col="' + i + '" style="--acc:' + accOf(c) + '">' +
         '<div class="bandhead">' +
@@ -597,43 +606,89 @@
         '<path d="M3 12a9 9 0 1 0 3.4-7.06"/><polyline points="3 2.5 3 8 8.5 8"/>' +
       '</svg>';
 
-    function renderColPage(c, i) {
-      const others = COLLECTIONS
-        .map((o, j) => ({ o, j }))
-        .filter(x => x.j !== i)
-        .map(({ o }) =>
-          '<a class="colnav-btn label" style="--acc:' + accOf(o) + '" href="#' + o.id + '">' +
-            esc(o.title.replace(/ - /g, " ")) +
-          '</a>'
-        ).join("");
-      colpage.innerHTML =
-        '<section class="colpage-inner" data-col="' + i + '" style="--acc:' + accOf(c) + '">' +
-          '<a class="back label" href="#">← All collections</a>' +
-          '<h2>' + titleHtml(c) + '</h2>' +
-          '<p class="desc">' + esc(cleanDesc(c.description)) + '</p>' +
-          (c.boards.length
-            ? '<div class="shelfgrid">' +
-                c.boards.map((b, k) => '<div class="scard" data-k="' + k + '" role="button" tabindex="0">' + cardInner(b, k) + '</div>').join("") +
-              '</div>'
-            : '<div class="restock label">Restocking — check back</div>') +
-          '<div class="colnav">' +
-            '<a class="colnav-home" href="#" title="Back to the main page" aria-label="Back to the main page">' + LOOP_SVG + '</a>' +
-            '<div class="colnav-links">' + others + '</div>' +
-          '</div>' +
-        '</section>';
-      colpage.querySelectorAll(".scard").forEach(s => {
-        s.addEventListener("click", () => openLb(i, +s.dataset.k, s));
-        s.addEventListener("keydown", e => {
-          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openLb(i, +s.dataset.k, s); }
+    /* bottom nav shared by collection pages and shop-all.
+       skip: index of the page you're on (-1 to skip none, "shop-all" handled via onShopAll) */
+    function colnavHtml(skip, onShopAll) {
+      const links =
+        (onShopAll ? "" : '<a class="colnav-btn label" href="#shop-all">Shop All</a>') +
+        COLLECTIONS
+          .map((o, j) => ({ o, j }))
+          .filter(x => x.j !== skip)
+          .map(({ o }) =>
+            '<a class="colnav-btn label" style="--acc:' + accOf(o) + '" href="#' + o.id + '">' +
+              esc(dispTitle(o)) +
+            '</a>'
+          ).join("");
+      return '<div class="colnav">' +
+          '<a class="colnav-home" href="#" title="Back to the main page" aria-label="Back to the main page">' + LOOP_SVG + '</a>' +
+          '<div class="colnav-links">' + links + '</div>' +
+        '</div>';
+    }
+
+    function colSectionHtml(c, i, afterH2) {
+      return '<h2>' + titleHtml(c) + '</h2>' +
+        (afterH2 || "") +
+        '<p class="desc">' + esc(cleanDesc(c.description)) + '</p>' +
+        (c.boards.length
+          ? '<div class="shelfgrid">' +
+              c.boards.map((b, k) => '<div class="scard" data-k="' + k + '" role="button" tabindex="0">' + cardInner(b, k) + '</div>').join("") +
+            '</div>'
+          : '<div class="restock label">Restocking — check back</div>');
+    }
+
+    function bindScards() {
+      colpage.querySelectorAll("section[data-col]").forEach(sec => {
+        const i = +sec.dataset.col;
+        sec.querySelectorAll(".scard").forEach(s => {
+          s.addEventListener("click", () => openLb(i, +s.dataset.k, s));
+          s.addEventListener("keydown", e => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openLb(i, +s.dataset.k, s); }
+          });
         });
       });
+    }
+
+    function renderColPage(c, i) {
+      const links =
+        '<div class="colpage-links">' +
+          '<a class="back label" href="#">← Back to collections</a>' +
+          '<a class="back label" href="#shop-all">Shop all collections →</a>' +
+        '</div>';
+      colpage.innerHTML =
+        '<section class="colpage-inner" data-col="' + i + '" style="--acc:' + accOf(c) + '">' +
+          colSectionHtml(c, i, links) +
+          colnavHtml(i, false) +
+        '</section>';
+      bindScards();
+    }
+
+    /* shop all: every collection page stitched into one scroll */
+    function renderShopAll() {
+      colpage.innerHTML =
+        '<section class="colpage-inner shopall-head">' +
+          '<h2>Shop <span class="hl">All</span></h2>' +
+          '<div class="colpage-links">' +
+            '<a class="back label" href="#">← Back to collections</a>' +
+          '</div>' +
+        '</section>' +
+        COLLECTIONS.map((c, i) =>
+          '<section class="colpage-inner shopall-sec" data-col="' + i + '" style="--acc:' + accOf(c) + '">' +
+            colSectionHtml(c, i) +
+          '</section>'
+        ).join("") +
+        '<section class="colpage-inner shopall-foot">' + colnavHtml(-1, true) + '</section>';
+      bindScards();
     }
 
     function route() {
       if (!lb.hidden) closeLb(true);
       const id = (location.hash || "").replace(/^#/, "");
       const i = COLLECTIONS.findIndex(c => c.id === id);
-      if (i >= 0) {
+      if (id === "shop-all") {
+        renderShopAll();
+        home.hidden = true; colpage.hidden = false;
+        vid.pause();
+      } else if (i >= 0) {
         renderColPage(COLLECTIONS[i], i);
         home.hidden = true; colpage.hidden = false;
         vid.pause();
@@ -683,13 +738,15 @@
       lbRf.textContent = b.name ? ref : "";
       const d = b.description || "";
       lbDesc.textContent = (!d || /^Replace this/m.test(d)) ? cleanDesc(c.description) : d;
-      lbCount.textContent = (k + 1) + " / " + c.boards.length + " — " + c.title.replace(/ - /g, " ");
+      lbCount.textContent = (k + 1) + " / " + c.boards.length + " — " + dispTitle(c);
       cur = { ci, k };
     }
 
     function sourceFrame() {
       if (!cur) return null;
-      const view = colpage.hidden ? document.querySelector('#cols section[data-col="' + cur.ci + '"] .belt') : colpage;
+      const view = colpage.hidden
+        ? document.querySelector('#cols section[data-col="' + cur.ci + '"] .belt')
+        : colpage.querySelector('section[data-col="' + cur.ci + '"]');
       if (!view) return null;
       const sel = colpage.hidden ? ".card" : ".scard";
       const el = Array.from(view.querySelectorAll(sel)).find(n =>
