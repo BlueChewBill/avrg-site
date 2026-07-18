@@ -11,7 +11,15 @@ const SITE = {
     "Celebrating the mundane",
     "It could be worse",
     "Because sometimes, that’s good enough",
-    "By no means the middle, but pretty close"
+    "By no means the middle, but pretty close",
+    "Applicable variance refutes generality",
+    "A very real goober",
+    "Applied variable research group",
+    "Actual values remain guestimates",
+    "Assembled via repetitive grief",
+    "Adequate, varying results, generalized",
+    "Allegedly very rad gear",
+    "Astonishingly vapid recycled gimmicks"
   ]
 };
 
