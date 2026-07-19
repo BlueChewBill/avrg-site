@@ -12,6 +12,15 @@
      G's split minus the process column, on pure black.
      Desktop: video + pitch spine | conveyor shelves.
      Mobile: logo → taglines → 2×2 tile grid (video + 3 collections) → pitch. */
+  /* Satoshi Black: the heading voice (approved in the Type & Button Lab
+     mockup). One weight only — 46KB, shipped from site/fonts/. */
+  @font-face {
+    font-family: "Satoshi";
+    src: url("../site/fonts/Satoshi-Black.otf") format("opentype");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
   :root {
     --bg: #000;
     --bone: #ddd1b6;
@@ -46,10 +55,6 @@
     gap: clamp(14px, 2.6vw, 30px);
     padding: 14px clamp(18px, 3vw, 40px);
     background-color: rgba(0, 0, 0, .86);
-    /* shelf-gray wash fading at both edges, same optical language as the belts */
-    background-image: linear-gradient(90deg,
-      rgba(74, 74, 74, 0) 0%, rgba(74, 74, 74, 1) 8%,
-      rgba(74, 74, 74, 1) 92%, rgba(74, 74, 74, 0) 100%);
     -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
     border-bottom: 1px solid #1c1c1c;
   }
@@ -67,7 +72,7 @@
     display: flex; align-items: center; cursor: pointer;
   }
   .bar-brand img { width: 38px; height: 38px; border-radius: 50%; }
-  @media (max-width: 560px) {
+  @media (max-width: 940px) {
     .topbar { justify-content: flex-start; gap: 8px; overflow-x: auto; scrollbar-width: none; }
     .topbar::-webkit-scrollbar { display: none; }
     .topbar .tab, .topbar .dm-mini, .topbar .bar-brand { flex: 0 0 auto; white-space: nowrap; }
@@ -106,7 +111,7 @@
     font-size: 12.5px; font-style: italic; line-height: 1.6;
     color: var(--hint); text-align: center;
   }
-  .made-note { margin-top: clamp(28px, 5vh, 48px); text-align: left; }
+  .made-note { margin-top: clamp(44px, 8vh, 72px); text-align: left; }
   .made-row {
     display: flex; align-items: flex-start; gap: 16px;
     margin-top: 12px; text-align: left;
@@ -141,6 +146,23 @@
   }
   .dm-mini:hover { background: #fff; color: #000; }
 
+  /* DM buttons wear the reserved glitch: a choppy slice-jitter on entry.
+     every other button gets the quiet text decode (JS, same glyph set as
+     the taglines). Class-driven, not :hover-driven — the clip-path slices
+     punch holes in hit-testing mid-run, which a :hover animation reads as
+     leave/re-enter and re-queues itself forever. The class also holds the
+     inverted colors so the hover style can't flicker during the run. */
+  .dm-mini.glitch-run, .lb-dm-btn.glitch-run {
+    animation: dm-glitch .26s steps(1, end) 1;
+    background: #fff; color: #000;
+  }
+  @keyframes dm-glitch {
+    0%   { transform: translate(2px, -1px) skewX(-6deg); clip-path: inset(0 0 44% 0); }
+    33%  { transform: translate(-2px, 1px) skewX(4deg);  clip-path: inset(52% 0 0 0); }
+    66%  { transform: translate(1px, 0);                 clip-path: inset(14% 0 26% 0); }
+    100% { transform: none; clip-path: none; }
+  }
+
   /* ---- shop column: conveyor shelves ---- */
   .shop { min-width: 0; }
   section.band { padding: 0 0 clamp(26px, 4vh, 44px); }
@@ -151,7 +173,8 @@
     padding: 2px 4px 0 112px;
   }
   .band h2 {
-    font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em; line-height: 1.05;
+    font-family: "Satoshi", var(--disp);
+    font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; line-height: 1.05;
     font-size: clamp(22px, 2.3vw, 30px);
     cursor: pointer; -webkit-tap-highlight-color: transparent;
   }
@@ -178,7 +201,7 @@
   .cap .rf {
     display: block; margin-top: 4px;
     font-family: var(--mono); font-size: 8.5px; font-weight: 700;
-    letter-spacing: .22em; text-transform: uppercase; color: var(--acc);
+    letter-spacing: .22em; text-transform: uppercase; color: #fff;
   }
 
   /* ---- conveyor ---- */
@@ -223,7 +246,8 @@
   }
   .colpage-inner h2 {
     display: inline-block; color: #fff;
-    font-weight: 800; text-transform: uppercase; letter-spacing: -0.025em; line-height: 1.04;
+    font-family: "Satoshi", var(--disp);
+    font-weight: 900; text-transform: uppercase; letter-spacing: -0.025em; line-height: 1.04;
     font-size: clamp(34px, 6vw, 68px); margin: 8px 0 0; padding: 0 16px;
   }
   .colpage-inner .desc {
@@ -328,7 +352,7 @@
     letter-spacing: .22em; text-transform: uppercase; line-height: 1;
   }
   .lb-pill .seg { padding: 10px 16px 9px; }
-  .lb-pill .ref { color: var(--acc, #d8511f); }
+  .lb-pill .ref { color: #fff; }
   .lb-pill .dims { color: var(--bone); border-left: 2px solid rgba(221, 209, 182, .55); }
   .lb-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
   .lb-list-btn {
@@ -418,6 +442,35 @@
   }
   @media (hover: none), (max-width: 720px) { .lb-nav { display: none; } }
 
+  /* mobile lightbox: the card rides in a scrollable sheet instead of being
+     pinned to viewport center — short phones (12 mini) can reach the buttons */
+  @media (max-width: 720px) {
+    .lb { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .lb-scrim { position: fixed; }
+    .lb-card {
+      position: relative; left: auto; top: auto; translate: none; z-index: 1;
+      margin: 72px auto calc(52px + env(safe-area-inset-bottom));
+    }
+    .lb-close { position: fixed; top: 16px; right: 16px; z-index: 3; }
+    .lb-count {
+      position: fixed; bottom: calc(10px + env(safe-area-inset-bottom));
+      pointer-events: none;
+    }
+  }
+
+  /* ---- video lightbox: the spine video pulled forward like a card ---- */
+  #vlb .lb-card {
+    /* 9:16 is tall — the height term keeps the whole card on screen */
+    width: min(340px, 78vw, calc((100vh - 240px) * 9 / 16));
+    transition: transform .55s cubic-bezier(.22,1,.36,1), opacity .3s ease;
+  }
+  #vlb:not(.in) .lb-card { opacity: 0; }
+  #vlb .frame { aspect-ratio: 9/16; }
+  #vlb .frame video {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
+  }
+  .video-wrap video, .vtile video { cursor: pointer; }
+
   /* narrower desktops: slim the fixed columns, smaller cards, keep ~3 visible */
   @media (max-width: 1260px) and (min-width: 941px) {
     .split { grid-template-columns: 284px 1fr; }
@@ -447,9 +500,17 @@
     .tile .tcap .sub {
       display: block; margin-top: 4px;
       font-family: var(--mono); font-size: 8.5px; font-weight: 700;
-      letter-spacing: .18em; text-transform: uppercase; color: var(--tacc, var(--hint));
+      letter-spacing: .18em; text-transform: uppercase; color: #fff;
     }
     .pitch { max-width: 44ch; }
+
+    /* collection pages: boards surface two across instead of one */
+    .shelfgrid {
+      grid-template-columns: 1fr 1fr;
+      gap: 30px 14px;
+      padding-left: 16px; padding-right: 16px;
+    }
+    .scard { width: min(232px, 100%); }
   }
 </style>
 </head>
@@ -527,6 +588,20 @@
     <div class="lb-count label" id="lb-count"></div>
   </div>
 
+  <!-- video lightbox: the spine <video> element itself moves in here,
+       so playback position survives the enlarge -->
+  <div class="lb" id="vlb" hidden>
+    <div class="lb-scrim" id="vlb-scrim"></div>
+    <button class="lb-close label" id="vlb-close" type="button">Close ✕</button>
+    <div class="lb-card" id="vlb-card">
+      <div class="frame" id="vlb-frame"></div>
+      <div class="lb-rest">
+        <div class="lb-thumbs" id="vlb-thumbs"></div>
+        <p class="lb-desc">every clip here — ridden on originals</p>
+      </div>
+    </div>
+  </div>
+
   <script src="../site/data.js"></script>
   <script>
   /* H — Blackout. Same engine as the live site (conveyor + lightbox +
@@ -575,6 +650,48 @@
       ti = (ti + 1) % tags.length;
       decodeTo(tags[ti]);
     }, 4400);
+
+    /* quiet decode on button hovers: a shorter, calmer cousin of the tagline
+       scramble. Delegated so re-rendered pages (colnav, lisst, shop-all) stay
+       wired. DM buttons are excluded — they wear the glitch (CSS) instead;
+       lb-list-btn is excluded because its label changes state on click. */
+    const canHover = matchMedia("(hover: hover)").matches;
+    const HOVER_DECODE = ".tab, .colnav-btn, .inq-send";
+    if (!reduced && canHover) document.addEventListener("pointerover", e => {
+      const btn = e.target.closest && e.target.closest(HOVER_DECODE);
+      if (!btn || btn.dataset.decoding) return;
+      const chars = [...btn.textContent];
+      if (!chars.length || chars.length > 40) return;
+      btn.dataset.decoding = "1";
+      const resolveAt = chars.map((c, i) => i * 0.4 + 1 + Math.random() * 2.2);
+      let f = 0;
+      const t = setInterval(() => {
+        f++;
+        let out = "", done = true;
+        for (let i = 0; i < chars.length; i++) {
+          if (!/\S/.test(chars[i])) { out += chars[i]; continue; }
+          if (f >= resolveAt[i]) { out += chars[i]; }
+          else { out += GLYPHS[(Math.random() * GLYPHS.length) | 0]; done = false; }
+        }
+        btn.textContent = out;
+        if (done) { clearInterval(t); delete btn.dataset.decoding; }
+      }, 30);
+    });
+
+    /* DM glitch: one run per real entry, driven by a class so mid-run
+       hit-test dropouts (see the CSS comment) can't cancel or re-queue it */
+    const GLITCH_SEL = ".dm-mini, .lb-dm-btn";
+    if (!reduced && canHover) {
+      document.addEventListener("pointerover", e => {
+        const btn = e.target.closest && e.target.closest(GLITCH_SEL);
+        if (!btn || btn.classList.contains("glitch-run")) return;
+        if (btn.contains(e.relatedTarget)) return;   /* internal move, not an entry */
+        btn.classList.add("glitch-run");
+      });
+      document.addEventListener("animationend", e => {
+        if (e.animationName === "dm-glitch") e.target.classList.remove("glitch-run");
+      });
+    }
 
     const handle = (typeof CONTACT === "object" && CONTACT && CONTACT.reddit) || "u/avrg";
     const rname = handle.replace(/^\/?u\//i, "");
@@ -672,11 +789,90 @@
     function placeVideo() {
       if (mq.matches) {
         if (vid.parentElement !== vtile) { const f = document.createElement("div"); f.className = "tframe"; f.appendChild(vid); vtile.innerHTML = ""; vtile.appendChild(f); }
-      } else if (vid.parentElement !== vwrap) { vtile.innerHTML = ""; vwrap.appendChild(vid); }
-      const p = vid.play(); if (p && p.catch) p.catch(() => {});
+      } else if (vid.parentElement !== vwrap) { vtile.innerHTML = ""; vwrap.insertBefore(vid, vwrap.firstChild); }
+      /* only roll when the home frame is actually showing */
+      if (document.getElementById("colpage").hidden) {
+        const p = vid.play(); if (p && p.catch) p.catch(() => {});
+      }
     }
     (mq.addEventListener ? mq.addEventListener("change", placeVideo) : mq.addListener(placeVideo));
     placeVideo();
+
+    /* ---- video lightbox: click the video to pull it forward, card-style.
+       The cover slot reuses the live spine <video> (placeVideo pattern), so
+       enlarging never restarts it. Other clips ride below as thumbs and
+       swap in place, the way board photos do. */
+    const VIDEOS = [
+      { id: "cover", src: "media/covercard.mp4",      poster: "media/covercard-poster.jpg" },
+      { id: "clip1", src: "../videos/web/clip-1.mp4", poster: "../videos/web/clip-1-poster.jpg" },
+      { id: "clip2", src: "../videos/web/clip-2.mp4", poster: "../videos/web/clip-2-poster.jpg" },
+    ];
+    const vlb = document.getElementById("vlb");
+    const vlbCard = document.getElementById("vlb-card");
+    const vlbFrame = document.getElementById("vlb-frame");
+    const vlbThumbs = document.getElementById("vlb-thumbs");
+    const clipEls = { cover: vid };   /* the spine video IS the cover entry */
+    function clipEl(v) {
+      if (!clipEls[v.id]) {
+        const el = document.createElement("video");
+        el.src = v.src; el.poster = v.poster;
+        el.muted = true; el.loop = true; el.playsInline = true; el.preload = "metadata";
+        clipEls[v.id] = el;
+      }
+      return clipEls[v.id];
+    }
+    vlbThumbs.innerHTML = VIDEOS.map((v, i) =>
+      '<img src="' + v.poster + '" data-v="' + v.id + '" alt="clip ' + (i + 1) + '">').join("");
+    function vlbShow(id) {
+      const el = clipEl(VIDEOS.find(x => x.id === id));
+      Object.values(clipEls).forEach(x => {
+        if (x !== el) { x.pause(); x.style.display = "none"; }
+      });
+      if (el.parentElement !== vlbFrame) vlbFrame.appendChild(el);
+      el.style.display = "";
+      el.controls = true;
+      const p = el.play(); if (p && p.catch) p.catch(() => {});
+      vlbThumbs.querySelectorAll("img").forEach(t => t.classList.toggle("on", t.dataset.v === id));
+    }
+    vlbThumbs.addEventListener("click", e => {
+      const id = e.target.dataset && e.target.dataset.v;
+      if (id) vlbShow(id);
+    });
+    function openVlb() {
+      const srcRect = reduced ? null : vid.getBoundingClientRect();
+      vlb.hidden = false;
+      document.body.style.overflow = "hidden";
+      vlbShow("cover");
+      if (srcRect) {
+        const fr = vlbFrame.getBoundingClientRect();
+        const s = srcRect.width / fr.width;
+        const dx = (srcRect.left + srcRect.width / 2) - (fr.left + fr.width / 2);
+        const dy = (srcRect.top + srcRect.height / 2) - (fr.top + fr.height / 2);
+        vlbCard.style.transition = "none";
+        vlbCard.style.transformOrigin = "50% " + (vlbFrame.offsetTop + vlbFrame.offsetHeight / 2) + "px";
+        vlbCard.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
+        void vlbCard.offsetWidth;
+        vlbCard.style.transition = "";
+        vlbCard.style.transform = "none";
+      }
+      requestAnimationFrame(() => vlb.classList.add("in"));
+    }
+    function closeVlb(instant) {
+      vlb.classList.remove("in");
+      setTimeout(() => {
+        vlb.hidden = true;
+        document.body.style.overflow = "";
+        Object.values(clipEls).forEach(x => { if (x !== vid) x.pause(); });
+        vid.controls = false; vid.muted = true; vid.style.display = "";
+        placeVideo();   /* the cover video rides home, still playing */
+      }, (reduced || instant) ? 0 : 330);
+    }
+    vid.addEventListener("click", () => { if (vlb.hidden) openVlb(); });
+    document.getElementById("vlb-close").addEventListener("click", () => closeVlb());
+    document.getElementById("vlb-scrim").addEventListener("click", () => closeVlb());
+    document.addEventListener("keydown", e => {
+      if (!vlb.hidden && e.key === "Escape") closeVlb();
+    });
 
     /* ---- routing: home <-> collection page ---- */
     const home = document.getElementById("home");
@@ -855,6 +1051,7 @@
 
     function route() {
       if (!lb.hidden) closeLb(true);
+      if (!vlb.hidden) closeVlb(true);
       const id = (location.hash || "").replace(/^#/, "");
       const i = COLLECTIONS.findIndex(c => c.id === id);
       if (id === "shop-all") {
@@ -1167,7 +1364,7 @@
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
-      if (!lb.hidden) { requestAnimationFrame(frame); return; }
+      if (!lb.hidden || !vlb.hidden) { requestAnimationFrame(frame); return; }
 
       rails.forEach(rail => {
         if (!rail.active) return;
