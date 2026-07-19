@@ -12,6 +12,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8123"],
       "port": 8123
+    },
+    {
+      "name": "logo-anim-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8321", "--directory", "/Users/dylan/Desktop/AVRG claude Design/logo/draw-in-animation"],
+      "port": 8321
     }
   ]
 }
