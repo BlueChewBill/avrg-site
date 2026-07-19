@@ -94,7 +94,7 @@
   /* ---- spine: logo, taglines, video, pitch, ask ---- */
   .spine { text-align: center; }
   .masthead .brand { display: inline-block; cursor: pointer; }
-  .masthead img { width: 132px; height: auto; margin: 0 auto; }
+  .masthead img { width: 150px; height: auto; margin: 0 auto; }
   /* fixed two-line box: swapping taglines never moves what's below.
      sits low, near the video, rather than tight under the logo */
   .tick { margin-top: clamp(36px, 8vh, 96px); color: #fff; line-height: 1.8; height: 36px; transition: opacity .45s ease; }
@@ -525,7 +525,7 @@
     <div class="split">
       <section class="spine">
         <div class="masthead">
-          <div class="brand" id="home-link" title="AVRG"><img src="media/logo-brush.png" alt="AVRG" /></div>
+          <div class="brand" id="home-link" title="AVRG"><img src="../site/img/logo-line-white.png" alt="AVRG" /></div>
           <div class="tick label" id="tick"></div>
         </div>
 
@@ -614,7 +614,7 @@
     const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    document.getElementById("bar-logo").src = IMG(SITE.logo);
+    document.getElementById("bar-logo").src = IMG("img/logo-line-white.png");
 
     /* taglines: rotating, minus the "middle" one; the box height is fixed in CSS */
     const tags = (SITE.taglines || []).filter(t => !/^by no means the m/i.test(t));
@@ -1297,9 +1297,13 @@
     const rails = [];
     const BASE_V = -26;
 
-    document.querySelectorAll(".belt").forEach(belt => {
-      const ci = +belt.dataset.col;
-      const col = COLLECTIONS[ci];
+    /* (re)build a belt's cards for the current --cardW. Runs at init and
+       again when the width breakpoint flips under a live page — the CSS
+       card width changes with the media query but a frozen rail spacing
+       doesn't, and frames wider than their slots crowd into each other. */
+    function buildBelt(rail) {
+      const belt = rail.belt;
+      const col = COLLECTIONS[+belt.dataset.col];
       const cardW = parseFloat(getComputedStyle(belt).getPropertyValue("--cardW")) || 172;
       const spacing = cardW + 44;   /* room for the 1.14x center zoom */
 
@@ -1312,14 +1316,21 @@
         '<div class="card" data-k="' + k + '" role="button" tabindex="-1">' + cardInner(b, k) + '</div>'
       ).join("");
 
+      rail.spacing = spacing;
+      rail.cards = Array.from(belt.children);
+      rail.total = items.length * spacing;
+      rail.offset = rail.offset % rail.total;   /* keep the drift position */
+    }
+
+    document.querySelectorAll(".belt").forEach(belt => {
+      const ci = +belt.dataset.col;
       const rail = {
-        belt, spacing,
-        cards: Array.from(belt.children),
-        total: items.length * spacing,
+        belt, spacing: 0, cards: [], total: 1,
         offset: 0, v: BASE_V, pointerX: null,
         dragging: false, dragX: 0, moved: 0,
         active: true,
       };
+      buildBelt(rail);
 
       belt.addEventListener("pointermove", e => {
         const r = belt.getBoundingClientRect();
@@ -1353,6 +1364,19 @@
       });
     }, { rootMargin: "120px" });
     rails.forEach(r => io.observe(r.belt));
+
+    /* rebuild belts when the breakpoint flips their card width (or the
+       window outgrows the loop) — debounced so drag-resizing stays cheap */
+    let beltResizeT = null;
+    addEventListener("resize", () => {
+      clearTimeout(beltResizeT);
+      beltResizeT = setTimeout(() => {
+        rails.forEach(rail => {
+          const cw = parseFloat(getComputedStyle(rail.belt).getPropertyValue("--cardW")) || 172;
+          if (cw + 44 !== rail.spacing || innerWidth + (cw + 44) * 4 > rail.total) buildBelt(rail);
+        });
+      }, 180);
+    });
 
     const smooth = (a, b, x) => {
       const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
