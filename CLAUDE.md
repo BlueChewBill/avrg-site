@@ -1,5 +1,7 @@
 # AVRG site — working notes for Claude
 
+> **This repo is PUBLIC.** Everything committed here — including this file — is readable by anyone. Keep business rationale, personal context, and anything sensitive out; that belongs in Claude's local memory, which points here for project mechanics.
+
 Static site for AVRG handmade fingerboards. No framework, no npm — plain HTML/CSS/JS plus two Python scripts. Media is committed directly (no LFS).
 
 ## Commands
