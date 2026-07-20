@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AVRG — K: home, dual ground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  /* K — home page, dual ground. h-blackout cloned, with a live black/white
+     ground switch (bottom-right, persisted) — a working prototype of a site
+     light/dark mode. Dark is the h-blackout baseline verbatim; light is the
+     body.light override block at the end of this stylesheet, speaking the
+     j-cards-white idiom (#fff ground, #000 max-contrast, #444 soft,
+     #767676 hints). Engine and markup are otherwise identical to h. */
+  /* Satoshi Black: the heading voice (approved in the Type & Button Lab
+     mockup). One weight only — 46KB, shipped from site/fonts/. */
+  @font-face {
+    font-family: "Satoshi";
+    src: url("../site/fonts/Satoshi-Black.otf") format("opentype");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --bg: #000;
+    --bone: #ddd1b6;
+    --ink: #201a15;
+    --soft: #c7bda4;
+    --hint: #a29a89;
+    --line: #6b6d71;
+    --disp: "Bricolage Grotesque", -apple-system, sans-serif;
+    --mono: "Space Mono", ui-monospace, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background-color: var(--bg); color: var(--bone);
+    font-family: var(--disp); font-weight: 400;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  ::selection { background: var(--bone); color: var(--ink); }
+  img, video { display: block; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+  .label {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase;
+  }
+
+  /* ---- top bar ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    gap: clamp(14px, 2.6vw, 30px);
+    padding: 14px clamp(18px, 3vw, 40px);
+    background-color: rgba(0, 0, 0, .86);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border-bottom: 1px solid #1c1c1c;
+  }
+  .topbar .tab {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    color: #fff; border: 2px solid #fff; border-radius: 8px;
+    padding: 10px 14px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .topbar .tab:hover { background: #fff; color: #000; }
+  .topbar .dm-mini { position: absolute; right: clamp(18px, 3vw, 40px); }
+  .bar-brand {
+    position: absolute; left: clamp(18px, 3vw, 40px);
+    display: flex; align-items: center; cursor: pointer;
+  }
+  .bar-brand img { width: 38px; height: 38px; border-radius: 50%; }
+  @media (max-width: 940px) {
+    .topbar { justify-content: flex-start; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .topbar::-webkit-scrollbar { display: none; }
+    .topbar .tab, .topbar .dm-mini, .topbar .bar-brand { flex: 0 0 auto; white-space: nowrap; }
+    .topbar .tab { font-size: 8.5px; letter-spacing: .08em; padding: 8px 8px; }
+    .topbar .dm-mini { position: static; margin-left: auto; padding: 8px 8px; font-size: 8.5px; letter-spacing: .08em; }
+    .bar-brand { position: static; }
+    .bar-brand img { width: 30px; height: 30px; }
+  }
+
+  /* ---- the split ---- */
+  .split {
+    display: grid; grid-template-columns: 324px 1fr;
+    gap: 0 clamp(28px, 3.4vw, 52px);
+    max-width: 1440px; margin: 0 auto;
+    padding: clamp(22px, 3.6vh, 44px) clamp(18px, 3vw, 40px) 0;
+  }
+  .spine { align-self: start; }
+
+  /* ---- spine: logo, taglines, video, pitch, ask ---- */
+  .spine { text-align: center; }
+  .masthead .brand { display: inline-block; cursor: pointer; }
+  .masthead img { width: 150px; height: auto; margin: 0 auto; }
+  /* fixed two-line box: swapping taglines never moves what's below.
+     sits low, near the video, rather than tight under the logo */
+  .tick { margin-top: clamp(36px, 8vh, 96px); color: #fff; line-height: 1.8; height: 36px; transition: opacity .45s ease; }
+  .tick.out { opacity: 0; }
+  .masthead .mono {
+    margin-top: 14px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase; line-height: 1.7; color: var(--soft);
+  }
+
+  .video-wrap { margin-top: 16px; }
+  .note {
+    margin-top: 12px;
+    font-size: 12.5px; font-style: italic; line-height: 1.6;
+    color: var(--hint); text-align: center;
+  }
+  .made-note { margin-top: clamp(44px, 8vh, 72px); text-align: left; }
+  .made-row {
+    display: flex; align-items: flex-start; gap: 16px;
+    margin-top: 12px; text-align: left;
+  }
+  .made-row figure { flex: 0 0 47%; margin: 0; }
+  .made-row figure img {
+    width: 100%; aspect-ratio: 5/4; object-fit: cover; border-radius: 6px;
+    box-shadow: 0 0 0 2px var(--ink), 6px 8px 0 -1px rgba(32, 26, 21, .34);
+  }
+  .made-row .note { text-align: left; margin-top: 10px; }
+  .made-row .pitch { margin: 0; flex: 1; }
+  .video-wrap video, .vtile video {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 6px;
+    box-shadow: 0 0 0 2px var(--ink), 9px 11px 0 -1px rgba(32, 26, 21, .34);
+    background: #16120e;
+  }
+  .video-wrap video { aspect-ratio: 9/14; }
+
+  .pitch {
+    margin: 24px auto 0; max-width: 36ch; text-align: left;
+    font-size: 14px; line-height: 1.8; color: var(--soft);
+  }
+  .spine-cta { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 20px; }
+  .spine-cta .ask { color: var(--bone); }
+  .dm-mini {
+    display: inline-block; background: transparent; color: #fff;
+    border: 2px solid #fff; border-radius: 8px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    padding: 12px 16px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .dm-mini:hover { background: #fff; color: #000; }
+
+  /* DM buttons wear the reserved glitch: a choppy slice-jitter on entry.
+     every other button gets the quiet text decode (JS, same glyph set as
+     the taglines). Class-driven, not :hover-driven — the clip-path slices
+     punch holes in hit-testing mid-run, which a :hover animation reads as
+     leave/re-enter and re-queues itself forever. The class also holds the
+     inverted colors so the hover style can't flicker during the run. */
+  .dm-mini.glitch-run, .lb-dm-btn.glitch-run {
+    animation: dm-glitch .26s steps(1, end) 1;
+    background: #fff; color: #000;
+  }
+  @keyframes dm-glitch {
+    0%   { transform: translate(2px, -1px) skewX(-6deg); clip-path: inset(0 0 44% 0); }
+    33%  { transform: translate(-2px, 1px) skewX(4deg);  clip-path: inset(52% 0 0 0); }
+    66%  { transform: translate(1px, 0);                 clip-path: inset(14% 0 26% 0); }
+    100% { transform: none; clip-path: none; }
+  }
+
+  /* ---- shop column: conveyor shelves ---- */
+  .shop { min-width: 0; }
+  section.band { padding: 0 0 clamp(26px, 4vh, 44px); }
+  .bandhead {
+    display: flex; align-items: center; gap: 32px; flex-wrap: wrap;
+    /* indented off the belt's left edge so the titles don't spotlight the
+       boundary the shelf fade is there to soften */
+    padding: 2px 4px 0 112px;
+  }
+  .band h2 {
+    font-family: "Satoshi", var(--disp);
+    font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; line-height: 1.05;
+    font-size: clamp(22px, 2.3vw, 30px);
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .band h2 .hl { color: #fff; }
+  .bandsub { color: #fff; font-size: 12px; letter-spacing: .16em; }
+
+  /* ---- card (shared with lightbox + grids) ---- */
+  .frame {
+    aspect-ratio: 4/5; overflow: hidden; border-radius: 6px;
+    background: #16120e;
+    box-shadow: 0 0 0 2px var(--ink), 7px 9px 0 -1px rgba(32, 26, 21, .34);
+  }
+  .frame img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  /* dual card: both sides of one board in a single frame */
+  .frame.dual { display: flex; gap: 2px; }
+  .frame.dual img { width: calc(50% - 1px); }
+  /* belt cards: shadow x tracks position on the shelf (virtual light above shelf
+     center) — --shx is set per-frame by the conveyor engine */
+  .card .frame {
+    box-shadow: 0 0 0 2px var(--ink), var(--shx, 7px) 9px 0 -1px rgba(32, 26, 21, .34);
+  }
+  .cap { margin-top: 12px; text-align: center; }
+  .cap .nm { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .cap .rf {
+    display: block; margin-top: 4px;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase; color: #fff;
+  }
+
+  /* ---- conveyor ---- */
+  .belt {
+    position: relative; z-index: 0;
+    margin-top: 14px; height: var(--beltH, 330px);
+    overflow: hidden; cursor: grab; touch-action: pan-y;
+    /* the shelf: gray band with long horizontal fades, feathered softly at the
+       top and bottom (the vertical layer fades to page-black over the gray) */
+    background:
+      linear-gradient(180deg,
+        rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 13%,
+        rgba(0, 0, 0, 0) 87%, rgba(0, 0, 0, 1) 100%),
+      linear-gradient(90deg,
+        rgba(74, 74, 74, 0) 0%, rgba(74, 74, 74, 1) 18%,
+        rgba(74, 74, 74, 1) 82%, rgba(74, 74, 74, 0) 100%);
+  }
+  .belt.dragging { cursor: grabbing; }
+  .belt::before, .belt::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 8%; z-index: 5; pointer-events: none;
+  }
+  .belt::before { left: 0; background: linear-gradient(to right, var(--bg), transparent); }
+  .belt::after { right: 0; background: linear-gradient(to left, var(--bg), transparent); }
+  .card {
+    position: absolute; left: 0; top: 50%;
+    width: var(--cardW, 172px); will-change: transform, opacity;
+    user-select: none; -webkit-user-drag: none; cursor: pointer;
+  }
+
+  /* ---- mobile tile grid ---- */
+  .tilegrid { display: none; }
+
+  /* ---- collection page (unchanged from the current site) ---- */
+  #colpage { max-width: 1240px; margin: 0 auto; }
+  .colpage-inner { text-align: center; padding: clamp(30px, 5vh, 56px) 0 0; }
+  .colpage-inner .back { display: inline-block; color: var(--hint); transition: color .15s ease; }
+  .colpage-inner .back:hover { color: var(--bone); }
+  /* the two small options under the centered title */
+  .colpage-links {
+    display: flex; justify-content: center; flex-wrap: wrap;
+    gap: 12px 32px; margin-top: 18px; padding: 0 20px;
+  }
+  .colpage-inner h2 {
+    display: inline-block; color: #fff;
+    font-family: "Satoshi", var(--disp);
+    font-weight: 900; text-transform: uppercase; letter-spacing: -0.025em; line-height: 1.04;
+    font-size: clamp(34px, 6vw, 68px); margin: 8px 0 0; padding: 0 16px;
+  }
+  .colpage-inner .desc {
+    max-width: 52ch; margin: 18px auto 0; padding: 0 20px;
+    font-size: 15px; font-weight: 500; line-height: 1.8; color: var(--soft);
+  }
+  .shelfgrid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(min(232px, 42vw), 1fr));
+    gap: 44px 32px; justify-items: center;
+    max-width: 1240px; margin: 0 auto;
+    padding: clamp(30px, 5vh, 52px) clamp(20px, 5vw, 64px) 40px;
+  }
+  .scard {
+    width: min(232px, 58vw);
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: transform .18s ease;
+  }
+  .scard:hover { transform: translateY(-4px); }
+  .restock {
+    max-width: 420px; margin: 38px auto 0; padding: 40px 20px;
+    border: 2.5px dashed var(--bone); border-radius: 14px; opacity: .5;
+  }
+  .colnav { margin-top: clamp(44px, 7vh, 72px); text-align: center; }
+  .colnav-home {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--bone); color: var(--ink);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .4);
+    transition: transform .3s ease;
+  }
+  .colnav-home svg { transition: transform .3s ease; }
+  .colnav-home:hover { transform: scale(1.06); }
+  .colnav-home:hover svg { transform: rotate(-90deg); }
+  .colnav-links {
+    display: flex; justify-content: center; flex-wrap: wrap;
+    gap: 14px; margin-top: 26px; padding: 0 20px;
+  }
+  .colnav-btn {
+    background: transparent; color: #fff;
+    border: 2px solid #fff; border-radius: 8px;
+    padding: 13px 20px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .colnav-btn:hover { background: #fff; color: #000; }
+
+  /* ---- shop all: collection pages stitched into one scroll ---- */
+  .shopall-head { padding-bottom: 0; }
+  .shopall-sec { padding-top: clamp(40px, 7vh, 80px); }
+  .shopall-foot { padding-top: 0; }
+  .shopall-foot .colnav { margin-top: clamp(28px, 5vh, 52px); padding-bottom: clamp(36px, 6vh, 64px); }
+
+  /* ---- lightbox (unchanged) ---- */
+  .lb { position: fixed; inset: 0; z-index: 5000; }
+  .lb[hidden] { display: none; }
+  .lb-scrim {
+    position: absolute; inset: 0; background: rgba(24, 19, 14, .88);
+    opacity: 0; transition: opacity .45s ease;
+  }
+  .lb.in .lb-scrim { opacity: 1; }
+  .lb-card {
+    position: absolute; left: 50%; top: 50%;
+    width: min(380px, 82vw);
+    translate: -50% -50%;
+    will-change: transform;
+    transition: transform .55s cubic-bezier(.22,1,.36,1);
+  }
+  .lb-card .frame {
+    border-radius: 8px;
+    box-shadow: 0 0 0 2.5px var(--bone), 0 34px 90px rgba(0, 0, 0, .6);
+  }
+  .lb-card .frame img { pointer-events: auto; cursor: pointer; object-fit: contain; }
+  .lb-rest { opacity: 0; transition: opacity .4s ease .18s; }
+  .lb.in .lb-rest { opacity: 1; }
+  .lb-thumbs { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+  .lb-thumbs:empty { display: none; }
+  .lb-thumbs img {
+    width: 54px; height: 54px; object-fit: cover; border-radius: 5px; cursor: pointer;
+    box-shadow: 0 0 0 2px rgba(221, 209, 182, .5); transition: box-shadow .2s ease;
+  }
+  .lb-thumbs img.on { box-shadow: 0 0 0 3px var(--acc, #d8511f); }
+  .lb-desc {
+    max-width: 40ch; margin: 18px auto 0; white-space: pre-line; text-align: center;
+    font-size: 13px; line-height: 1.75; color: #d6cbb2;
+  }
+  .lb-desc:empty { display: none; }
+  .lb-product {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    margin-top: 16px; padding: 18px 16px;
+    background: rgba(221, 209, 182, .08);
+    border: 1px solid rgba(221, 209, 182, .28);
+    border-radius: 10px; text-align: center;
+  }
+  .lb-product .nm {
+    display: block; color: var(--bone);
+    font-size: 14px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  }
+  /* spec pill: identifier | dimensions */
+  .lb-pill {
+    display: inline-flex; align-items: stretch; overflow: hidden;
+    border: 2px solid rgba(221, 209, 182, .55); border-radius: 999px;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase; line-height: 1;
+  }
+  .lb-pill .seg { padding: 10px 16px 9px; }
+  .lb-pill .ref { color: #fff; }
+  .lb-pill .dims { color: var(--bone); border-left: 2px solid rgba(221, 209, 182, .55); }
+  .lb-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .lb-list-btn {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--soft); border: 1.5px dashed rgba(221, 209, 182, .45);
+    border-radius: 999px; padding: 9px 14px;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .lb-list-btn:hover { color: #fff; border-color: #fff; }
+  .lb-list-btn.on { color: var(--acc, #d8511f); border-style: solid; border-color: currentColor; }
+
+  /* ---- my lisst page + inquiry form ---- */
+  .lisst-empty {
+    max-width: 420px; margin: 38px auto 0; padding: 40px 20px;
+    border: 2.5px dashed var(--bone); border-radius: 14px; opacity: .5;
+  }
+  .lisst-card { position: relative; }
+  .lisst-remove {
+    position: absolute; top: -10px; right: -10px; z-index: 3;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--bone); color: var(--ink);
+    font-family: var(--mono); font-size: 13px; font-weight: 700; line-height: 1;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+    transition: transform .15s ease;
+  }
+  .lisst-remove:hover { transform: scale(1.12); }
+  .inq {
+    max-width: 460px; margin: clamp(36px, 6vh, 60px) auto 0; padding: 0 20px;
+    text-align: left;
+  }
+  .inq-head { text-align: center; color: #fff; }
+  .inq-sub { margin-top: 10px; text-align: center; font-size: 12.5px; font-style: italic; color: var(--hint); }
+  .inq label {
+    display: block; margin: 18px 0 7px;
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--soft);
+  }
+  .inq input, .inq select, .inq textarea {
+    width: 100%; background: transparent; color: var(--bone);
+    border: 2px solid rgba(221, 209, 182, .4); border-radius: 8px;
+    font-family: var(--disp); font-size: 14px; padding: 12px 13px;
+    transition: border-color .15s ease;
+  }
+  .inq input:focus, .inq select:focus, .inq textarea:focus { outline: none; border-color: #fff; }
+  .inq select { -webkit-appearance: none; appearance: none; cursor: pointer; }
+  .inq select option { background: #111; color: var(--bone); }
+  .inq textarea { resize: vertical; min-height: 90px; }
+  .inq-send {
+    display: block; margin: 24px auto 0;
+    background: transparent; color: #fff;
+    border: 2px solid #fff; border-radius: 8px; padding: 13px 22px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .inq-send:hover { background: #fff; color: #000; }
+  .inq-status { margin-top: 14px; text-align: center; font-size: 13px; color: var(--soft); min-height: 1.4em; }
+  .inq-or { margin-top: 26px; text-align: center; }
+  .inq-or .dm-mini { margin-top: 10px; }
+  .lb-cta-ask { color: var(--bone); }
+  .lb-dm-btn {
+    flex: 0 0 auto; background: transparent; color: #fff;
+    border: 2px solid #fff; border-radius: 8px;
+    padding: 12px 16px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .lb-dm-btn:hover { background: #fff; color: #000; }
+  .lb-close {
+    position: absolute; top: 74px; right: clamp(18px, 3.5vw, 40px); z-index: 3;
+    color: var(--bone); opacity: .8; transition: opacity .15s ease;
+  }
+  .lb-close:hover { opacity: 1; }
+  .lb-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+    font-family: var(--mono); font-size: 28px; line-height: 1;
+    width: 54px; height: 54px; border-radius: 50%;
+    background: var(--bone); color: var(--ink);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .5);
+    opacity: .92;
+    transition: opacity .15s ease, transform .15s ease;
+  }
+  .lb-nav:hover { opacity: 1; transform: translateY(-50%) scale(1.08); }
+  .lb-prev { left: calc(50% - min(190px, 41vw) - 78px); }
+  .lb-next { right: calc(50% - min(190px, 41vw) - 78px); }
+  .lb-count {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 3;
+    color: #a3967b;
+  }
+  @media (hover: none), (max-width: 720px) { .lb-nav { display: none; } }
+
+  /* mobile lightbox: the card rides in a scrollable sheet instead of being
+     pinned to viewport center — short phones (12 mini) can reach the buttons */
+  @media (max-width: 720px) {
+    .lb { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .lb-scrim { position: fixed; }
+    .lb-card {
+      position: relative; left: auto; top: auto; translate: none; z-index: 1;
+      margin: 72px auto calc(52px + env(safe-area-inset-bottom));
+    }
+    .lb-close { position: fixed; top: 16px; right: 16px; z-index: 3; }
+    .lb-count {
+      position: fixed; bottom: calc(10px + env(safe-area-inset-bottom));
+      pointer-events: none;
+    }
+  }
+
+  /* ---- video lightbox: the spine video pulled forward like a card ---- */
+  #vlb .lb-card {
+    /* 9:16 is tall — the height term keeps the whole card on screen */
+    width: min(340px, 78vw, calc((100vh - 240px) * 9 / 16));
+    transition: transform .55s cubic-bezier(.22,1,.36,1), opacity .3s ease;
+  }
+  #vlb:not(.in) .lb-card { opacity: 0; }
+  #vlb .frame { aspect-ratio: 9/16; }
+  #vlb .frame video {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
+  }
+  .video-wrap video, .vtile video { cursor: pointer; }
+
+  /* narrower desktops: slim the fixed columns, smaller cards, keep ~3 visible */
+  @media (max-width: 1260px) and (min-width: 941px) {
+    .split { grid-template-columns: 284px 1fr; }
+    .belt { --cardW: 140px; --beltH: 286px; }
+    .masthead img { width: 72px; height: 72px; }
+  }
+
+  /* ================= mobile: tiles instead of belts ================= */
+  @media (max-width: 940px) {
+    .split { display: flex; flex-direction: column; gap: 0; padding-top: 26px; }
+    .shop { display: none; }
+
+    .video-wrap { display: none; }
+    .tilegrid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 22px 14px; margin-top: 24px; text-align: left;
+    }
+    .tile { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .tile .tframe {
+      aspect-ratio: 3/4; overflow: hidden; border-radius: 6px;
+      background: #16120e;
+      box-shadow: 0 0 0 2px var(--ink), 6px 8px 0 -1px rgba(32, 26, 21, .34);
+    }
+    .tile .tframe img, .tile .tframe video { width: 100%; height: 100%; object-fit: cover; }
+    .tile .tcap { margin-top: 11px; text-align: center; }
+    .tile .tcap .nm { font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; display: block; }
+    .tile .tcap .sub {
+      display: block; margin-top: 4px;
+      font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+      letter-spacing: .18em; text-transform: uppercase; color: #fff;
+    }
+    .pitch { max-width: 44ch; }
+
+    /* collection pages: boards surface two across instead of one */
+    .shelfgrid {
+      grid-template-columns: 1fr 1fr;
+      gap: 30px 14px;
+      padding-left: 16px; padding-right: 16px;
+    }
+    .scard { width: min(232px, 100%); }
+  }
+
+  /* ================= card treatments (j finalists on the live engine) =================
+     Ported from j-cards-white (.paper, .d7f frame v3) and j-cards-black
+     (.d5 slab base + .d6z zoned), then made fluid — width 100%, square
+     stage — so one card rides both the belt slots (--cardW) and the shelf
+     grids. Treatments keep their own ground (paper/frame are white cards,
+     zoned is a dark card) on BOTH page grounds; that collision is the
+     point of the tool. */
+  .wchip {
+    display: inline-block;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    background: #fff; color: #000; border: none; border-radius: 0;
+    padding: 5px 8px;
+  }
+  button.wchip { cursor: pointer; letter-spacing: .16em; padding: 6px 10px; transition: background .15s ease, color .15s ease; }
+  button.wchip:hover { background: #000; color: #fff; box-shadow: 0 0 0 1.5px #fff; }
+  .bchip {
+    display: inline-block;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    background: #000; color: #fff; border: none; border-radius: 0;
+    padding: 5px 8px;
+  }
+  button.bchip { cursor: pointer; letter-spacing: .16em; padding: 6px 10px; transition: background .15s ease, color .15s ease; }
+  button.bchip:hover { background: #fff; color: #000; box-shadow: 0 0 0 1.5px #000; }
+  .st {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+  }
+  .st .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .st.avail { color: #58a852; } .st.avail .dot { background: #58a852; }
+  .st.pend { color: #c98a12; } .st.pend .dot { background: #c98a12; animation: pulse 1.6s ease-in-out infinite; }
+  .st.gone { color: #8b8175; } .st.gone .dot { background: #8b8175; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .spark { color: #d8511f; font-size: 12px; line-height: 1; cursor: help; }
+  .sold { opacity: .55; }
+  .sold:hover .stage img { transform: none !important; }
+  .sold .wchip.rfc { text-decoration: line-through; }
+
+  /* d5 slab base (zoned builds on it) */
+  .d5 { width: 100%; cursor: pointer; }
+  .d5 .panel {
+    border-radius: 6px; background: #0b0b0b; overflow: hidden;
+    box-shadow: 7px 9px 0 -1px rgba(255, 255, 255, .07), 7px 9px 0 0 rgba(0, 0, 0, .9);
+    transition: box-shadow .22s ease;
+  }
+  .d5:hover .panel { box-shadow: 12px 15px 0 -1px rgba(255, 255, 255, .09), 12px 15px 0 0 rgba(0, 0, 0, .9); }
+  .d5 .stage {
+    position: relative; height: auto; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d5 .stage img {
+    max-height: 84%; max-width: 86%; width: auto; height: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .6));
+    transition: transform .22s ease, filter .22s ease;
+  }
+  .d5:hover .stage img {
+    transform: scale(1.07);
+    filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .6));
+  }
+  .d5 .info { padding: 11px 13px 13px; color: #fff; }
+  .d5 .nm { font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d5 .dims {
+    margin-top: 5px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #9a9a9a;
+  }
+  .d5 .r2 { display: flex; justify-content: space-between; align-items: center; margin-top: 9px; }
+  .d5 .corner {
+    position: absolute; top: 12px; left: 12px; z-index: 2;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .d5.spread .info { text-align: center; padding-top: 0; }
+  .d5.spread .nm { display: block; }
+  .d5.spread .r2 { margin-top: 12px; }
+  .d5.sold .stage img { filter: grayscale(.7) drop-shadow(7px 9px 0 rgba(0, 0, 0, .4)); }
+
+  /* zoned: grey plate stage inside a white-bordered black card */
+  .d6z .panel { border: 2px solid #fff; background: #0b0b0b; }
+  .d6z .plate { background: #a49d92; }
+  .d6z .plate .nm { display: block; text-align: center; color: #16120e; padding-bottom: 15px; letter-spacing: .13em; }
+  .d6z .plate .stage img { filter: drop-shadow(7px 9px 0 rgba(22, 18, 14, .45)); }
+  .d6z:hover .plate .stage img { filter: drop-shadow(11px 14px 0 rgba(22, 18, 14, .45)); }
+  .d6z.sold .plate .stage img { filter: grayscale(.7) drop-shadow(7px 9px 0 rgba(22, 18, 14, .3)); }
+  .d6z .info { padding-top: 12px; }
+  .d6z .corner .wchip { box-shadow: 0 0 0 1.5px #16120e; }
+  /* white ground: the white border vanishes on white — hold the edge in ink
+     (tool adaptation, not part of the treatment) */
+  body.light .d6z .panel { border-color: #000; }
+
+  /* paper: white card, black border, ink text, black chips */
+  .paper { width: 100%; cursor: pointer; }
+  .paper .panel {
+    border-radius: 6px; background: #fff; overflow: hidden;
+    border: 2px solid #000;
+    box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .85);
+    transition: box-shadow .22s ease;
+  }
+  .paper:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .85); }
+  .paper .stage {
+    position: relative; height: auto; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .paper .stage img {
+    max-height: 84%; max-width: 86%; width: auto; height: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .3));
+    transition: transform .22s ease, filter .22s ease;
+  }
+  .paper:hover .stage img {
+    transform: scale(1.07);
+    filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .3));
+  }
+  .paper .corner {
+    position: absolute; top: 12px; left: 12px; z-index: 2;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .paper .info { text-align: center; padding: 0 13px 13px; color: #000; }
+  .paper .nm { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .paper .dims {
+    margin-top: 6px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #000;
+  }
+  .paper .r2 { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+
+  /* frame v3: the ⸺·⸺ card — flush chips wipe in from the frame edge,
+     exits recede into the rails, whole card at half speed. Enter and exit
+     animate on different axes, so BOTH are keyframes and the exit is armed
+     by a JS-applied .left class (a transition can't pick up from an
+     animation-held value; an unarmed exit would fire on page load). */
+  .d7f { width: 100%; cursor: pointer; }
+  .d7f .panel {
+    position: relative; border-radius: 6px; background: #fff; overflow: hidden;
+    border: 1.5px solid #000;
+    box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .85);
+    transition: box-shadow .44s ease;
+  }
+  .d7f:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .85); }
+  .d7f .inframe { position: absolute; inset: 10px; z-index: 1; pointer-events: none; }
+  .d7f .inframe::before, .d7f .inframe::after {
+    content: ""; position: absolute; left: 0; width: calc(100% - 4px);
+    height: 41%; border: 2px solid #000;
+    transition: height .56s ease;
+  }
+  .d7f .inframe::before { top: 0; border-bottom: 0; }
+  .d7f .inframe::after { bottom: 0; border-top: 0; }
+  .d7f:hover .inframe::before, .d7f:hover .inframe::after { height: calc(50% - 6px); }
+  .d7f .dgl, .d7f .dgr {
+    position: absolute; top: 50%; width: 5px; height: 5px; border-radius: 50%;
+    background: #000; transform: translateY(-50%);
+  }
+  .d7f .dgl { left: -1.5px; }
+  .d7f .dgr { right: -1.5px; }
+  .d7f .inframe .ctl, .d7f .inframe .cbr { position: absolute; display: block; }
+  .d7f .inframe .ctl { width: 4px; height: 4px; top: -1px; left: -1px; background: #000; }
+  .d7f .inframe .cbr { width: 6px; height: 6px; bottom: -1px; right: -1px; background: #FF4655; }
+  .d7f .stage {
+    position: relative; height: auto; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d7f .stage img {
+    max-height: 79%; max-width: 78%; width: auto; height: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .3));
+    transition: transform .44s ease, filter .44s ease;
+  }
+  .d7f:hover .stage img {
+    transform: scale(1.07);
+    filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .3));
+  }
+  .d7f .corner {
+    position: absolute; top: 12px; left: 12px; z-index: 2;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .d7f .info { position: relative; z-index: 0; text-align: center; padding: 8px 28px 44px; color: #000; }
+  .d7f .nm { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d7f .tspark { position: absolute; top: 13px; right: 14px; z-index: 2; }
+  .d7f .fchip {
+    position: relative; overflow: hidden;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: #000; background: none; border: none; border-radius: 0;
+    padding: 6px 9px;
+  }
+  .d7f .fchip::before {
+    content: ""; position: absolute; inset: 0; background: #000;
+    transform: scaleY(0);
+  }
+  .d7f .fchip .ft { position: relative; z-index: 1; transition: color .2s ease .18s; }
+  .d7f:hover .fchip .ft { color: #fff; }
+  button.d7f-cta { cursor: pointer; }
+  .d7f .fc-ref::before { transform-origin: center top; }
+  .d7f .fc-list {
+    position: absolute; bottom: 12px; right: 12px; z-index: 2;
+    letter-spacing: .16em; padding: 7px 10px;
+  }
+  .d7f .fc-list::before { transform-origin: center bottom; }
+  .d7f.left .fchip::before { animation: chipdrop .36s ease; }
+  .d7f:hover .fc-ref::before { transform-origin: left center; animation: chipwipe .44s ease forwards; }
+  .d7f:hover .fc-list::before { transform-origin: right center; animation: chipwipe .44s ease forwards; }
+  @keyframes chipwipe {
+    from { transform: scaleX(0) scaleY(1); }
+    to   { transform: scale(1, 1); }
+  }
+  @keyframes chipdrop {
+    from { transform: scale(1, 1); }
+    to   { transform: scaleY(0); }
+  }
+  .d7f .fst {
+    position: absolute; bottom: 14px; left: 14px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+  }
+  .d7f .fst .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .d7f .fst.avail { color: #3e7d3a; }
+  .d7f .fst.avail .dot { background: #3e7d3a; }
+  .d7f .fst.pend { color: #c98a12; }
+  .d7f .fst.pend .dot { background: #c98a12; animation: pulse 1.6s ease-in-out infinite; }
+  .d7f .fst.gone { color: #8b8175; }
+  .d7f .fst.gone .dot { background: #8b8175; }
+  .d7f .sttxt { min-height: 1em; }
+
+  /* treatments are taller than the photo card — give the belt room */
+  body:not([data-card="photo"]) .belt { --beltH: 356px; }
+  @media (max-width: 1260px) and (min-width: 941px) {
+    body:not([data-card="photo"]) .belt { --beltH: 306px; }
+  }
+
+  /* belt proportion pass: slots are ~2/3 of the 262px j card, so the
+     furniture (chips, refs, statuses, paddings) scales by the same factor —
+     reads a touch small by design; the board keeps its share of the stage */
+  .card .wchip, .card .bchip { font-size: 6px; padding: 3.5px 6px; }
+  .card button.wchip, .card button.bchip { padding: 4px 7px; }
+  .card .st { font-size: 6px; gap: 4px; }
+  .card .st .dot { width: 5px; height: 5px; }
+  .card .spark { font-size: 9px; }
+  .card .d5 .info, .card .paper .info { padding: 8px 10px 10px; }
+  .card .paper .info { padding-top: 0; }
+  .card .d5 .nm, .card .paper .nm, .card .d7f .nm { font-size: 8px; }
+  .card .d5 .dims, .card .paper .dims { font-size: 6px; margin-top: 4px; }
+  .card .d5 .r2, .card .paper .r2 { margin-top: 8px; }
+  .card .d5 .corner, .card .paper .corner, .card .d7f .corner { top: 8px; left: 8px; gap: 5px; }
+  .card .d6z .plate .nm { padding-bottom: 10px; }
+  .card .d7f .inframe { inset: 7px; }
+  .card .d7f .inframe::before, .card .d7f .inframe::after { border-width: 1.5px; }
+  .card .d7f .dgl, .card .d7f .dgr { width: 4px; height: 4px; }
+  .card .d7f .inframe .ctl { width: 3px; height: 3px; }
+  .card .d7f .inframe .cbr { width: 5px; height: 5px; }
+  .card .d7f .fchip { font-size: 6px; padding: 4px 6px; }
+  .card .d7f .fc-list { bottom: 8px; right: 8px; padding: 4.5px 7px; }
+  .card .d7f .fst { font-size: 6px; gap: 5px; bottom: 10px; left: 10px; }
+  .card .d7f .fst .dot { width: 5px; height: 5px; }
+  .card .d7f .info { padding: 6px 18px 30px; }
+  .card .d7f .tspark { top: 9px; right: 10px; font-size: 9px; }
+
+  /* ---- fv3 lightbox: the clicked full view IS the frame v3 card, blown up.
+     Active only while the frame v3 treatment is selected — other treatments
+     keep the stock lightbox. JS puts .fv3 on #lb and .d7f on #lb-card, so
+     the card's own hover choreography (rails close, chips wipe, ref/name/
+     status decode) runs on the big card through the existing delegated
+     handlers; the extra chrome elements hide outside fv3 mode. */
+  #lb:not(.fv3) .lb-fv3only { display: none; }
+  #lb.fv3 .lb-card { width: min(430px, 84vw); }
+  #lb.fv3 .lb-card .panel {
+    position: relative; border-radius: 6px; background: #fff; overflow: hidden;
+    border: 1.5px solid #000;
+    box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .85), 0 34px 90px rgba(0, 0, 0, .4);
+  }
+  #lb.fv3 .lb-card .frame {
+    aspect-ratio: 1; border-radius: 0; background: transparent; box-shadow: none;
+  }
+  #lb.fv3 .lb-card .frame img {
+    padding: 34px 38px 12px;
+    filter: drop-shadow(9px 11px 0 rgba(0, 0, 0, .3));
+  }
+  #lb.fv3 .inframe { inset: 12px; }
+  #lb.fv3 .corner { top: 14px; left: 14px; }
+  #lb.fv3 .fchip { font-size: 10.5px; padding: 8px 12px; }
+  #lb.fv3 .fc-list { bottom: 14px; right: 14px; }
+  #lb.fv3 .fst { font-size: 10px; bottom: 18px; left: 18px; }
+  #lb.fv3 .fst .dot { width: 8px; height: 8px; }
+  #lb.fv3 .lb-card .info { padding: 6px 44px 52px; }
+  #lb.fv3 .lb-card .info .nm { font-size: 14px; }
+  /* the frame card carries name/ref/status/list itself — slim the product
+     box down to the DM cta */
+  #lb.fv3 #lb-nm, #lb.fv3 .lb-pill, #lb.fv3 #lb-list-btn { display: none; }
+  #lb.fv3 .lb-product { background: none; border: none; padding: 4px 0 0; }
+
+  /* ---- fv3 nav: the ‹ › arrows live ON the card, facing the mid-rail dots.
+     Square seat (decided 2026-07-20; empty circles clashed with the card's
+     angular language). One gesture on card hover: rails close onto the dots,
+     the line grows from each dot (.34s in), the seat draws as two
+     half-rectangles splitting off the line and meeting at the far side
+     (.46s in), then the seat fills LIKE A CHIP — black wipes in
+     horizontally from the rail toward the card middle (chipwipe, .64s in)
+     and the arrow flips white. On exit the fill drains vertically into the
+     frame (chipdrop, armed by the same .left class the chips use; prev
+     drains up, next drains down, keeping the card's diagonal pattern).
+     Board + shadow growth spans the full ~.94s. Hovering the arrow itself
+     inverts it (white fill, ink ring + glyph) — the +List answer. */
+  #lb.fv3 .navfx {
+    position: absolute; top: 50%; left: 12px; width: 62px; height: 40px;
+    transform: translateY(-50%); z-index: 2; pointer-events: none;
+    fill: none; stroke: #000; stroke-width: 2;
+  }
+  #lb.fv3 .navfx.rt { left: auto; right: 12px; transform: translateY(-50%) scaleX(-1); }
+  #lb.fv3 .navfx .ln-s { stroke-dasharray: 15; stroke-dashoffset: 15; transition: stroke-dashoffset .12s ease; }
+  #lb.fv3 .navfx .sq { stroke-dasharray: 52; stroke-dashoffset: 52; transition: stroke-dashoffset .18s ease; }
+  #lb.fv3 .lb-card:hover .navfx .ln-s { stroke-dashoffset: 0; transition: stroke-dashoffset .14s ease .34s; }
+  #lb.fv3 .lb-card:hover .navfx .sq { stroke-dashoffset: 0; transition: stroke-dashoffset .22s ease .46s; }
+  #lb.fv3 .lb-fv3nav {
+    position: absolute; top: 50%; z-index: 3;
+    display: grid; place-items: center; overflow: hidden;
+    width: 26px; height: 26px; margin-top: -13px; border-radius: 0;
+    font-family: var(--mono); font-size: 15px; font-weight: 700; line-height: 1;
+    color: #000; opacity: .45;
+    transition: opacity .2s ease, box-shadow .15s ease;
+  }
+  #lb.fv3 .lb-fv3nav.prev { left: 28px; }   /* 12px inset + seat left edge 16 */
+  #lb.fv3 .lb-fv3nav.next { right: 28px; }
+  #lb.fv3 .lb-fv3nav::before {
+    content: ""; position: absolute; inset: 0; background: #000;
+    transform: scaleY(0);
+  }
+  #lb.fv3 .lb-fv3nav .ft { position: relative; z-index: 1; transition: color .15s ease; }
+  #lb.fv3 .lb-card:hover .lb-fv3nav { opacity: 1; transition: opacity .2s ease .46s, box-shadow .15s ease; }
+  #lb.fv3 .lb-card:hover .lb-fv3nav.prev::before { transform-origin: left center; animation: chipwipe .3s ease .64s forwards; }
+  #lb.fv3 .lb-card:hover .lb-fv3nav.next::before { transform-origin: right center; animation: chipwipe .3s ease .64s forwards; }
+  #lb.fv3 .lb-card:hover .lb-fv3nav .ft { color: #fff; transition: color .2s ease .78s; }
+  #lb.fv3 .lb-card.left .lb-fv3nav.prev::before { transform-origin: center top; animation: chipdrop .36s ease; }
+  #lb.fv3 .lb-card.left .lb-fv3nav.next::before { transform-origin: center bottom; animation: chipdrop .36s ease; }
+  #lb.fv3 .lb-card .lb-fv3nav:hover { opacity: 1; box-shadow: inset 0 0 0 1.5px #000; }
+  #lb.fv3 .lb-card .lb-fv3nav:hover::before { background: #fff; }
+  #lb.fv3 .lb-card .lb-fv3nav:hover .ft { color: #000; transition: color .1s ease; }
+  #lb.fv3 .lb-prev, #lb.fv3 .lb-next { display: none; }
+  @media (hover: none), (max-width: 720px) { #lb.fv3 .lb-fv3nav, #lb.fv3 .navfx { display: none; } }
+  #lb.fv3 .lb-card .frame img { transition: transform .3s ease, filter .3s ease; }
+  #lb.fv3 .lb-card:hover .frame img {
+    transform: scale(1.08);
+    filter: drop-shadow(13px 16px 0 rgba(0, 0, 0, .3));
+    transition: transform .94s ease, filter .94s ease;
+  }
+
+  /* ================= ground switcher (tool chrome) ================= */
+  .switch {
+    position: fixed; right: 18px; bottom: 18px; z-index: 6000;
+    display: flex; flex-direction: column; gap: 7px; align-items: flex-end;
+    background: rgba(20, 20, 20, .9); border: 1px solid #333; border-radius: 10px;
+    padding: 12px 12px 12px 14px;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .4);
+  }
+  .switch .swhead { color: var(--hint); font-size: 8.5px; margin-bottom: 3px; }
+  .switch .swrow { display: flex; gap: 7px; }
+  .switch .swbtn {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    letter-spacing: .16em; text-transform: uppercase;
+    color: #fff; border: 1.5px solid #555; border-radius: 6px;
+    padding: 6px 10px;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .switch .swbtn:hover { border-color: #fff; }
+  .switch .swbtn.on { background: #fff; color: #000; border-color: #fff; }
+  body.light .switch { background: rgba(255, 255, 255, .9); border-color: #ddd; box-shadow: 0 8px 30px rgba(0, 0, 0, .12); }
+  body.light .switch .swbtn { color: #000; border-color: #bbb; }
+  body.light .switch .swbtn:hover { border-color: #000; }
+  body.light .switch .swbtn.on { background: #000; color: #fff; border-color: #000; }
+
+  /* ================= light ground: the inversion =================
+     j-cards-white idiom. --bg/--bone/--soft/--hint flip via inheritance
+     (the belt edge fades, body text, restock border, colnav disc all ride
+     the vars); --ink stays the constant dark ring/shadow color on both
+     grounds, so anything that used --ink as text-on-bone gets an explicit
+     color override here instead. */
+  body.light {
+    --bg: #fff;
+    --bone: #111;
+    --soft: #444;
+    --hint: #767676;
+  }
+  body.light ::selection { background: #000; color: #fff; }
+
+  /* top bar */
+  body.light .topbar { background-color: rgba(255, 255, 255, .88); border-bottom-color: #e2e2e2; }
+  body.light .topbar .tab { color: #000; border-color: #000; }
+  body.light .topbar .tab:hover { background: #000; color: #fff; }
+
+  /* spine */
+  body.light .masthead img { filter: invert(1); }
+  body.light .tick { color: #000; }
+  body.light .video-wrap video, body.light .vtile video { background: #eee9df; }
+  body.light .dm-mini { color: #000; border-color: #000; }
+  body.light .dm-mini:hover { background: #000; color: #fff; }
+  body.light .dm-mini.glitch-run, body.light .lb-dm-btn.glitch-run { background: #000; color: #fff; }
+
+  /* shelves */
+  body.light .band h2 .hl { color: #000; }
+  body.light .bandsub { color: #000; }
+  body.light .cap .rf { color: #000; }
+  body.light .frame { background: #eee9df; }
+  body.light .belt {
+    background:
+      linear-gradient(180deg,
+        rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 13%,
+        rgba(255, 255, 255, 0) 87%, rgba(255, 255, 255, 1) 100%),
+      linear-gradient(90deg,
+        rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .13) 18%,
+        rgba(0, 0, 0, .13) 82%, rgba(0, 0, 0, 0) 100%);
+  }
+  body.light .belt::before { background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0)); }
+  body.light .belt::after { background: linear-gradient(to left, #fff, rgba(255, 255, 255, 0)); }
+
+  /* collection pages */
+  body.light .colpage-inner h2 { color: #000; }
+  body.light .colnav-home { background: #000; color: #fff; box-shadow: 0 8px 28px rgba(0, 0, 0, .18); }
+  body.light .colnav-btn { color: #000; border-color: #000; }
+  body.light .colnav-btn:hover { background: #000; color: #fff; }
+
+  /* lightbox */
+  body.light .lb-scrim { background: rgba(248, 247, 244, .9); }
+  /* white fill so the object-fit:contain letterbox vanishes into the scrim
+     (dark ground hides it with the near-black frame fill instead) */
+  body.light .lb-card .frame { background: #fff; box-shadow: 0 0 0 2.5px #000, 0 34px 90px rgba(0, 0, 0, .22); }
+  body.light .lb-thumbs img { box-shadow: 0 0 0 2px rgba(0, 0, 0, .35); }
+  body.light .lb-desc { color: #444; }
+  body.light .lb-product { background: rgba(0, 0, 0, .05); border-color: rgba(0, 0, 0, .22); }
+  body.light .lb-pill { border-color: rgba(0, 0, 0, .55); }
+  body.light .lb-pill .ref { color: #000; }
+  body.light .lb-pill .dims { border-left-color: rgba(0, 0, 0, .55); }
+  body.light .lb-list-btn { border-color: rgba(0, 0, 0, .4); }
+  body.light .lb-list-btn:hover { color: #000; border-color: #000; }
+  body.light .lb-dm-btn { color: #000; border-color: #000; }
+  body.light .lb-dm-btn:hover { background: #000; color: #fff; }
+  body.light .lb-nav { background: #000; color: #fff; box-shadow: 0 8px 28px rgba(0, 0, 0, .2); }
+  body.light .lb-count { color: #767676; }
+  body.light .lisst-remove { background: #000; color: #fff; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }
+
+  /* inquiry form */
+  body.light .inq-head { color: #000; }
+  body.light .inq input, body.light .inq select, body.light .inq textarea { border-color: rgba(0, 0, 0, .35); }
+  body.light .inq input:focus, body.light .inq select:focus, body.light .inq textarea:focus { border-color: #000; }
+  body.light .inq select option { background: #f5f5f5; color: #111; }
+  body.light .inq-send { color: #000; border-color: #000; }
+  body.light .inq-send:hover { background: #000; color: #fff; }
+
+  /* mobile tiles */
+  body.light .tile .tframe { background: #eee9df; }
+  body.light .tile .tcap .sub { color: #000; }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="bar-brand" id="bar-brand" title="AVRG"><img id="bar-logo" src="" alt="AVRG" /></div>
+    <nav id="topnav" style="display:contents"></nav>
+    <a class="dm-mini" id="nav-dm" href="#" target="_blank" rel="noopener"></a>
+  </header>
+
+  <div id="home">
+    <div class="split">
+      <section class="spine">
+        <div class="masthead">
+          <div class="brand" id="home-link" title="AVRG"><img src="../site/img/logo-line-white.png" alt="AVRG" /></div>
+          <div class="tick label" id="tick"></div>
+        </div>
+
+        <div class="tilegrid" id="tilegrid">
+          <div class="tile vtile" id="vtile"></div>
+          <!-- collection tiles are rendered by JS -->
+        </div>
+
+        <div class="video-wrap" id="video-wrap">
+          <video id="spinevid" src="media/covercard.mp4" poster="media/covercard-poster.jpg"
+                 autoplay muted loop playsinline preload="metadata"></video>
+          <p class="note">all shredding in the above video was performed on originals</p>
+        </div>
+
+        <p class="note made-note">originals, made like this</p>
+        <div class="made-row">
+          <figure>
+            <img src="media/story-clamps.jpg" alt="A deck clamped up with every clamp in the shop" />
+          </figure>
+          <p class="pitch">all proceeds to fund the tools / R&amp;D for advanced dorking in v2</p>
+        </div>
+
+        <div class="spine-cta">
+          <span class="ask label">Interested?</span>
+          <a class="dm-mini" id="spine-dm" href="#" target="_blank" rel="noopener"></a>
+        </div>
+      </section>
+
+      <main class="shop" id="cols"></main>
+    </div>
+  </div>
+
+  <div id="colpage" hidden></div>
+
+  <!-- lightbox: card pulled forward -->
+  <div class="lb" id="lb" hidden>
+    <div class="lb-scrim" id="lb-scrim"></div>
+    <button class="lb-close label" id="lb-close" type="button">Close ✕</button>
+    <button class="lb-nav lb-prev" id="lb-prev" type="button" aria-label="Previous deck">‹</button>
+    <button class="lb-nav lb-next" id="lb-next" type="button" aria-label="Next deck">›</button>
+    <div class="lb-card" id="lb-card">
+      <div class="panel">
+        <div class="inframe lb-fv3only" aria-hidden="true"><i class="ctl"></i><i class="cbr"></i><i class="dgl"></i><i class="dgr"></i></div>
+        <div class="corner lb-fv3only"><span class="fchip fc-ref"><span class="ft" id="lb-fv3-ref"></span></span></div>
+        <div class="frame"><img id="lb-big" src="" alt="" title="View the whole collection" /></div>
+        <div class="info lb-fv3only"><span class="nm"><span class="nmt" id="lb-fv3-nmt"></span></span></div>
+        <button class="fchip fc-list d7f-cta lb-fv3only" id="lb-fv3-list" type="button"><span class="ft">+ List</span></button>
+        <span class="fst lb-fv3only avail" id="lb-fv3-st"><span class="dot"></span><span class="sttxt" id="lb-fv3-sttxt"></span></span>
+        <svg class="navfx lb-fv3only" viewBox="0 0 62 40" aria-hidden="true">
+          <line class="ln-s" x1="1.5" y1="20" x2="16" y2="20"/>
+          <path class="sq" d="M16 20 V7 H42 V20"/>
+          <path class="sq" d="M16 20 V33 H42 V20"/>
+        </svg>
+        <svg class="navfx rt lb-fv3only" viewBox="0 0 62 40" aria-hidden="true">
+          <line class="ln-s" x1="1.5" y1="20" x2="16" y2="20"/>
+          <path class="sq" d="M16 20 V7 H42 V20"/>
+          <path class="sq" d="M16 20 V33 H42 V20"/>
+        </svg>
+        <button class="lb-fv3nav prev lb-fv3only" id="lb-fv3-prev" type="button" aria-label="Previous deck"><span class="ft">‹</span></button>
+        <button class="lb-fv3nav next lb-fv3only" id="lb-fv3-next" type="button" aria-label="Next deck"><span class="ft">›</span></button>
+      </div>
+      <div class="lb-rest">
+        <div class="lb-thumbs" id="lb-thumbs"></div>
+        <p class="lb-desc" id="lb-desc"></p>
+        <div class="lb-product">
+          <span class="nm" id="lb-nm"></span>
+          <div class="lb-pill">
+            <span class="seg ref" id="lb-pill-ref"></span>
+            <span class="seg dims" id="lb-pill-dims"></span>
+          </div>
+          <button class="lb-list-btn" id="lb-list-btn" type="button"></button>
+          <div class="lb-cta">
+            <span class="lb-cta-ask label">Interested?</span>
+            <a class="lb-dm-btn label" id="lb-dm" href="#" target="_blank" rel="noopener"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lb-count label" id="lb-count"></div>
+  </div>
+
+  <!-- video lightbox: the spine <video> element itself moves in here,
+       so playback position survives the enlarge -->
+  <div class="lb" id="vlb" hidden>
+    <div class="lb-scrim" id="vlb-scrim"></div>
+    <button class="lb-close label" id="vlb-close" type="button">Close ✕</button>
+    <div class="lb-card" id="vlb-card">
+      <div class="frame" id="vlb-frame"></div>
+      <div class="lb-rest">
+        <div class="lb-thumbs" id="vlb-thumbs"></div>
+        <p class="lb-desc">every clip here — ridden on originals</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="switch">
+    <span class="swhead label">Ground</span>
+    <div class="swrow">
+      <button class="swbtn" type="button" data-ground="black">Black</button>
+      <button class="swbtn" type="button" data-ground="white">White</button>
+    </div>
+    <span class="swhead label" style="margin-top:6px">Card</span>
+    <div class="swrow">
+      <button class="swbtn" type="button" data-card="photo">Photo</button>
+      <button class="swbtn" type="button" data-card="framev3">Frame v3</button>
+      <button class="swbtn" type="button" data-card="paper">Paper</button>
+      <button class="swbtn" type="button" data-card="zoned">Zoned</button>
+    </div>
+  </div>
+
+  <script src="../site/data.js"></script>
+  <script>
+  /* K — dual ground. Same engine as h-blackout (conveyor + lightbox +
+     collection pages); adds only the ground switch. Data comes from
+     ../site/data.js. */
+  (function () {
+    "use strict";
+
+    const IMG = p => (p ? "../site/" + p : p);
+    const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* ---- ground switch: black (h-blackout baseline) <-> white (j-cards
+       idiom). Persisted so reloads keep the ground under comparison. The
+       bar logo swaps assets (white line art on black, circle sticker on
+       white); the masthead line logo flips via CSS invert instead. */
+    const GROUND_KEY = "avrg-k-ground";
+    const barLogo = document.getElementById("bar-logo");
+    function setGround(g) {
+      document.body.classList.toggle("light", g === "white");
+      barLogo.src = IMG(g === "white" ? "img/logo-circle.png" : "img/logo-line-white.png");
+      document.querySelectorAll(".swbtn[data-ground]").forEach(b =>
+        b.classList.toggle("on", b.dataset.ground === g));
+      try { localStorage.setItem(GROUND_KEY, g); } catch (e) {}
+    }
+    document.querySelectorAll(".swbtn[data-ground]").forEach(b =>
+      b.addEventListener("click", () => setGround(b.dataset.ground)));
+    let ground = "black";
+    try { ground = localStorage.getItem(GROUND_KEY) || "black"; } catch (e) {}
+    setGround(ground === "white" ? "white" : "black");
+
+    /* ---- card style: photo (h baseline) | frame v3 | paper | zoned.
+       Read before the belts/grids first render; the switch wiring lives
+       after the conveyor init because switching rebuilds the rails. */
+    const CARD_KEY = "avrg-k-card";
+    let CARD = "photo";
+    try { CARD = localStorage.getItem(CARD_KEY) || "photo"; } catch (e) {}
+    if (!/^(photo|framev3|paper|zoned)$/.test(CARD)) CARD = "photo";
+    document.body.dataset.card = CARD;
+
+
+    /* taglines: rotating, minus the "middle" one; the box height is fixed in CSS */
+    const tags = (SITE.taglines || []).filter(t => !/^by no means the m/i.test(t));
+    const tick = document.getElementById("tick");
+    let ti = 0;
+
+    /* decode swap: incoming phrase resolves out of junk glyphs, left to right.
+       no color change — white the whole time. spaces stay spaces so the
+       two-line wrap doesn't jump mid-scramble. */
+    const GLYPHS = "#%&?{}<>*+=/";
+    let decodeTimer = null;
+    function decodeTo(text) {
+      clearInterval(decodeTimer);
+      const chars = [...text];
+      const resolveAt = chars.map((c, i) => i * 0.55 + 3 + Math.random() * 5);
+      let f = 0;
+      decodeTimer = setInterval(() => {
+        f++;
+        let out = "", done = true;
+        for (let i = 0; i < chars.length; i++) {
+          if (chars[i] === " ") { out += " "; continue; }
+          if (f >= resolveAt[i]) { out += chars[i]; }
+          else { out += GLYPHS[(Math.random() * GLYPHS.length) | 0]; done = false; }
+        }
+        tick.textContent = out;
+        if (done) clearInterval(decodeTimer);
+      }, 35);
+    }
+
+    if (reduced) { tick.textContent = tags[0] || ""; }
+    else if (tags.length) { decodeTo(tags[0]); }
+    if (!reduced && tags.length > 1) setInterval(() => {
+      ti = (ti + 1) % tags.length;
+      decodeTo(tags[ti]);
+    }, 4400);
+
+    /* quiet decode on button hovers: a shorter, calmer cousin of the tagline
+       scramble. Delegated so re-rendered pages (colnav, lisst, shop-all) stay
+       wired. DM buttons are excluded — they wear the glitch (CSS) instead;
+       lb-list-btn is excluded because its label changes state on click. */
+    const canHover = matchMedia("(hover: hover)").matches;
+    const HOVER_DECODE = ".tab, .colnav-btn, .inq-send";
+    if (!reduced && canHover) document.addEventListener("pointerover", e => {
+      const btn = e.target.closest && e.target.closest(HOVER_DECODE);
+      if (!btn || btn.dataset.decoding) return;
+      const chars = [...btn.textContent];
+      if (!chars.length || chars.length > 40) return;
+      btn.dataset.decoding = "1";
+      const resolveAt = chars.map((c, i) => i * 0.4 + 1 + Math.random() * 2.2);
+      let f = 0;
+      const t = setInterval(() => {
+        f++;
+        let out = "", done = true;
+        for (let i = 0; i < chars.length; i++) {
+          if (!/\S/.test(chars[i])) { out += chars[i]; continue; }
+          if (f >= resolveAt[i]) { out += chars[i]; }
+          else { out += GLYPHS[(Math.random() * GLYPHS.length) | 0]; done = false; }
+        }
+        btn.textContent = out;
+        if (done) { clearInterval(t); delete btn.dataset.decoding; }
+      }, 30);
+    });
+
+    /* DM glitch: one run per real entry, driven by a class so mid-run
+       hit-test dropouts (see the CSS comment) can't cancel or re-queue it */
+    const GLITCH_SEL = ".dm-mini, .lb-dm-btn";
+    if (!reduced && canHover) {
+      document.addEventListener("pointerover", e => {
+        const btn = e.target.closest && e.target.closest(GLITCH_SEL);
+        if (!btn || btn.classList.contains("glitch-run")) return;
+        if (btn.contains(e.relatedTarget)) return;   /* internal move, not an entry */
+        btn.classList.add("glitch-run");
+      });
+      document.addEventListener("animationend", e => {
+        if (e.animationName === "dm-glitch") e.target.classList.remove("glitch-run");
+      });
+    }
+
+    /* frame v3 card: on card entry the ref chip decodes to AVRG, the name
+       decodes to dims (PH_DIMS boards only) and the status word decodes in
+       beside its dot; all restore on exit. The .left class arms the chip
+       exit animation (see the CSS comment). */
+    function decodeInto(el, text) {
+      clearInterval(el._t);
+      const chars = [...text];
+      const resolveAt = chars.map((c, i) => i * 0.4 + 1 + Math.random() * 2.2);
+      let f = 0;
+      el._t = setInterval(() => {
+        f++;
+        let out = "", done = true;
+        for (let i = 0; i < chars.length; i++) {
+          if (!/\S/.test(chars[i])) { out += chars[i]; continue; }
+          if (f >= resolveAt[i]) { out += chars[i]; }
+          else { out += GLYPHS[(Math.random() * GLYPHS.length) | 0]; done = false; }
+        }
+        el.textContent = out;
+        if (done) clearInterval(el._t);
+      }, 30);
+    }
+    if (canHover) {
+      document.addEventListener("pointerover", e => {
+        const card = e.target.closest && e.target.closest(".d7f");
+        if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return;
+        card.classList.remove("left");
+        const ref = card.querySelector(".fc-ref .ft");
+        const stx = card.querySelector(".sttxt");
+        const nmt = card.querySelector(".nmt");
+        const dims = nmt && nmt.dataset.dims;
+        if (reduced) {
+          if (ref) ref.textContent = "AVRG";
+          if (stx) stx.textContent = stx.dataset.txt;
+          if (dims) nmt.textContent = dims;
+          return;
+        }
+        if (ref) decodeInto(ref, "AVRG");
+        if (stx) decodeInto(stx, stx.dataset.txt);
+        if (dims) decodeInto(nmt, dims);
+      });
+      document.addEventListener("pointerout", e => {
+        const card = e.target.closest && e.target.closest(".d7f");
+        if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return;
+        card.classList.add("left");
+        const ref = card.querySelector(".fc-ref .ft");
+        const stx = card.querySelector(".sttxt");
+        const nmt = card.querySelector(".nmt");
+        if (ref) { clearInterval(ref._t); ref.textContent = ref.dataset.ref; }
+        if (stx) { clearInterval(stx._t); stx.textContent = ""; }
+        if (nmt) { clearInterval(nmt._t); nmt.textContent = nmt.dataset.nm; }
+      });
+    }
+
+    const handle = (typeof CONTACT === "object" && CONTACT && CONTACT.reddit) || "u/avrg";
+    const rname = handle.replace(/^\/?u\//i, "");
+    /* primed PM compose: recipient + subject + body prefilled (classic messages,
+       not chat — chat has no prefill URL). Lands in reddit.com/message/inbox. */
+    const composeUrl = (subject, body) =>
+      "https://www.reddit.com/message/compose/?to=" + encodeURIComponent(rname) +
+      "&subject=" + encodeURIComponent(subject) +
+      "&message=" + encodeURIComponent(body);
+    const siteUrl = () => location.href.split("#")[0];
+    const genericDm = () => composeUrl("AVRG inquiry", "hey! coming from the AVRG site — ");
+    [["spine-dm", "DM " + handle + " →"], ["lb-dm", "DM " + handle + " →"], ["nav-dm", "Contact me"]].forEach(([id, txt]) => {
+      const el = document.getElementById(id); el.href = genericDm(); el.textContent = txt;
+    });
+
+    /* home band naming: short titles + one-line "how" subs */
+    const ACC = { originals: "#d8511f", "hand-shaped": "#1f6fb8", classic: "#c98a12", resale: "#6d4fa3" };
+    const SHORT = { originals: "Original", "hand-shaped": "Shaped", classic: "Routed", resale: "Resale" };
+    const SUB = {
+      originals: "no mold, lots of clamping and a little luck",
+      "hand-shaped": "hand shaped, nfb mold pressed",
+      classic: "router shaped, nfb mold pressed",
+      resale: "pre-owned, still proper"
+    };
+    const accOf = c => ACC[c.id] || c.accent;
+    const refOf = (b, k) => b.ref || "#" + String(k + 1).padStart(2, "0");
+    /* display title: no "Completes" suffix, dashes flattened */
+    const dispTitle = c => c.title.replace(/\s*-\s*Completes/i, "").replace(/ - /g, " ");
+    const titleHtml = c => {
+      const words = dispTitle(c).split(" ");
+      const last = words.pop();
+      return esc(words.join(" ")) + (words.length ? " " : "") + '<span class="hl">' + esc(last) + '</span>';
+    };
+    /* dual: collections whose grid cards show both sides of the board at once */
+    const DUAL = { "hand-shaped": true, classic: true };
+
+    /* ---- j-card treatments: meta + renderers (from j-cards-white/black).
+       Demo states and placeholder dims ride along, same as the j pages. */
+    const CUT = b => "card-lab/cuts/" + b.thumb.split("/").pop().replace(/\.jpg$/, "") + "-cut.png";
+    const CARDNM = { originals: "Original", "hand-shaped": "Shaped", classic: "Classic", resale: "Resale" };
+    const JDIMS = {
+      originals: "ORIGINAL · ONE OF ONE",
+      "hand-shaped": "HAND-SHAPED · ONE OF ONE",
+      classic: "33.5 × 96 MM · MED KICK",
+      resale: "PRE-OWNED · STILL PROPER"
+    };
+    const JSPARK = { "CL 5": 1, "OG 1": 1 };
+    const JPEND = { "HS 2": 1 };
+    const JGONE = { "CL 3": 1 };
+    const PH_DIMS = { "OG 1": "33.5 × 97.5 MM", "HS 1": "33.5 × 97.5 MM" };
+    const jref = (c, b, k) => {
+      const m = String(b.ref || "").match(/\d+/);
+      return (PREFIX[c.id] || "#") + " " + (m ? +m[0] : k + 1);
+    };
+    function jmeta(c, b, k) {
+      const ref = jref(c, b, k);
+      return {
+        ref,
+        nm: b.name || CARDNM[c.id] || "",
+        img: CUT(b),
+        dims: JDIMS[c.id] || "",
+        spark: !!JSPARK[ref],
+        dimsPh: PH_DIMS[ref] || "",
+        st: JGONE[ref] ? "gone" : (JPEND[ref] ? "pend" : "avail"),
+        stTxt: JGONE[ref] ? "Sold" : (JPEND[ref] ? "Pending" : "Available")
+      };
+    }
+    const stHtml = m => '<span class="st ' + m.st + '"><span class="dot"></span>' + m.stTxt + '</span>';
+    const sparkHtml = m => m.spark ? ' <span class="spark" title="Builder\'s mark — this one came out perfect">✱</span>' : "";
+    const soldCls = m => m.st === "gone" ? " sold" : "";
+    const cornerHtml = m => '<div class="corner"><span class="wchip rfc">' + esc(m.ref) + '</span>' + sparkHtml(m) + '</div>';
+    const JCARDS = {
+      framev3: m =>
+        '<div class="d7f' + soldCls(m) + '"><div class="panel">' +
+          '<div class="inframe"><i class="ctl"></i><i class="cbr"></i><i class="dgl"></i><i class="dgr"></i></div>' +
+          (m.spark ? '<span class="spark tspark" title="Builder\'s mark — this one came out perfect">✱</span>' : '') +
+          '<div class="stage">' +
+            '<div class="corner"><span class="fchip fc-ref"><span class="ft" data-ref="' + esc(m.ref) + '">' + esc(m.ref) + '</span></span></div>' +
+            '<img loading="lazy" src="' + m.img + '" alt="' + esc(m.nm) + '"></div>' +
+          '<div class="info">' +
+            '<span class="nm"><span class="nmt" data-nm="' + esc(m.nm) + '" data-dims="' + esc(m.dimsPh) + '">' + esc(m.nm) + '</span></span>' +
+          '</div>' +
+          (m.st === "gone" ? "" :
+            '<button class="fchip fc-list d7f-cta"><span class="ft">+ List</span></button>') +
+          '<span class="fst ' + m.st + '"><span class="dot"></span><span class="sttxt" data-txt="' + m.stTxt.toUpperCase() + '"></span></span>' +
+        '</div></div>',
+      paper: m =>
+        '<div class="paper' + soldCls(m) + '"><div class="panel">' +
+          '<div class="stage">' +
+            '<div class="corner"><span class="bchip">' + esc(m.ref) + '</span>' + sparkHtml(m) + '</div>' +
+            '<img loading="lazy" src="' + m.img + '" alt="' + esc(m.nm) + '"></div>' +
+          '<div class="info">' +
+            '<span class="nm">' + esc(m.nm) + '</span>' +
+            '<div class="dims">' + m.dims + '</div>' +
+            '<div class="r2">' + stHtml(m) + (m.st === "gone" ? "" : '<button class="bchip">+ List</button>') + '</div>' +
+          '</div>' +
+        '</div></div>',
+      zoned: m =>
+        '<div class="d5 spread d6z' + soldCls(m) + '"><div class="panel">' +
+          '<div class="plate">' +
+            '<div class="stage">' + cornerHtml(m) +
+              '<img loading="lazy" src="' + m.img + '" alt="' + esc(m.nm) + '"></div>' +
+            '<span class="nm">' + esc(m.nm) + '</span>' +
+          '</div>' +
+          '<div class="info">' +
+            '<div class="dims">' + m.dims + '</div>' +
+            '<div class="r2">' + stHtml(m) + (m.st === "gone" ? "" : '<button class="wchip">+ List</button>') + '</div>' +
+          '</div>' +
+        '</div></div>'
+    };
+
+    const cardInner = (b, k, dual, c) => {
+      if (CARD !== "photo" && c && JCARDS[CARD]) return JCARDS[CARD](jmeta(c, b, k));
+      const ref = refOf(b, k);
+      const alt = esc(b.name || ref);
+      const th = j => IMG((b.thumbs && b.thumbs[j]) || b.thumb);
+      const imgs = (dual && b.thumbs && b.thumbs.length > 1)
+        ? '<img loading="lazy" src="' + th(0) + '" alt="' + alt + ' — side one">' +
+          '<img loading="lazy" src="' + th(1) + '" alt="' + alt + ' — side two">'
+        : '<img loading="lazy" src="' + IMG(b.thumb) + '" alt="' + alt + '">';
+      return '<div class="frame' + ((dual && b.thumbs && b.thumbs.length > 1) ? " dual" : "") + '">' + imgs + '</div>' +
+        '<div class="cap"><span class="nm">' + esc(b.name || ref) + '</span>' +
+        (b.name ? '<span class="rf">' + esc(ref) + '</span>' : '') + '</div>';
+    };
+    const cleanDesc = s => (s || "").replace(/ Hover.*$/, "");
+
+    /* ---- home: shelf bands (desktop) ---- */
+    const HOME = COLLECTIONS.map((c, i) => ({ c, i })).filter(x => x.c.boards.length);
+
+    /* top bar tabs, one per section */
+    document.getElementById("topnav").innerHTML =
+      '<a class="tab" href="#shop-all">Shop All</a>' +
+      HOME.map(({ c }) =>
+        '<a class="tab" href="#' + c.id + '">' + esc(SHORT[c.id] || c.title) + '</a>'
+      ).join("") +
+      '<a class="tab" href="#my-lisst" id="nav-lisst"></a>';
+    document.getElementById("cols").innerHTML = HOME.map(({ c, i }) =>
+      '<section class="band" data-col="' + i + '" style="--acc:' + accOf(c) + '">' +
+        '<div class="bandhead">' +
+          '<h2 role="link" tabindex="0" title="Open collection"><span class="hl">' + esc(SHORT[c.id] || c.title) + '</span></h2>' +
+          '<span class="bandsub label">' + esc(SUB[c.id] || c.tagline || "") + '</span>' +
+        '</div>' +
+        '<div class="belt" data-col="' + i + '"></div>' +
+      '</section>'
+    ).join("");
+
+    /* ---- home: tile grid (mobile) ---- */
+    /* every tile gets a single-deck beauty shot; the classic cover is the
+       multi-deck stack, so that one falls back to a board thumb */
+    const tileShot = c => (c.id === "classic" ? c.boards[0].thumb : (c.cover || (c.boards[0] && c.boards[0].thumb)));
+    const tilegrid = document.getElementById("tilegrid");
+    tilegrid.insertAdjacentHTML("beforeend", HOME.map(({ c, i }) =>
+      '<div class="tile" data-col="' + i + '" role="link" tabindex="0" style="--tacc:' + accOf(c) + '">' +
+        '<div class="tframe"><img loading="lazy" src="' + IMG(tileShot(c)) + '" alt="' + esc(SHORT[c.id] || c.title) + '"></div>' +
+        '<div class="tcap"><span class="nm">' + esc(SHORT[c.id] || c.title) + '</span>' +
+        '<span class="sub">' + esc(SUB[c.id] || "") + '</span></div>' +
+      '</div>'
+    ).join(""));
+    tilegrid.querySelectorAll(".tile[data-col]").forEach(t => {
+      const go = () => { location.hash = COLLECTIONS[+t.dataset.col].id; };
+      t.addEventListener("click", go);
+      t.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+      });
+    });
+
+    /* the one <video> lives in the spine on desktop, tile #1 on mobile */
+    const vid = document.getElementById("spinevid");
+    const vwrap = document.getElementById("video-wrap");
+    const vtile = document.getElementById("vtile");
+    const mq = matchMedia("(max-width: 940px)");
+    function placeVideo() {
+      if (mq.matches) {
+        if (vid.parentElement !== vtile) { const f = document.createElement("div"); f.className = "tframe"; f.appendChild(vid); vtile.innerHTML = ""; vtile.appendChild(f); }
+      } else if (vid.parentElement !== vwrap) { vtile.innerHTML = ""; vwrap.insertBefore(vid, vwrap.firstChild); }
+      /* only roll when the home frame is actually showing */
+      if (document.getElementById("colpage").hidden) {
+        const p = vid.play(); if (p && p.catch) p.catch(() => {});
+      }
+    }
+    (mq.addEventListener ? mq.addEventListener("change", placeVideo) : mq.addListener(placeVideo));
+    placeVideo();
+
+    /* ---- video lightbox: click the video to pull it forward, card-style.
+       The cover slot reuses the live spine <video> (placeVideo pattern), so
+       enlarging never restarts it. Other clips ride below as thumbs and
+       swap in place, the way board photos do. */
+    const VIDEOS = [
+      { id: "cover", src: "media/covercard.mp4",      poster: "media/covercard-poster.jpg" },
+      { id: "clip1", src: "../videos/web/clip-1.mp4", poster: "../videos/web/clip-1-poster.jpg" },
+      { id: "clip2", src: "../videos/web/clip-2.mp4", poster: "../videos/web/clip-2-poster.jpg" },
+    ];
+    const vlb = document.getElementById("vlb");
+    const vlbCard = document.getElementById("vlb-card");
+    const vlbFrame = document.getElementById("vlb-frame");
+    const vlbThumbs = document.getElementById("vlb-thumbs");
+    const clipEls = { cover: vid };   /* the spine video IS the cover entry */
+    function clipEl(v) {
+      if (!clipEls[v.id]) {
+        const el = document.createElement("video");
+        el.src = v.src; el.poster = v.poster;
+        el.muted = true; el.loop = true; el.playsInline = true; el.preload = "metadata";
+        clipEls[v.id] = el;
+      }
+      return clipEls[v.id];
+    }
+    vlbThumbs.innerHTML = VIDEOS.map((v, i) =>
+      '<img src="' + v.poster + '" data-v="' + v.id + '" alt="clip ' + (i + 1) + '">').join("");
+    function vlbShow(id) {
+      const el = clipEl(VIDEOS.find(x => x.id === id));
+      Object.values(clipEls).forEach(x => {
+        if (x !== el) { x.pause(); x.style.display = "none"; }
+      });
+      if (el.parentElement !== vlbFrame) vlbFrame.appendChild(el);
+      el.style.display = "";
+      el.controls = true;
+      const p = el.play(); if (p && p.catch) p.catch(() => {});
+      vlbThumbs.querySelectorAll("img").forEach(t => t.classList.toggle("on", t.dataset.v === id));
+    }
+    vlbThumbs.addEventListener("click", e => {
+      const id = e.target.dataset && e.target.dataset.v;
+      if (id) vlbShow(id);
+    });
+    function openVlb() {
+      const srcRect = reduced ? null : vid.getBoundingClientRect();
+      vlb.hidden = false;
+      document.body.style.overflow = "hidden";
+      vlbShow("cover");
+      if (srcRect) {
+        const fr = vlbFrame.getBoundingClientRect();
+        const s = srcRect.width / fr.width;
+        const dx = (srcRect.left + srcRect.width / 2) - (fr.left + fr.width / 2);
+        const dy = (srcRect.top + srcRect.height / 2) - (fr.top + fr.height / 2);
+        vlbCard.style.transition = "none";
+        vlbCard.style.transformOrigin = "50% " + (vlbFrame.offsetTop + vlbFrame.offsetHeight / 2) + "px";
+        vlbCard.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
+        void vlbCard.offsetWidth;
+        vlbCard.style.transition = "";
+        vlbCard.style.transform = "none";
+      }
+      requestAnimationFrame(() => vlb.classList.add("in"));
+    }
+    function closeVlb(instant) {
+      vlb.classList.remove("in");
+      setTimeout(() => {
+        vlb.hidden = true;
+        document.body.style.overflow = "";
+        Object.values(clipEls).forEach(x => { if (x !== vid) x.pause(); });
+        vid.controls = false; vid.muted = true; vid.style.display = "";
+        placeVideo();   /* the cover video rides home, still playing */
+      }, (reduced || instant) ? 0 : 330);
+    }
+    vid.addEventListener("click", () => { if (vlb.hidden) openVlb(); });
+    document.getElementById("vlb-close").addEventListener("click", () => closeVlb());
+    document.getElementById("vlb-scrim").addEventListener("click", () => closeVlb());
+    document.addEventListener("keydown", e => {
+      if (!vlb.hidden && e.key === "Escape") closeVlb();
+    });
+
+    /* ---- routing: home <-> collection page ---- */
+    const home = document.getElementById("home");
+    const colpage = document.getElementById("colpage");
+
+    const LOOP_SVG =
+      '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M3 12a9 9 0 1 0 3.4-7.06"/><polyline points="3 2.5 3 8 8.5 8"/>' +
+      '</svg>';
+
+    /* bottom nav shared by collection pages and shop-all.
+       skip: index of the page you're on (-1 to skip none, "shop-all" handled via onShopAll) */
+    function colnavHtml(skip, onShopAll) {
+      const links =
+        (onShopAll ? "" : '<a class="colnav-btn label" href="#shop-all">Shop All</a>') +
+        COLLECTIONS
+          .map((o, j) => ({ o, j }))
+          .filter(x => x.j !== skip)
+          .map(({ o }) =>
+            '<a class="colnav-btn label" style="--acc:' + accOf(o) + '" href="#' + o.id + '">' +
+              esc(dispTitle(o)) +
+            '</a>'
+          ).join("");
+      return '<div class="colnav">' +
+          '<a class="colnav-home" href="#" title="Back to the main page" aria-label="Back to the main page">' + LOOP_SVG + '</a>' +
+          '<div class="colnav-links">' + links + '</div>' +
+        '</div>';
+    }
+
+    function colSectionHtml(c, i, afterH2) {
+      return '<h2>' + titleHtml(c) + '</h2>' +
+        (afterH2 || "") +
+        '<p class="desc">' + esc(cleanDesc(c.description)) + '</p>' +
+        (c.boards.length
+          ? '<div class="shelfgrid">' +
+              c.boards.map((b, k) => '<div class="scard" data-k="' + k + '" role="button" tabindex="0">' + cardInner(b, k, DUAL[c.id], c) + '</div>').join("") +
+            '</div>'
+          : '<div class="restock label">Restocking — check back</div>');
+    }
+
+    function bindScards() {
+      colpage.querySelectorAll("section[data-col]").forEach(sec => {
+        const i = +sec.dataset.col;
+        sec.querySelectorAll(".scard").forEach(s => {
+          s.addEventListener("click", () => openLb(i, +s.dataset.k, s));
+          s.addEventListener("keydown", e => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openLb(i, +s.dataset.k, s); }
+          });
+        });
+      });
+    }
+
+    function renderColPage(c, i) {
+      const links =
+        '<div class="colpage-links">' +
+          '<a class="back label" href="#">← Back to collections</a>' +
+          '<a class="back label" href="#shop-all">Shop all collections →</a>' +
+        '</div>';
+      colpage.innerHTML =
+        '<section class="colpage-inner" data-col="' + i + '" style="--acc:' + accOf(c) + '">' +
+          colSectionHtml(c, i, links) +
+          colnavHtml(i, false) +
+        '</section>';
+      bindScards();
+    }
+
+    /* shop all: every collection page stitched into one scroll */
+    function renderShopAll() {
+      colpage.innerHTML =
+        '<section class="colpage-inner shopall-head">' +
+          '<h2>Shop <span class="hl">All</span></h2>' +
+          '<div class="colpage-links">' +
+            '<a class="back label" href="#">← Back to collections</a>' +
+          '</div>' +
+        '</section>' +
+        COLLECTIONS.map((c, i) =>
+          '<section class="colpage-inner shopall-sec" data-col="' + i + '" style="--acc:' + accOf(c) + '">' +
+            colSectionHtml(c, i) +
+          '</section>'
+        ).join("") +
+        '<section class="colpage-inner shopall-foot">' + colnavHtml(-1, true) + '</section>';
+      bindScards();
+    }
+
+    /* ---- my lisst page: picked boards + one inquiry about all of them ---- */
+    function renderLisst() {
+      const entries = myLisst.map(id => BOARD_INDEX[id]);
+      const cards = entries.length
+        ? '<div class="shelfgrid">' + entries.map(({ c, ci, b, k }) =>
+            '<div class="scard lisst-card" data-ci="' + ci + '" data-k="' + k + '" role="button" tabindex="0">' +
+              '<button class="lisst-remove" type="button" data-id="' + b.id + '" title="Remove from lisst" aria-label="Remove from lisst">✕</button>' +
+              cardInner(b, k, DUAL[c.id], c) +
+            '</div>'
+          ).join("") + '</div>'
+        : '<div class="lisst-empty label">Nothing on the lisst yet — open a board and hit “+ add to my lisst”</div>';
+      const refs = myLisst.map(lisstLabel);
+      const dmLisst = refs.length
+        ? '<div class="inq-or"><span class="label" style="color:var(--soft)">reddit person?</span><br>' +
+          '<a class="dm-mini label" target="_blank" rel="noopener" href="' +
+            composeUrl("Interested in " + refs.join(", "),
+              "hey! interested in these from the AVRG site: " + refs.join(", ") + " → " + siteUrl()) +
+          '">DM the lisst →</a></div>'
+        : "";
+      colpage.innerHTML =
+        '<section class="colpage-inner" style="--acc:#d8511f">' +
+          '<h2>My <span class="hl">Lisst</span></h2>' +
+          '<div class="colpage-links">' +
+            '<a class="back label" href="#">← Back to collections</a>' +
+            '<a class="back label" href="#shop-all">Shop all collections →</a>' +
+          '</div>' +
+          cards +
+          '<div class="inq">' +
+            '<h3 class="inq-head label" style="font-size:12px">Send one message about ' + (refs.length ? "the lisst" : "anything") + '</h3>' +
+            '<p class="inq-sub">' + (refs.length ? "your picks ride along automatically: " + esc(refs.join(", ")) : "no picks attached — just say hi") + '</p>' +
+            '<form id="inq-form">' +
+              '<label for="inq-name">Name / alias</label>' +
+              '<input id="inq-name" name="name" type="text" autocomplete="name" placeholder="optional">' +
+              '<label for="inq-method">Preferred contact</label>' +
+              '<select id="inq-method" name="preferred_method">' +
+                '<option value="email">Email</option>' +
+                '<option value="reddit">Reddit</option>' +
+                '<option value="instagram">Instagram</option>' +
+              '</select>' +
+              '<label for="inq-handle">Where do we reach you</label>' +
+              '<input id="inq-handle" name="contact" type="text" required placeholder="address or handle">' +
+              '<label for="inq-msg">Message</label>' +
+              '<textarea id="inq-msg" name="message" placeholder="optional"></textarea>' +
+              '<button class="inq-send label" type="submit">Send it →</button>' +
+              '<p class="inq-status" id="inq-status"></p>' +
+            '</form>' +
+            dmLisst +
+          '</div>' +
+          colnavHtml(-1, true) +
+        '</section>';
+      colpage.querySelectorAll(".lisst-remove").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.stopPropagation();
+          toggleLisst(btn.dataset.id);
+          renderLisst();
+        });
+      });
+      colpage.querySelectorAll(".lisst-card").forEach(s => {
+        const go = () => openLb(+s.dataset.ci, +s.dataset.k, s);
+        s.addEventListener("click", go);
+        s.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+        });
+      });
+      const form = document.getElementById("inq-form");
+      const status = document.getElementById("inq-status");
+      form.addEventListener("submit", async e => {
+        e.preventDefault();
+        if (/^PASTE-/.test(SPLITFORMS_KEY)) {
+          status.textContent = "form isn’t wired up yet — use the DM button for now";
+          return;
+        }
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.access_key = SPLITFORMS_KEY;
+        data.lisst = refs.join(", ") || "none";
+        data.subject = "AVRG inquiry — " + (refs.length ? refs.join(", ") : "general");
+        data.page = siteUrl();
+        status.textContent = "sending…";
+        try {
+          const r = await fetch("https://splitforms.com/api/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify(data)
+          });
+          if (r.ok) { status.textContent = "sent — talk soon ✓"; form.reset(); }
+          else { status.textContent = "something broke — try the DM button instead"; }
+        } catch (err) {
+          status.textContent = "something broke — try the DM button instead";
+        }
+      });
+    }
+
+    function route() {
+      if (!lb.hidden) closeLb(true);
+      if (!vlb.hidden) closeVlb(true);
+      const id = (location.hash || "").replace(/^#/, "");
+      const i = COLLECTIONS.findIndex(c => c.id === id);
+      if (id === "shop-all") {
+        renderShopAll();
+        home.hidden = true; colpage.hidden = false;
+        vid.pause();
+      } else if (id === "my-lisst") {
+        renderLisst();
+        home.hidden = true; colpage.hidden = false;
+        vid.pause();
+      } else if (i >= 0) {
+        renderColPage(COLLECTIONS[i], i);
+        home.hidden = true; colpage.hidden = false;
+        vid.pause();
+      } else {
+        colpage.hidden = true; home.hidden = false;
+        const p = vid.play(); if (p && p.catch) p.catch(() => {});
+      }
+      window.scrollTo(0, 0);
+    }
+    window.addEventListener("hashchange", route);
+    document.getElementById("home-link").addEventListener("click", () => { location.hash = ""; });
+    document.getElementById("bar-brand").addEventListener("click", () => { location.hash = ""; });
+
+    document.querySelectorAll("#cols h2").forEach(h2 => {
+      const go = () => { location.hash = COLLECTIONS[+h2.closest("section").dataset.col].id; };
+      h2.addEventListener("click", go);
+      h2.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+      });
+    });
+
+    /* ---- lightbox: the pull-forward ---- */
+    const lb = document.getElementById("lb");
+    const lbScrim = document.getElementById("lb-scrim");
+    const lbCard = document.getElementById("lb-card");
+    const lbBig = document.getElementById("lb-big");
+    const lbThumbs = document.getElementById("lb-thumbs");
+    const lbNm = document.getElementById("lb-nm");
+    const lbDm = document.getElementById("lb-dm");
+    const lbListBtn = document.getElementById("lb-list-btn");
+    const lbPillRef = document.getElementById("lb-pill-ref");
+    const lbPillDims = document.getElementById("lb-pill-dims");
+    /* pill identifier: collection prefix + zero-padded number (HS 04, CL 12, OG 01) */
+    const PREFIX = { originals: "OG", "hand-shaped": "HS", classic: "CL", resale: "RS" };
+    const fmtRef = (c, b, k) => {
+      const m = String(b.ref || "").match(/\d+/);
+      const n = m ? +m[0] : k + 1;
+      return (PREFIX[c.id] || "#") + " " + String(n).padStart(2, "0");
+    };
+
+    /* ---- my lisst: localStorage cart ---- */
+    const SPLITFORMS_KEY = "eca3f906ba5346fd894c65220f38baa8";
+    const LIST_KEY = "avrg-lisst";
+    const BOARD_INDEX = {};
+    COLLECTIONS.forEach((c, ci) => c.boards.forEach((b, k) => { BOARD_INDEX[b.id] = { c, ci, b, k }; }));
+    let myLisst = [];
+    try { myLisst = (JSON.parse(localStorage.getItem(LIST_KEY)) || []).filter(id => BOARD_INDEX[id]); } catch (e) {}
+    const lisstSave = () => { try { localStorage.setItem(LIST_KEY, JSON.stringify(myLisst)); } catch (e) {} };
+    const inLisst = id => myLisst.includes(id);
+    const lisstLabel = id => {
+      const { c, b, k } = BOARD_INDEX[id];
+      return b.name ? b.name + " (" + fmtRef(c, b, k) + ")" : fmtRef(c, b, k);
+    };
+    const navLisst = document.getElementById("nav-lisst");
+    function lisstTab() {
+      navLisst.textContent = "My Lisst" + (myLisst.length ? " (" + myLisst.length + ")" : "");
+    }
+    lisstTab();
+    function toggleLisst(id) {
+      myLisst = inLisst(id) ? myLisst.filter(x => x !== id) : myLisst.concat(id);
+      lisstSave(); lisstTab();
+    }
+    const lbDesc = document.getElementById("lb-desc");
+    const lbCount = document.getElementById("lb-count");
+    let cur = null;
+
+    function populate(ci, k, j) {
+      j = j || 0;
+      const c = COLLECTIONS[ci];
+      const b = c.boards[k];
+      const ref = refOf(b, k);
+      lb.style.setProperty("--acc", accOf(c));
+      lbBig.src = IMG(b.photos[j]);
+      lbBig.alt = b.name || ref;
+      lbThumbs.innerHTML = b.photos.length > 1
+        ? b.photos.map((p, tj) =>
+            '<img class="' + (tj === j ? "on" : "") + '" src="' + IMG((b.thumbs && b.thumbs[tj]) || p) + '" data-j="' + tj + '" alt="angle ' + (tj + 1) + '">'
+          ).join("")
+        : "";
+      lbNm.textContent = b.name || "";
+      lbNm.style.display = b.name ? "" : "none";
+      lbPillRef.textContent = fmtRef(c, b, k);
+      lbPillDims.textContent = b.dims || "";
+      lbPillDims.style.display = b.dims ? "" : "none";
+      /* the DM button carries this exact board into the primed message */
+      const label = b.name ? b.name + " (" + fmtRef(c, b, k) + ")" : fmtRef(c, b, k);
+      lbDm.href = composeUrl("Interested in " + label,
+        "hey! interested in " + label + " from the AVRG site → " + siteUrl() + "#" + c.id);
+      lbListBtn.dataset.id = b.id;
+      lbListBtn.textContent = inLisst(b.id) ? "✓ on the lisst" : "+ add to my lisst";
+      lbListBtn.classList.toggle("on", inLisst(b.id));
+      const d = b.description || "";
+      lbDesc.textContent = (!d || /^Replace this/m.test(d)) ? cleanDesc(c.description) : d;
+      lbCount.textContent = (k + 1) + " / " + c.boards.length + " — " + dispTitle(c);
+      /* fv3: dress the lightbox as the frame v3 card. The d7f class opts the
+         big card into the delegated hover choreography. */
+      const fv3 = CARD === "framev3";
+      lb.classList.toggle("fv3", fv3);
+      lbCard.classList.toggle("d7f", fv3);
+      lbCard.classList.remove("left");
+      if (fv3) {
+        const jm = jmeta(c, b, k);
+        const rft = document.getElementById("lb-fv3-ref");
+        rft.dataset.ref = jm.ref; rft.textContent = jm.ref;
+        const nmt = document.getElementById("lb-fv3-nmt");
+        nmt.dataset.nm = jm.nm; nmt.dataset.dims = b.dims || jm.dimsPh; nmt.textContent = jm.nm;
+        document.getElementById("lb-fv3-st").className = "fst lb-fv3only " + jm.st;
+        const stx = document.getElementById("lb-fv3-sttxt");
+        stx.dataset.txt = jm.stTxt.toUpperCase(); stx.textContent = "";
+        const lchip = document.getElementById("lb-fv3-list");
+        lchip.style.display = jm.st === "gone" ? "none" : "";
+        lchip.querySelector(".ft").textContent = inLisst(b.id) ? "✓ Lisst" : "+ List";
+        /* hero = the cutout, so the open view IS the card; thumbs and
+           arrows step through the real shots */
+        if (j === 0) lbBig.src = CUT(b);
+      }
+      cur = { ci, k, j };
+    }
+
+    function sourceFrame() {
+      if (!cur) return null;
+      const view = colpage.hidden
+        ? document.querySelector('#cols section[data-col="' + cur.ci + '"] .belt')
+        : colpage.querySelector('section[data-col="' + cur.ci + '"]');
+      if (!view) return null;
+      const sel = colpage.hidden ? ".card" : ".scard";
+      const el = Array.from(view.querySelectorAll(sel)).find(n =>
+        +n.dataset.k === cur.k && n.style.visibility !== "hidden");
+      /* j treatments have a .panel where the photo card has a .frame */
+      return el ? el.querySelector(".frame, .panel") : null;
+    }
+
+    function flipFrom(frameEl) {
+      lbCard.style.transition = "none";
+      if (frameEl) {
+        const sr = frameEl.getBoundingClientRect();
+        const fr = lbCard.querySelector(".frame").getBoundingClientRect();
+        const s = sr.width / fr.width;
+        const dx = (sr.left + sr.width / 2) - (fr.left + fr.width / 2);
+        const dy = (sr.top + sr.height / 2) - (fr.top + fr.height / 2);
+        const frame = lbCard.querySelector(".frame");
+        lbCard.style.transformOrigin = "50% " + (frame.offsetTop + frame.offsetHeight / 2) + "px";
+        lbCard.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
+      } else {
+        lbCard.style.transform = "scale(.6)";
+      }
+      void lbCard.offsetWidth;
+      lbCard.style.transition = "";
+      lbCard.style.transform = "none";
+    }
+
+    function openLb(ci, k, sourceEl) {
+      populate(ci, k);
+      lb.hidden = false;
+      document.body.style.overflow = "hidden";
+      if (!reduced) flipFrom(sourceEl ? sourceEl.querySelector(".frame, .panel") : null);
+      requestAnimationFrame(() => lb.classList.add("in"));
+    }
+
+    function closeLb(instant) {
+      const back = (reduced || instant) ? null : sourceFrame();
+      lb.classList.remove("in");
+      if (back) {
+        const sr = back.getBoundingClientRect();
+        const fr = lbCard.querySelector(".frame").getBoundingClientRect();
+        const s = sr.width / fr.width;
+        const dx = (sr.left + sr.width / 2) - (fr.left + fr.width / 2);
+        const dy = (sr.top + sr.height / 2) - (fr.top + fr.height / 2);
+        lbCard.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
+      }
+      setTimeout(() => {
+        lb.hidden = true;
+        lbCard.style.transform = "none";
+        document.body.style.overflow = "";
+        cur = null;
+        /* lisst membership may have changed while the lightbox was open */
+        if (location.hash.replace(/^#/, "") === "my-lisst") renderLisst();
+      }, (reduced || instant) ? 0 : 430);
+    }
+
+    function step(dir) {
+      if (!cur) return;
+      const c = COLLECTIONS[cur.ci];
+      /* walk the current board's photos first; only cross to the
+         next/previous board once you run off either end */
+      let k = cur.k, j = cur.j + dir;
+      if (j < 0 || j >= c.boards[k].photos.length) {
+        k = (cur.k + dir + c.boards.length) % c.boards.length;
+        j = dir > 0 ? 0 : c.boards[k].photos.length - 1;
+      }
+      /* same board, different angle: swap in place — the slide/fade is
+         reserved for moving between boards */
+      if (k === cur.k) { populate(cur.ci, k, j); return; }
+      if (!reduced) {
+        lbCard.style.transition = "transform .18s ease, opacity .18s ease";
+        lbCard.style.opacity = "0";
+        lbCard.style.transform = "translateX(" + (-dir * 30) + "px)";
+        setTimeout(() => {
+          populate(cur.ci, k, j);
+          lbCard.style.transition = "none";
+          lbCard.style.transform = "translateX(" + (dir * 30) + "px)";
+          void lbCard.offsetWidth;
+          lbCard.style.transition = "transform .22s ease, opacity .22s ease";
+          lbCard.style.opacity = "1";
+          lbCard.style.transform = "none";
+          setTimeout(() => { lbCard.style.transition = ""; }, 240);
+        }, 180);
+      } else {
+        populate(cur.ci, k, j);
+      }
+    }
+
+    lbListBtn.addEventListener("click", () => {
+      const id = lbListBtn.dataset.id;
+      if (!id) return;
+      toggleLisst(id);
+      lbListBtn.textContent = inLisst(id) ? "✓ on the lisst" : "+ add to my lisst";
+      lbListBtn.classList.toggle("on", inLisst(id));
+    });
+    /* fv3 list chip proxies the same lisst toggle (lb-list-btn is hidden
+       in fv3 mode but keeps carrying the board id) */
+    document.getElementById("lb-fv3-list").addEventListener("click", e => {
+      e.stopPropagation();
+      const id = lbListBtn.dataset.id;
+      if (!id) return;
+      toggleLisst(id);
+      e.currentTarget.querySelector(".ft").textContent = inLisst(id) ? "✓ Lisst" : "+ List";
+      lbListBtn.textContent = inLisst(id) ? "✓ on the lisst" : "+ add to my lisst";
+      lbListBtn.classList.toggle("on", inLisst(id));
+    });
+    document.getElementById("lb-close").addEventListener("click", () => closeLb());
+    lbScrim.addEventListener("click", () => closeLb());
+    document.getElementById("lb-prev").addEventListener("click", () => step(-1));
+    document.getElementById("lb-next").addEventListener("click", () => step(1));
+    document.getElementById("lb-fv3-prev").addEventListener("click", e => { e.stopPropagation(); step(-1); });
+    document.getElementById("lb-fv3-next").addEventListener("click", e => { e.stopPropagation(); step(1); });
+    lbBig.addEventListener("click", () => {
+      if (!cur) return;
+      const id = COLLECTIONS[cur.ci].id;
+      if (location.hash.replace(/^#/, "") === id) { closeLb(); return; }
+      closeLb(true);
+      location.hash = id;
+    });
+    lbThumbs.addEventListener("click", e => {
+      const j = e.target.dataset && e.target.dataset.j;
+      if (j == null || !cur) return;
+      const b = COLLECTIONS[cur.ci].boards[cur.k];
+      lbBig.src = IMG(b.photos[+j]);
+      cur.j = +j;
+      lbThumbs.querySelectorAll("img").forEach(t => t.classList.toggle("on", t.dataset.j === j));
+    });
+    document.addEventListener("keydown", e => {
+      if (lb.hidden) return;
+      if (e.key === "Escape") closeLb();
+      else if (e.key === "ArrowLeft") step(-1);
+      else if (e.key === "ArrowRight") step(1);
+    });
+    let swX = null;
+    lb.addEventListener("touchstart", e => { swX = e.changedTouches[0].clientX; }, { passive: true });
+    lb.addEventListener("touchend", e => {
+      if (swX == null) return;
+      const dx = e.changedTouches[0].clientX - swX;
+      if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+      swX = null;
+    }, { passive: true });
+
+    /* ---- conveyor engine ---- */
+    const rails = [];
+    const BASE_V = -26;
+
+    /* (re)build a belt's cards for the current --cardW. Runs at init and
+       again when the width breakpoint flips under a live page — the CSS
+       card width changes with the media query but a frozen rail spacing
+       doesn't, and frames wider than their slots crowd into each other. */
+    function buildBelt(rail) {
+      const belt = rail.belt;
+      const col = COLLECTIONS[+belt.dataset.col];
+      const cardW = parseFloat(getComputedStyle(belt).getPropertyValue("--cardW")) || 172;
+      const spacing = cardW + 44;   /* room for the 1.14x center zoom */
+
+      const minTotal = Math.max(innerWidth + spacing * 4, 3200);
+      const reps = Math.max(2, Math.ceil(minTotal / (col.boards.length * spacing)));
+      const items = [];
+      for (let r = 0; r < reps; r++) col.boards.forEach((b, k) => items.push({ b, k }));
+
+      belt.innerHTML = items.map(({ b, k }) =>
+        '<div class="card" data-k="' + k + '" role="button" tabindex="-1">' + cardInner(b, k, 0, col) + '</div>'
+      ).join("");
+
+      rail.spacing = spacing;
+      rail.cards = Array.from(belt.children);
+      rail.total = items.length * spacing;
+      rail.offset = rail.offset % rail.total;   /* keep the drift position */
+    }
+
+    document.querySelectorAll(".belt").forEach(belt => {
+      const ci = +belt.dataset.col;
+      const rail = {
+        belt, spacing: 0, cards: [], total: 1,
+        offset: 0, v: BASE_V, pointerX: null,
+        dragging: false, dragX: 0, moved: 0,
+        active: true,
+      };
+      buildBelt(rail);
+
+      belt.addEventListener("pointermove", e => {
+        const r = belt.getBoundingClientRect();
+        rail.pointerX = e.clientX - r.left;
+        if (rail.dragging) {
+          const dx = e.clientX - rail.dragX;
+          rail.dragX = e.clientX;
+          rail.offset += dx;
+          rail.moved += Math.abs(dx);
+        }
+      });
+      belt.addEventListener("pointerleave", () => { rail.pointerX = null; rail.dragging = false; });
+      belt.addEventListener("pointerdown", e => {
+        rail.dragging = true; rail.dragX = e.clientX; rail.moved = 0;
+        belt.classList.add("dragging");
+      });
+      addEventListener("pointerup", () => { rail.dragging = false; belt.classList.remove("dragging"); });
+      belt.addEventListener("click", e => {
+        if (rail.moved > 6) return;
+        const card = e.target.closest(".card");
+        if (card) openLb(ci, +card.dataset.k, card);
+      });
+
+      rails.push(rail);
+    });
+
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        const rail = rails.find(r => r.belt === en.target);
+        if (rail) rail.active = en.isIntersecting;
+      });
+    }, { rootMargin: "120px" });
+    rails.forEach(r => io.observe(r.belt));
+
+    /* rebuild belts when the breakpoint flips their card width (or the
+       window outgrows the loop) — debounced so drag-resizing stays cheap */
+    let beltResizeT = null;
+    addEventListener("resize", () => {
+      clearTimeout(beltResizeT);
+      beltResizeT = setTimeout(() => {
+        rails.forEach(rail => {
+          const cw = parseFloat(getComputedStyle(rail.belt).getPropertyValue("--cardW")) || 172;
+          if (cw + 44 !== rail.spacing || innerWidth + (cw + 44) * 4 > rail.total) buildBelt(rail);
+        });
+      }, 180);
+    });
+
+    const smooth = (a, b, x) => {
+      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+
+    let last = performance.now();
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      if (!lb.hidden || !vlb.hidden) { requestAnimationFrame(frame); return; }
+
+      rails.forEach(rail => {
+        if (!rail.active) return;
+        const w = rail.belt.clientWidth;
+        if (!w) return;                            /* hidden on mobile */
+        const cx = w / 2;
+
+        let target = BASE_V;
+        if (rail.pointerX != null && !rail.dragging) {
+          const dx = rail.pointerX - cx;
+          if (Math.abs(dx) > rail.spacing) {
+            const t = Math.min(1, (Math.abs(dx) - rail.spacing) / Math.max(120, cx - rail.spacing));
+            target = -Math.sign(dx) * (60 + 340 * t);
+          }
+        }
+        if (!reduced && !rail.dragging) rail.v += (target - rail.v) * Math.min(1, dt * 4);
+        if (!rail.dragging && !reduced) rail.offset += rail.v * dt;
+
+        rail.offset = ((rail.offset % rail.total) + rail.total) % rail.total;
+
+        rail.cards.forEach((card, i) => {
+          let x = (i * rail.spacing + rail.offset) % rail.total;
+          x -= rail.spacing * 1.5;
+          if (x < -rail.spacing * 1.6 || x > w + rail.spacing * .6) {
+            card.style.visibility = "hidden";
+            return;
+          }
+          card.style.visibility = "visible";
+          const center = x + rail.spacing / 2;
+          const d = Math.abs(center - cx) / rail.spacing;
+          const fall = smooth(0.62, 2.6, d);
+          const s = 1.14 - 0.36 * fall;
+          /* soften near the belt edges so cards dissolve into the black —
+             gentle enough that they're still semi-visible as they leave */
+          const edge = Math.min(center, w - center) / rail.spacing;
+          const o = (1 - 0.62 * fall) * smooth(-0.4, 0.8, edge);
+          card.style.transform = "translate3d(" + x + "px,-50%,0) scale(" + s.toFixed(3) + ")";
+          /* shadow drifts with position: enters offset toward the incoming edge,
+             sits directly under the card at shelf center, exits leading the other way */
+          const shx = Math.max(-14, Math.min(14, ((center - cx) / rail.spacing) * 9));
+          card.style.setProperty("--shx", shx.toFixed(1) + "px");
+          card.style.opacity = o.toFixed(3);
+          card.style.zIndex = String(1000 - Math.round(d * 100));
+        });
+      });
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    /* card switch: rebuild the belts in the new treatment and re-render
+       whatever page the hash currently shows */
+    function setCard(s) {
+      CARD = s;
+      document.body.dataset.card = s;
+      try { localStorage.setItem(CARD_KEY, s); } catch (e) {}
+      document.querySelectorAll(".swbtn[data-card]").forEach(b =>
+        b.classList.toggle("on", b.dataset.card === s));
+      rails.forEach(rail => buildBelt(rail));
+      route();
+    }
+    document.querySelectorAll(".swbtn[data-card]").forEach(b => {
+      b.classList.toggle("on", b.dataset.card === CARD);
+      b.addEventListener("click", () => { if (b.dataset.card !== CARD) setCard(b.dataset.card); });
+    });
+
+    route();
+  })();
+  </script>
+</body>
+</html>
