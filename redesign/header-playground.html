@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<!--
+  AVRG header playground — 8 versions of the blackout top bar, each with a
+  different tab hover style. Tune globals on the left, click a bar to pick it,
+  copy the prompt at the bottom of the sidebar back into Claude.
+
+  Button styles pulled from ~/Projects/web-assets/snippets/ (decode, glitch,
+  valorant, cascade) + three new explorations (brackets, underline, wipe)
+  + the current site baseline.
+
+  Self-contained: no Google Fonts, so labels fall back to system mono unless
+  Space Mono is installed locally. Shapes/spacing are true to h-blackout.html.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVRG header playground</title>
+<style>
+  :root {
+    /* knobs (JS writes these) */
+    --acc: #d8511f;
+    --tab-fs: 10px;
+    --tab-ls: 0.18em;
+    --tab-px: 14px;
+    --tab-py: 10px;
+    --tab-r: 8px;
+    --tab-bw: 2px;
+    /* blackout palette */
+    --bg: #000;
+    --bone: #ddd1b6;
+    --soft: #c7bda4;
+    --hint: #a29a89;
+    --bar: #050505;
+    --mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0c; color: #e8e4da;
+    font-family: -apple-system, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+  .app { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+
+  /* ---------- sidebar ---------- */
+  .side {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    padding: 20px 18px 24px; border-right: 1px solid #1c1c1e;
+    background: #0d0d0f; display: flex; flex-direction: column; gap: 18px;
+  }
+  .side h1 { font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--bone); }
+  .side h1 span { color: #67625a; font-weight: 400; }
+  .grp { display: flex; flex-direction: column; gap: 10px; }
+  .grp > .gt {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase; color: #67625a;
+  }
+  .ctl { display: flex; flex-direction: column; gap: 4px; }
+  .ctl label { display: flex; justify-content: space-between; font-size: 11.5px; color: #b6b0a4; }
+  .ctl label output { font-family: var(--mono); font-size: 10px; color: var(--bone); }
+  input[type=range] { width: 100%; accent-color: var(--acc); }
+  .row { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: #b6b0a4; }
+  .row input[type=checkbox] { accent-color: var(--acc); width: 14px; height: 14px; }
+
+  .swatches { display: flex; gap: 7px; flex-wrap: wrap; }
+  .sw {
+    width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; outline: 1px solid #2a2a2c;
+  }
+  .sw.on { border-color: #0d0d0f; outline: 2px solid var(--bone); }
+
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .presets button {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: 6px 9px; border: 1px solid #2c2c2e; border-radius: 6px; color: #b6b0a4;
+    transition: .15s;
+  }
+  .presets button:hover { border-color: var(--bone); color: var(--bone); }
+
+  .promptcard {
+    margin-top: auto; display: flex; flex-direction: column; gap: 8px;
+    border-top: 1px solid #1c1c1e; padding-top: 14px;
+  }
+  #prompt {
+    font-family: var(--mono); font-size: 10.5px; line-height: 1.65; color: #cfc9bb;
+    background: #121214; border: 1px solid #222; border-radius: 8px;
+    padding: 10px; max-height: 220px; overflow-y: auto; white-space: pre-wrap;
+  }
+  #copy {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; padding: 9px; border-radius: 8px;
+    background: var(--bone); color: #111; transition: .15s;
+  }
+  #copy:hover { filter: brightness(1.08); }
+
+  /* ---------- header rows ---------- */
+  .rows { padding: 22px 26px 60px; display: flex; flex-direction: column; gap: 22px; }
+  .hrow { cursor: pointer; border-radius: 10px; outline: 1px solid #1a1a1c; overflow: hidden; transition: outline-color .15s; }
+  .hrow:hover { outline-color: #333; }
+  .hrow.sel { outline: 2px solid var(--acc); }
+  .hmeta {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 9px 14px; background: #101012;
+  }
+  .hmeta .num { font-family: var(--mono); font-size: 9px; color: #57534b; }
+  .hmeta .nm { font-size: 12px; font-weight: 600; color: var(--bone); }
+  .hmeta .ds { font-size: 11px; color: #79746a; }
+  .hmeta .src { margin-left: auto; font-family: var(--mono); font-size: 8.5px; letter-spacing: .06em; color: #4d4a44; }
+  .hrow.sel .hmeta .nm::after {
+    content: "selected"; margin-left: 8px;
+    font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--acc);
+  }
+
+  /* the bar itself — mirrors .topbar in h-blackout.html */
+  .topbar {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; row-gap: 12px;
+    gap: clamp(10px, 1.8vw, 24px); padding: 14px clamp(90px, 9vw, 150px); min-height: 66px;
+    background: var(--bar); border-bottom: 1px solid #1c1c1c;
+  }
+  body.nochrome .topbar { padding: 14px 28px; }
+  .brand {
+    position: absolute; left: 24px; width: 36px; height: 36px; border-radius: 50%;
+    background: var(--bone); color: #16120e; display: grid; place-items: center;
+    font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: .05em;
+  }
+  .dm {
+    position: absolute; right: 24px;
+    font-family: var(--mono); font-size: var(--tab-fs); font-weight: 700;
+    letter-spacing: var(--tab-ls); text-transform: uppercase;
+    color: #fff; border: 2px solid #fff; border-radius: var(--tab-r);
+    padding: var(--tab-py) var(--tab-px); opacity: .45;
+  }
+  body.nochrome .brand, body.nochrome .dm { display: none; }
+
+  .tab {
+    font-family: var(--mono); font-size: var(--tab-fs); font-weight: 700;
+    letter-spacing: var(--tab-ls); color: #fff; white-space: nowrap;
+  }
+  body.upper .tab { text-transform: uppercase; }
+
+  /* 01 baseline — current site: border chip, invert on hover, JS scramble */
+  .v-baseline .tab {
+    border: var(--tab-bw) solid #fff; border-radius: var(--tab-r);
+    padding: var(--tab-py) var(--tab-px);
+    transition: background .15s ease, color .15s ease;
+  }
+  .v-baseline .tab:hover { background: #fff; color: #000; }
+
+  /* 02 decode — CSS content-scramble (web-assets/decode-button.html) */
+  .v-decode .tab {
+    background: #161616; border-radius: var(--tab-r);
+    padding: var(--tab-py) var(--tab-px); transition: .3s; overflow: hidden;
+  }
+  .v-decode .tab span { position: relative; background: inherit; transition: .3s; }
+  .v-decode .tab span::before { position: absolute; content: ""; background: inherit; }
+  .v-decode .tab:hover { background: #222; }
+  .v-decode .tab:hover span { color: var(--acc); }
+  .v-decode .tab:hover span::before { animation: chitchat linear both 1.1s; }
+  @keyframes chitchat {
+    0% { content: "#"; } 5% { content: "."; } 10% { content: "^{"; }
+    15% { content: "-!"; } 20% { content: "#$_"; } 25% { content: "№:0"; }
+    30% { content: "#{+."; } 35% { content: "@}-?"; } 40% { content: "?{4@%"; }
+    45% { content: "=.,^!"; } 50% { content: "?2@%"; } 55% { content: "\\;1}]"; }
+    60% { content: "?{%:%"; right: 0; } 65% { content: "|{f[4"; right: 0; }
+    70% { content: "{4%0%"; right: 0; } 75% { content: "'1_0<"; right: 0; }
+    80% { content: "{0%"; right: 0; } 85% { content: "]>'"; right: 0; }
+    90% { content: "4"; right: 0; } 95% { content: "2"; right: 0; }
+    100% { content: ""; right: 0; }
+  }
+
+  /* 03 glitch — clip-path signal corruption (web-assets/glitch-button.html) */
+  .v-glitch .tab, .v-glitch .tab::after {
+    padding: var(--tab-py) var(--tab-px);
+    background: linear-gradient(45deg, transparent 6%, var(--acc) 6%);
+    box-shadow: 3px 0 0 #00e6f6; border-radius: 0; line-height: 1;
+  }
+  .v-glitch .tab { position: relative; }
+  .v-glitch .tab::after {
+    --s1: inset(80% -6px 0 0); --s2: inset(50% -6px 30% 0); --s3: inset(10% -6px 85% 0);
+    --s4: inset(40% -6px 43% 0); --s5: inset(80% -6px 5% 0);
+    content: var(--label, ""); position: absolute; inset: 0; display: block;
+    font-family: var(--mono); font-size: var(--tab-fs); font-weight: 700; letter-spacing: var(--tab-ls);
+    background: linear-gradient(45deg, transparent 3%, #00e6f6 3%, #00e6f6 5%, var(--acc) 5%);
+    text-shadow: -2px -2px 0 #f8f005, 2px 2px 0 #00e6f6;
+    clip-path: inset(50% 50% 50% 50%);
+  }
+  .v-glitch .tab:hover::after { animation: glitch 1s steps(2, end); }
+  @keyframes glitch {
+    0% { clip-path: var(--s1); transform: translate(-12px, -6px); }
+    10% { clip-path: var(--s3); transform: translate(6px, 6px); }
+    20% { clip-path: var(--s1); transform: translate(-6px, 6px); }
+    30% { clip-path: var(--s3); transform: translate(0, 3px); }
+    40% { clip-path: var(--s2); transform: translate(-3px, 0); }
+    50% { clip-path: var(--s3); transform: translate(3px, 0); }
+    60% { clip-path: var(--s4); transform: translate(3px, 6px); }
+    70% { clip-path: var(--s2); transform: translate(-6px, 6px); }
+    80% { clip-path: var(--s5); transform: translate(12px, -6px); }
+    90% { clip-path: var(--s1); transform: translate(-6px, 0); }
+    100% { clip-path: var(--s1); transform: translate(0); }
+  }
+
+  /* 04 valorant — angled slash sweep (web-assets/valorant-button.html) */
+  .v-valorant .bb { position: relative; }
+  .v-valorant .bb::before, .v-valorant .bb::after {
+    content: ""; position: absolute; width: calc(100% + .5em); height: 50%; left: -.3em;
+    border: 1px solid #3a3a3c; z-index: 0;
+  }
+  .v-valorant .bb::before { top: -.28em; border-bottom: 0; }
+  .v-valorant .bb::after { bottom: -.28em; border-top: 0; }
+  .v-valorant .tab {
+    position: relative; z-index: 1; display: inline-block;
+    padding: var(--tab-py) calc(var(--tab-px) + 6px);
+    border: 1px solid #2c2c2e; background-color: #0d0d0f;
+    /* slash background-image injected by JS so it follows the accent */
+    background-size: 200%; background-position: 200%; background-repeat: no-repeat;
+    transition: .3s ease-in-out; transition-property: background-position, border-color;
+  }
+  .v-valorant .tab:hover { border-color: var(--acc); background-position: 40%; }
+  .v-valorant .tab::before, .v-valorant .tab::after {
+    content: ""; position: absolute; width: 4px; height: 4px;
+    transition: background-color .15s ease-in-out;
+  }
+  .v-valorant .tab::before { top: -1px; left: -1px; background: #0d0d0f; }
+  .v-valorant .tab::after { bottom: -1px; right: -1px; background: var(--acc); }
+  .v-valorant .tab:hover::before, .v-valorant .tab:hover::after { background: #fff; }
+
+  /* 05 cascade — per-letter roll-up (web-assets/cascade-text.html) */
+  .v-cascade { gap: clamp(18px, 2.6vw, 36px); }
+  .v-cascade .tab { display: inline-flex; padding: var(--tab-py) 0; }
+  .v-cascade .ch { display: inline-block; overflow: hidden; height: 1.25em; line-height: 1.25em; }
+  .v-cascade .ch > span {
+    display: block; transition: transform .45s cubic-bezier(.76, 0, .24, 1);
+    transition-delay: calc(var(--i) * 32ms);
+  }
+  .v-cascade .tab:hover .ch > span { transform: translateY(-1.25em); }
+  .v-cascade .ch .alt { display: block; color: var(--acc); }
+
+  /* 06 brackets — targeting corners snap in (new) */
+  .v-brackets .tab {
+    position: relative; padding: var(--tab-py) var(--tab-px);
+    color: var(--soft); transition: color .18s ease;
+  }
+  .v-brackets .tab::before, .v-brackets .tab::after {
+    content: ""; position: absolute; width: 8px; height: 8px;
+    border: 2px solid var(--acc); opacity: 0; transition: .18s ease;
+  }
+  .v-brackets .tab::before { top: 0; left: 0; border-right: 0; border-bottom: 0; transform: translate(5px, 5px); }
+  .v-brackets .tab::after { bottom: 0; right: 0; border-left: 0; border-top: 0; transform: translate(-5px, -5px); }
+  .v-brackets .tab:hover { color: #fff; }
+  .v-brackets .tab:hover::before, .v-brackets .tab:hover::after { opacity: 1; transform: translate(0, 0); }
+
+  /* 07 underline — accent rule draws in (new) */
+  .v-underline .tab {
+    padding: var(--tab-py) 2px; color: var(--soft);
+    background: linear-gradient(var(--acc), var(--acc)) no-repeat left bottom / 0% 2px;
+    transition: background-size .25s ease, color .2s ease;
+  }
+  .v-underline .tab:hover { color: #fff; background-size: 100% 2px; }
+
+  /* 08 wipe — accent fill rises, ink flips (new) */
+  .v-wipe .tab {
+    border: 1px solid #4a4a4c; border-radius: var(--tab-r);
+    padding: var(--tab-py) var(--tab-px);
+    background: linear-gradient(var(--acc), var(--acc)) no-repeat left bottom / 100% 0%;
+    transition: background-size .22s ease, color .18s ease, border-color .22s ease;
+  }
+  .v-wipe .tab:hover { background-size: 100% 100%; color: #000; border-color: var(--acc); }
+
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    .side { position: static; height: auto; }
+  }
+</style>
+</head>
+<body class="upper">
+<div class="app">
+
+  <aside class="side">
+    <h1>AVRG header playground <span>/ blackout top bar</span></h1>
+
+    <div class="grp">
+      <div class="gt">Presets</div>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div class="grp">
+      <div class="gt">Accent</div>
+      <div class="swatches" id="swatches"></div>
+    </div>
+
+    <div class="grp">
+      <div class="gt">Type &amp; shape</div>
+      <div class="ctl"><label>Label size <output id="o-fs"></output></label>
+        <input type="range" id="c-fs" min="9" max="13" step="0.5"></div>
+      <div class="ctl"><label>Letter spacing <output id="o-ls"></output></label>
+        <input type="range" id="c-ls" min="0.04" max="0.3" step="0.02"></div>
+      <div class="ctl"><label>Pad X <output id="o-px"></output></label>
+        <input type="range" id="c-px" min="6" max="26" step="1"></div>
+      <div class="ctl"><label>Pad Y <output id="o-py"></output></label>
+        <input type="range" id="c-py" min="5" max="16" step="1"></div>
+      <div class="ctl"><label>Corner radius <output id="o-r"></output></label>
+        <input type="range" id="c-r" min="0" max="14" step="1"></div>
+      <div class="ctl"><label>Border width <output id="o-bw"></output></label>
+        <input type="range" id="c-bw" min="0" max="3" step="1"></div>
+    </div>
+
+    <div class="grp">
+      <div class="gt">Behavior</div>
+      <div class="row"><span>Uppercase labels</span><input type="checkbox" id="c-upper" checked></div>
+      <div class="row"><span>Keep JS decode scramble</span><input type="checkbox" id="c-scramble" checked></div>
+      <div class="row"><span>Show brand + contact</span><input type="checkbox" id="c-chrome" checked></div>
+    </div>
+
+    <div class="promptcard">
+      <div class="gt">Prompt</div>
+      <div id="prompt"></div>
+      <button id="copy">Copy prompt</button>
+    </div>
+  </aside>
+
+  <main class="rows" id="rows"></main>
+</div>
+
+<script>
+  const TABS = ["Shop All", "Original", "Shaped", "Routed", "Resale", "My Lisst"];
+
+  const VARIANTS = [
+    { id: "baseline",  nm: "Current baseline", ds: "2px chip, invert on hover + JS scramble", src: "h-blackout.html",
+      how: "the existing style: 2px white-bordered chips that invert to white/black on hover, with the JS decode scramble" },
+    { id: "decode",    nm: "Decode", ds: "label burns through junk glyphs, flips to accent — pure CSS", src: "web-assets/decode-button.html",
+      how: "the CSS decode style from ~/Projects/web-assets/snippets/decode-button.html — hover animates the span::before content through junk glyphs that shrink away while the label flips to the accent color; tabs become solid dark chips (the overlay trick needs an opaque background)" },
+    { id: "glitch",    nm: "Glitch", ds: "clip-path slices flicker a color-clashed clone", src: "web-assets/glitch-button.html",
+      how: "the glitch style from ~/Projects/web-assets/snippets/glitch-button.html — angled accent slab with a cyan offset shadow; hover runs the steps() clip-path slice animation on a ::after clone (set --label on each tab). Note the site currently reserves this effect for the DM buttons" },
+    { id: "valorant",  nm: "Valorant slash", ds: "angled accent slash sweeps in, bracket borders", src: "web-assets/valorant-button.html",
+      how: "the Valorant style from ~/Projects/web-assets/snippets/valorant-button.html — dark plate with bracket outer borders and corner dots; hover slides an angled accent parallelogram (SVG data-URI background-position trick) in from the right. Recolor the SVG polygon to the accent" },
+    { id: "cascade",   nm: "Cascade", ds: "letters roll up in a stagger wave, no borders", src: "web-assets/cascade-text.html",
+      how: "the cascade style from ~/Projects/web-assets/snippets/cascade-text.html — borderless text tabs where each letter rolls up in a staggered wave on hover, revealing an accent-colored copy (JS splits labels into stacked char spans; incompatible with the text-mutating scramble)" },
+    { id: "brackets",  nm: "Corner brackets", ds: "targeting corners snap in on hover (new)", src: "new exploration",
+      how: "a new 'targeting brackets' style — borderless tabs in soft bone; on hover two accent corner brackets (top-left, bottom-right) snap inward from outside while the label brightens to white. Fits the pixel-terminal inspiration notes" },
+    { id: "underline", nm: "Underline sweep", ds: "accent rule draws in left-to-right (new)", src: "new exploration",
+      how: "a new quiet-editorial style — borderless tabs; on hover a 2px accent underline draws in from the left (background-size transition) and the label brightens to white" },
+    { id: "wipe",      nm: "Fill wipe", ds: "accent floods up from the bottom, ink flips (new)", src: "new exploration",
+      how: "a new 'fill wipe' style — thin-bordered chips; on hover the accent color floods up from the bottom edge (background-size 100%→full) and the label flips to black" },
+  ];
+
+  const ACCENTS = [
+    ["#d8511f", "orange (Originals)"], ["#1f6fb8", "blue (Shaped)"],
+    ["#c98a12", "gold (Routed)"], ["#6d4fa3", "purple (Resale)"],
+    ["#FAC921", "amber (decode snippet)"], ["#ff4655", "valorant red"],
+    ["#ddd1b6", "bone"],
+  ];
+
+  const DEFAULTS = { acc: "#d8511f", fs: 10, ls: 0.18, px: 14, py: 10, r: 8, bw: 2,
+                     upper: true, scramble: true, chrome: true, variant: "baseline" };
+  const state = { ...DEFAULTS };
+
+  const PRESETS = {
+    "Current site":   { ...DEFAULTS },
+    "Terminal":       { ...DEFAULTS, variant: "decode", acc: "#FAC921", r: 0, bw: 1 },
+    "Esports":        { ...DEFAULTS, variant: "valorant", acc: "#d8511f", r: 0, ls: 0.14 },
+    "Quiet editorial":{ ...DEFAULTS, variant: "underline", acc: "#ddd1b6", bw: 0, ls: 0.24, scramble: false },
+    "Signal loss":    { ...DEFAULTS, variant: "glitch", acc: "#ff013c", r: 0 },
+  };
+
+  /* ---- build header rows ---- */
+  const rowsEl = document.getElementById("rows");
+  rowsEl.innerHTML = VARIANTS.map((v, i) => {
+    const tabs = TABS.map(t => {
+      if (v.id === "valorant") return '<span class="bb"><a class="tab" href="#">' + t + "</a></span>";
+      if (v.id === "glitch")   return '<a class="tab" href="#" data-glitch>' + t + "</a>";
+      if (v.id === "decode")   return '<a class="tab" href="#"><span>' + t + "</span></a>";
+      if (v.id === "cascade")  return '<a class="tab" href="#" data-cascade>' + t + "</a>";
+      return '<a class="tab" href="#">' + t + "</a>";
+    }).join("");
+    return '<section class="hrow" data-v="' + v.id + '">' +
+      '<div class="hmeta"><span class="num">0' + (i + 1) + '</span><span class="nm">' + v.nm +
+      '</span><span class="ds">' + v.ds + '</span><span class="src">' + v.src + "</span></div>" +
+      '<header class="topbar v-' + v.id + '"><span class="brand">AVRG</span>' + tabs +
+      '<span class="dm">Contact me</span></header></section>';
+  }).join("");
+
+  /* cascade: split labels into stacked char pairs */
+  document.querySelectorAll("[data-cascade]").forEach(el => {
+    const text = el.textContent; el.textContent = "";
+    [...text].forEach((c, i) => {
+      const ch = document.createElement("span");
+      ch.className = "ch"; ch.style.setProperty("--i", i);
+      const g = c === " " ? " " : c;
+      ch.innerHTML = "<span>" + g + '<span class="alt">' + g + "</span></span>";
+      el.appendChild(ch);
+    });
+  });
+
+  /* glitch: the ::after clone reads --label */
+  function setGlitchLabels() {
+    document.querySelectorAll("[data-glitch]").forEach(el =>
+      el.style.setProperty("--label", JSON.stringify(state.upper ? el.textContent.toUpperCase() : el.textContent)));
+  }
+
+  /* valorant: rebuild the slash SVG whenever the accent changes */
+  const slashStyle = document.head.appendChild(document.createElement("style"));
+  function setSlash() {
+    const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 531.28 200'>" +
+      "<polygon fill='" + state.acc + "' points='415.81 200 0 200 115.47 0 531.28 0 415.81 200'/></svg>";
+    slashStyle.textContent = '.v-valorant .tab{background-image:url("data:image/svg+xml,' +
+      encodeURIComponent(svg) + '")}';
+  }
+
+  /* JS decode scramble — same feel as the site's .tab hover (skips glitch/cascade,
+     whose labels can't survive textContent mutation) */
+  const GLYPHS = "#$%&@?!/\\|<>{}[]=+-_^~;:.·01".split("");
+  document.addEventListener("pointerover", e => {
+    if (!state.scramble) return;
+    const row = e.target.closest && e.target.closest(".hrow");
+    if (!row || row.dataset.v === "glitch" || row.dataset.v === "cascade" || row.dataset.v === "decode") return;
+    const btn = e.target.closest(".tab");
+    if (!btn || btn.dataset.decoding) return;
+    const chars = [...btn.textContent];
+    if (!chars.length || chars.length > 40) return;
+    btn.dataset.decoding = "1";
+    const resolveAt = chars.map((c, i) => i * 0.4 + 1 + Math.random() * 2.2);
+    let f = 0;
+    const t = setInterval(() => {
+      f++;
+      let out = "", done = true;
+      for (let i = 0; i < chars.length; i++) {
+        if (!/\S/.test(chars[i])) { out += chars[i]; continue; }
+        if (f >= resolveAt[i]) out += chars[i];
+        else { out += GLYPHS[(Math.random() * GLYPHS.length) | 0]; done = false; }
+      }
+      btn.textContent = out;
+      if (done) { clearInterval(t); delete btn.dataset.decoding; }
+    }, 30);
+  });
+
+  /* ---- controls ---- */
+  const $ = id => document.getElementById(id);
+  const swEl = $("swatches");
+  swEl.innerHTML = ACCENTS.map(([hex, name]) =>
+    '<div class="sw" data-hex="' + hex + '" title="' + name + '" style="background:' + hex + '"></div>').join("");
+  swEl.addEventListener("click", e => {
+    const sw = e.target.closest(".sw");
+    if (sw) { state.acc = sw.dataset.hex; updateAll(); }
+  });
+
+  const presetEl = $("presets");
+  presetEl.innerHTML = Object.keys(PRESETS).map(k => "<button data-p='" + k + "'>" + k + "</button>").join("");
+  presetEl.addEventListener("click", e => {
+    const b = e.target.closest("[data-p]");
+    if (b) { Object.assign(state, PRESETS[b.dataset.p]); syncControls(); updateAll(); }
+  });
+
+  rowsEl.addEventListener("click", e => {
+    const row = e.target.closest(".hrow");
+    if (row) { state.variant = row.dataset.v; updateAll(); }
+    if (e.target.closest("a")) e.preventDefault();
+  });
+
+  const SLIDERS = [["fs", "px"], ["ls", "em"], ["px", "px"], ["py", "px"], ["r", "px"], ["bw", "px"]];
+  SLIDERS.forEach(([k]) => $("c-" + k).addEventListener("input", e => { state[k] = +e.target.value; updateAll(); }));
+  [["upper", "c-upper"], ["scramble", "c-scramble"], ["chrome", "c-chrome"]].forEach(([k, id]) =>
+    $(id).addEventListener("change", e => { state[k] = e.target.checked; updateAll(); }));
+
+  function syncControls() {
+    SLIDERS.forEach(([k]) => $("c-" + k).value = state[k]);
+    $("c-upper").checked = state.upper;
+    $("c-scramble").checked = state.scramble;
+    $("c-chrome").checked = state.chrome;
+  }
+
+  /* ---- render ---- */
+  function renderPreview() {
+    const r = document.documentElement.style;
+    r.setProperty("--acc", state.acc);
+    r.setProperty("--tab-fs", state.fs + "px");
+    r.setProperty("--tab-ls", state.ls + "em");
+    r.setProperty("--tab-px", state.px + "px");
+    r.setProperty("--tab-py", state.py + "px");
+    r.setProperty("--tab-r", state.r + "px");
+    r.setProperty("--tab-bw", state.bw + "px");
+    document.body.classList.toggle("upper", state.upper);
+    document.body.classList.toggle("nochrome", !state.chrome);
+    SLIDERS.forEach(([k, unit]) => $("o-" + k).textContent = state[k] + unit);
+    document.querySelectorAll(".sw").forEach(s => s.classList.toggle("on", s.dataset.hex === state.acc));
+    document.querySelectorAll(".hrow").forEach(row => row.classList.toggle("sel", row.dataset.v === state.variant));
+    setGlitchLabels(); setSlash();
+  }
+
+  function updatePrompt() {
+    const v = VARIANTS.find(x => x.id === state.variant);
+    const parts = [];
+    if (state.acc !== DEFAULTS.acc) {
+      const nm = (ACCENTS.find(a => a[0] === state.acc) || [])[1];
+      parts.push("use " + state.acc + (nm ? " (" + nm + ")" : "") + " as the accent");
+    } else if (state.variant !== "baseline") {
+      parts.push("use the Originals orange #d8511f as the accent");
+    }
+    if (state.fs !== DEFAULTS.fs) parts.push(state.fs + "px labels");
+    if (state.ls !== DEFAULTS.ls) parts.push(state.ls + "em letter-spacing" + (state.ls >= 0.22 ? " (airier than current)" : ""));
+    if (state.px !== DEFAULTS.px || state.py !== DEFAULTS.py) parts.push("padding " + state.py + "px " + state.px + "px");
+    if (state.r !== DEFAULTS.r) parts.push(state.r === 0 ? "square corners (radius 0)" : state.r + "px corner radius");
+    if (state.bw !== DEFAULTS.bw && ["baseline", "wipe"].includes(state.variant))
+      parts.push(state.bw === 0 ? "no border" : state.bw + "px borders");
+    if (!state.upper) parts.push("keep labels in their natural case (drop the uppercase transform)");
+
+    const scrambleNote = ["glitch", "cascade", "decode"].includes(state.variant)
+      ? "Remove the existing JS hover decode scramble from the tabs — this style replaces it (it mutates textContent and would fight the effect)."
+      : (state.scramble
+        ? "Keep the existing JS hover decode scramble on the tabs; it layers on top of this style."
+        : "Remove the existing JS hover decode scramble from the tabs.");
+
+    $("prompt").textContent =
+      "In the AVRG blackout draft (redesign/h-blackout.html), restyle the top-bar tabs " +
+      "(.topbar .tab — note the tabs are injected by JS into #topnav, so this is a CSS/class change, not markup) to " + v.how + ". " +
+      (parts.length ? "Details: " + parts.join(", ") + ". " : "") +
+      scrambleNote +
+      (state.chrome ? "" : " Also hide the brand logo and Contact button from the bar.") +
+      " Keep the bar itself as-is: sticky, blurred black, 1px #1c1c1c bottom border, Space Mono labels.";
+  }
+
+  function updateAll() { renderPreview(); updatePrompt(); }
+
+  $("copy").addEventListener("click", () => {
+    navigator.clipboard.writeText($("prompt").textContent).then(() => {
+      const b = $("copy"); b.textContent = "Copied!";
+      setTimeout(() => b.textContent = "Copy prompt", 1200);
+    });
+  });
+
+  syncControls(); updateAll();
+</script>
+</body>
+</html>
