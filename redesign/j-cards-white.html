@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AVRG — J: cards in context (white)</title>
+<!-- Exploration: the site inverted — white ground, black text — carrying the
+     card-lab treatments that were built for (or adapt to) a light page.
+     Twin page: j-cards-black.html. Serve from repo root (:8123). -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  @font-face {
+    font-family: "Satoshi";
+    src: url("../site/fonts/Satoshi-Black.otf") format("opentype");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --bg: #fff;
+    --ink: #000;
+    --soft: #444;
+    --hint: #767676;
+    --disp: "Bricolage Grotesque", -apple-system, sans-serif;
+    --mono: "Space Mono", ui-monospace, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--disp); -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  ::selection { background: #000; color: #fff; }
+  img { display: block; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  .label {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase;
+  }
+
+  /* ---- topbar, inverted ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    gap: clamp(14px, 2.6vw, 30px);
+    padding: 14px clamp(18px, 3vw, 40px);
+    background: rgba(255, 255, 255, .88);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border-bottom: 1px solid #e2e2e2;
+  }
+  .topbar .tab {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    color: #000; border: 2px solid #000; border-radius: 8px;
+    padding: 10px 14px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .topbar .tab:hover { background: #000; color: #fff; }
+  .bar-brand { position: absolute; left: clamp(18px, 3vw, 40px); display: flex; align-items: center; }
+  .bar-brand img { width: 38px; height: 38px; border-radius: 50%; }
+  .dm-mini {
+    position: absolute; right: clamp(18px, 3vw, 40px);
+    background: transparent; color: #000;
+    border: 2px solid #000; border-radius: 8px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    padding: 10px 14px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .dm-mini.glitch-run {
+    animation: dm-glitch .26s steps(1, end) 1;
+    background: #000; color: #fff;
+  }
+  @keyframes dm-glitch {
+    0%   { transform: translate(2px, -1px) skewX(-6deg); clip-path: inset(0 0 44% 0); }
+    33%  { transform: translate(-2px, 1px) skewX(4deg);  clip-path: inset(52% 0 0 0); }
+    66%  { transform: translate(1px, 0);                 clip-path: inset(14% 0 26% 0); }
+    100% { transform: none; clip-path: none; }
+  }
+
+  /* ---- sections ---- */
+  .colpage-inner { text-align: center; padding: clamp(36px, 6vh, 64px) 0 0; max-width: 1240px; margin: 0 auto; }
+  .colpage-inner h2 {
+    display: inline-block; color: #000;
+    font-family: "Satoshi", var(--disp);
+    font-weight: 900; text-transform: uppercase; letter-spacing: -0.025em; line-height: 1.04;
+    font-size: clamp(34px, 6vw, 68px); padding: 0 16px;
+  }
+  .colpage-inner .desc {
+    max-width: 52ch; margin: 18px auto 0; padding: 0 20px;
+    font-size: 15px; font-weight: 500; line-height: 1.8; color: var(--soft);
+  }
+  .pagehead { text-align: center; padding: clamp(28px, 5vh, 48px) 20px 0; }
+  .pagehead .note { margin-top: 10px; font-size: 12.5px; font-style: italic; color: var(--hint); }
+
+  .cgrid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(262px, 1fr));
+    gap: 54px 34px; justify-items: center;
+    padding: clamp(30px, 5vh, 52px) clamp(20px, 5vw, 64px) 30px;
+  }
+
+  /* ---- shared atoms ---- */
+  .st {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+  }
+  .st .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .st.avail .dot { background: #3e7d3a; }
+  .st.avail { color: #3e7d3a; }
+  .st.pend .dot { background: #c98a12; animation: pulse 1.6s ease-in-out infinite; }
+  .st.pend { color: #c98a12; }
+  .st.gone .dot { background: #8b8175; }
+  .st.gone { color: #8b8175; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .spark { color: #d8511f; font-size: 12px; line-height: 1; cursor: help; }
+  .sold { opacity: .55; }
+  .sold:hover .stage img { transform: none !important; }
+  .sold .stage img { filter: grayscale(.7) drop-shadow(7px 9px 0 rgba(0, 0, 0, .25)) !important; }
+
+  /* white chips (for the dark slab cards) */
+  .wchip {
+    display: inline-block;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    background: #fff; color: #000; border: none; border-radius: 0;
+    padding: 5px 8px;
+  }
+  button.wchip { cursor: pointer; letter-spacing: .16em; padding: 6px 10px; transition: background .15s ease, color .15s ease; }
+  button.wchip:hover { background: #000; color: #fff; box-shadow: 0 0 0 1.5px #fff; }
+  /* black chips (for the paper card) */
+  .bchip {
+    display: inline-block;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    background: #000; color: #fff; border: none; border-radius: 0;
+    padding: 5px 8px;
+  }
+  button.bchip { cursor: pointer; letter-spacing: .16em; padding: 6px 10px; transition: background .15s ease, color .15s ease; }
+  button.bchip:hover { background: #fff; color: #000; box-shadow: 0 0 0 1.5px #000; }
+
+  /* ---- slab: the d5 card on a white page (D4a + white-chip refinement) ---- */
+  .d5 { width: 262px; cursor: pointer; }
+  .d5 .panel {
+    border-radius: 6px; background: #0b0b0b; overflow: hidden;
+    box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .28);
+    transition: box-shadow .22s ease;
+  }
+  .d5:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .36); }
+  .d5 .stage {
+    position: relative; height: 250px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d5 .stage img {
+    max-height: 214px; max-width: 86%; width: auto; height: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .6));
+    transition: transform .22s ease, filter .22s ease;
+  }
+  .d5:hover .stage img {
+    transform: scale(1.07);
+    filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .6));
+  }
+  .d5 .info { padding: 11px 13px 13px; color: #fff; }
+  .d5 .r1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .d5 .nm { font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d5 .dims {
+    margin-top: 5px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #9a9a9a;
+  }
+  .d5 .r2 {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 9px; padding-top: 9px; border-top: 1.5px solid rgba(255, 255, 255, .18);
+  }
+  .d5 .st.avail, .d5 .st.avail .dot { color: #58a852; }
+  .d5 .st.avail .dot { background: #58a852; }
+  .d5.sq .info { border-top: 2px solid #2a2a2a; }
+  .d5 .corner {
+    position: absolute; top: 12px; left: 12px; z-index: 2;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .d5.spread .info { text-align: center; padding-top: 0; }
+  .d5.spread .nm { display: block; }
+  .d5.spread .dims { color: #fff; margin-top: 6px; }
+  .d5.spread .r2 { border-top: 0; padding-top: 0; margin-top: 12px; }
+
+  /* ---- paper: the spread card inverted — white card, black border, ink text ---- */
+  .paper { width: 262px; cursor: pointer; }
+  .paper .panel {
+    border-radius: 6px; background: #fff; overflow: hidden;
+    border: 2px solid #000;
+    box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .85);
+    transition: box-shadow .22s ease;
+  }
+  .paper:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .85); }
+  .paper .stage {
+    position: relative; height: 250px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .paper .stage img {
+    max-height: 214px; max-width: 86%; width: auto; height: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .3));
+    transition: transform .22s ease, filter .22s ease;
+  }
+  .paper:hover .stage img {
+    transform: scale(1.07);
+    filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .3));
+  }
+  .paper .corner {
+    position: absolute; top: 12px; left: 12px; z-index: 2;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .paper .info { text-align: center; padding: 0 13px 13px; color: #000; }
+  .paper .nm { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .paper .dims {
+    margin-top: 6px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #000;
+  }
+  .paper .r2 { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+
+  /* ---- frame: the d7a ⸺·⸺ card inverted — black frame lines on a white card ---- */
+  .d7f { width: 262px; cursor: pointer; }
+  .d7f .panel {
+    position: relative; border-radius: 6px; background: #fff; overflow: hidden;
+    border: 1.5px solid #000;
+    box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .85);
+    transition: box-shadow .22s ease;
+  }
+  .d7f:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .85); }
+  .d7f .inframe { position: absolute; inset: 10px; z-index: 1; pointer-events: none; }
+  .d7f .inframe::before, .d7f .inframe::after {
+    content: ""; position: absolute; left: 0; width: calc(100% - 4px);
+    height: 41%; border: 2px solid #000;
+    transition: height .28s ease;
+  }
+  .d7f .inframe::before { top: 0; border-bottom: 0; }
+  .d7f .inframe::after { bottom: 0; border-top: 0; }
+  .d7f:hover .inframe::before, .d7f:hover .inframe::after { height: calc(50% - 6px); }
+  .d7f .dgl, .d7f .dgr {
+    position: absolute; top: 50%; width: 5px; height: 5px; border-radius: 50%;
+    background: #000; transform: translateY(-50%);
+  }
+  .d7f .dgl { left: -1.5px; }
+  .d7f .dgr { right: -1.5px; }
+  .d7f .inframe .ctl, .d7f .inframe .cbr { position: absolute; display: block; }
+  .d7f .inframe .ctl { width: 4px; height: 4px; top: -1px; left: -1px; background: #000; }
+  .d7f .inframe .cbr { width: 6px; height: 6px; bottom: -1px; right: -1px; background: #FF4655; }
+  .d7f .stage {
+    position: relative; height: 262px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d7f .stage img {
+    max-height: 208px; max-width: 78%; width: auto; height: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .3));
+    transition: transform .22s ease, filter .22s ease;
+  }
+  .d7f:hover .stage img {
+    transform: scale(1.07);
+    filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .3));
+  }
+  .d7f .corner {
+    position: absolute; top: 12px; left: 12px; z-index: 2;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .d7f .info { position: relative; z-index: 0; text-align: center; padding: 8px 28px 44px; color: #000; }
+  .d7f .nm { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  /* builder's mark rides the top-right corner */
+  .d7f .tspark { position: absolute; top: 13px; right: 14px; z-index: 2; }
+  /* flush chips: black text on the white card; the black box wipes in from the
+     frame edge on card hover and the label flips white as it's covered */
+  .d7f .fchip {
+    position: relative; overflow: hidden;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: #000; background: none; border: none; border-radius: 0;
+    padding: 6px 9px;
+  }
+  .d7f .fchip::before {
+    content: ""; position: absolute; inset: 0; background: #000;
+    transform: scaleX(0); transform-origin: left center;
+    transition: transform .22s ease;
+  }
+  .d7f .fchip .ft { position: relative; z-index: 1; transition: color .12s ease .09s; }
+  .d7f:hover .fchip::before { transform: scaleX(1); }
+  .d7f:hover .fchip .ft { color: #fff; }
+  button.d7f-cta { cursor: pointer; }
+  .d7f .fc-list {
+    position: absolute; bottom: 12px; right: 12px; z-index: 2;
+    letter-spacing: .16em; padding: 7px 10px;
+  }
+  .d7f .fc-list::before { transform-origin: right center; }
+  /* status: dot rides the bottom-left corner, the word decodes in on hover */
+  .d7f .fst {
+    position: absolute; bottom: 14px; left: 14px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+  }
+  .d7f .fst .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .d7f .fst.avail { color: #3e7d3a; }
+  .d7f .fst.avail .dot { background: #3e7d3a; }
+  .d7f .fst.pend { color: #c98a12; }
+  .d7f .fst.pend .dot { background: #c98a12; animation: pulse 1.6s ease-in-out infinite; }
+  .d7f .fst.gone { color: #8b8175; }
+  .d7f .fst.gone .dot { background: #8b8175; }
+  .d7f .sttxt { min-height: 1em; }
+  /* v2 exit: same wipe in from the frame edge; on leave the box collapses
+     vertically onto its own centerline instead of sliding back out.
+     Both directions are keyframes — a transition can't pick up from a value
+     an animation was holding, so the exit is its own animation, armed by the
+     .left class (set on pointerout) so it never fires on page load. */
+  .d7f.vexit .fchip::before {
+    transform: scaleY(0); transform-origin: 50% 50%;
+  }
+  .d7f.vexit.left .fchip::before { animation: chipdrop .18s ease; }
+  .d7f.vexit:hover .fc-ref::before { transform-origin: left center; }
+  .d7f.vexit:hover .fc-list::before { transform-origin: right center; }
+  .d7f.vexit:hover .fchip::before { animation: chipwipe .22s ease forwards; }
+  @keyframes chipwipe {
+    from { transform: scaleX(0) scaleY(1); }
+    to   { transform: scale(1, 1); }
+  }
+  @keyframes chipdrop {
+    from { transform: scale(1, 1); }
+    to   { transform: scaleY(0); }
+  }
+  /* v3: exits recede AWAY from the card's center, back into the frame — the
+     top-left chip drains upward into the top rail, the bottom-right chip
+     drains downward into the bottom rail — and the whole card runs at half
+     speed. Exit origins live on the base state so chipdrop uses them; hover
+     overrides the origin back to the frame edge for the wipe-in. */
+  .d7f.v3 .fchip::before { transform: scaleY(0); }
+  .d7f.v3 .fc-ref::before { transform-origin: center top; }
+  .d7f.v3 .fc-list::before { transform-origin: center bottom; }
+  .d7f.v3.left .fchip::before { animation: chipdrop .36s ease; }
+  .d7f.v3:hover .fc-ref::before { transform-origin: left center; animation: chipwipe .44s ease forwards; }
+  .d7f.v3:hover .fc-list::before { transform-origin: right center; animation: chipwipe .44s ease forwards; }
+  .d7f.v3 .fchip .ft { transition: color .2s ease .18s; }
+  .d7f.v3 .inframe::before, .d7f.v3 .inframe::after { transition: height .56s ease; }
+  .d7f.v3 .panel { transition-duration: .44s; }
+  .d7f.v3 .stage img { transition-duration: .44s; }
+
+  /* ---- brutal: D4b — hard border, solid offset, stacked buttons ---- */
+  .d4b { width: 262px; cursor: pointer; }
+  .d4b .panel {
+    background: #fff; border: 3px solid #000;
+    box-shadow: 9px 10px 0 0 #000;
+    transition: box-shadow .15s ease, transform .15s ease;
+  }
+  .d4b:hover .panel { transform: translate(3px, 3px); box-shadow: 5px 6px 0 0 #000; }
+  .d4b .stage {
+    position: relative; height: 236px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d4b .stage img {
+    max-height: 204px; max-width: 86%; width: auto; height: auto;
+    filter: drop-shadow(6px 7px 0 rgba(0, 0, 0, .85));
+    transition: transform .22s ease;
+  }
+  .d4b:hover .stage img { transform: rotate(-2deg); }
+  .d4b .info { border-top: 3px solid #000; padding: 12px 13px 14px; color: #000; text-align: left; }
+  .d4b .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .d4b .nm { font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d4b .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+  .d4b .dims {
+    margin-top: 5px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #555;
+    padding-bottom: 10px; border-bottom: 2px solid #000;
+  }
+  .d4b .st { margin-top: 10px; }
+  .d4b .btcol { display: flex; flex-direction: column; gap: 9px; margin-top: 11px; }
+  .d4b .bbt {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    padding: 10px 0; text-align: center; width: 100%;
+    border: 2.5px solid #000; background: #fff; color: #000;
+    box-shadow: 4px 4px 0 0 #000;
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .d4b .bbt:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 0 #000; }
+  .d4b .bbt.solid { background: #000; color: #fff; }
+
+  /* ---- bracket: D4c — bracket frame, corner dots, slash-sweep button ---- */
+  .d4c { width: 274px; cursor: pointer; position: relative; }
+  .d4c::before, .d4c::after {
+    content: ""; position: absolute; left: -7px; width: calc(100% + 14px);
+    height: 48%; border: 2px solid #0E1822; pointer-events: none;
+  }
+  .d4c::before { top: -7px; border-bottom: 0; }
+  .d4c::after { bottom: -7px; border-top: 0; }
+  .d4c .panel {
+    position: relative; background: #0E1822; border: 1px solid #0E1822;
+    transition: border-color .2s ease;
+  }
+  .d4c:hover .panel { border-color: #FF4655; }
+  .d4c .panel::before {
+    content: ""; position: absolute; width: 4px; height: 4px;
+    top: -1px; left: -1px; background: #0E1822; z-index: 2;
+    transition: background-color .15s ease;
+  }
+  .d4c .panel::after {
+    content: ""; position: absolute; width: 6px; height: 6px;
+    bottom: -1px; right: -1px; background: #FF4655; z-index: 2;
+    transition: background-color .15s ease;
+  }
+  .d4c:hover .panel::before, .d4c:hover .panel::after { background: #fff; }
+  .d4c .stage {
+    position: relative; height: 244px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d4c .stage img {
+    max-height: 210px; max-width: 86%; width: auto; height: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .55));
+    transition: transform .22s ease;
+  }
+  .d4c:hover .stage img { transform: rotate(2deg); }
+  .d4c .info { border-top: 1px solid rgba(255, 255, 255, .16); padding: 11px 13px 13px; color: #fff; text-align: left; }
+  .d4c .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .d4c .nm { font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d4c .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #FF4655; }
+  .d4c .dims {
+    margin-top: 5px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #8b95a1;
+  }
+  .d4c .r2 { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .d4c .st.avail, .d4c .st.avail .dot { color: #58a852; }
+  .d4c .st.avail .dot { background: #58a852; }
+  .d4c .vbt {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase; color: #fff;
+    border: 1px solid #fff; padding: 8px 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 531.28 200'%3E%3Cdefs%3E%3Cstyle%3E .shape %7B fill: %23FF4655 %7D %3C/style%3E%3C/defs%3E%3Cg id='Layer_2' data-name='Layer 2'%3E%3Cg id='Layer_1-2' data-name='Layer 1'%3E%3Cpolygon class='shape' points='415.81 200 0 200 115.47 0 531.28 0 415.81 200' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E%0A");
+    background-color: transparent;
+    background-size: 200%; background-position: 200%; background-repeat: no-repeat;
+    transition: .3s ease-in-out;
+    transition-property: background-position, border-color;
+  }
+  .d4c .vbt:hover { border-color: #FF4655; background-position: 40%; }
+
+  /* ---- switcher ---- */
+  .switch {
+    position: fixed; right: 18px; bottom: 18px; z-index: 2000;
+    display: flex; flex-direction: column; gap: 7px; align-items: flex-end;
+    background: rgba(255, 255, 255, .9); border: 1px solid #ddd; border-radius: 10px;
+    padding: 12px 12px 12px 14px;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .12);
+  }
+  .switch .swhead { color: var(--hint); font-size: 8.5px; margin-bottom: 3px; }
+  .switch .swbtn {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    letter-spacing: .16em; text-transform: uppercase;
+    color: #000; border: 1.5px solid #bbb; border-radius: 6px;
+    padding: 6px 10px;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .switch .swbtn:hover { border-color: #000; }
+  .switch .swbtn.on { background: #000; color: #fff; border-color: #000; }
+  .switch .twin { margin-top: 6px; color: var(--hint); font-size: 8.5px; letter-spacing: .16em; }
+  .switch .twin:hover { color: #000; }
+
+  .foot { text-align: center; padding: 40px 20px 70px; color: var(--hint); font-size: 12.5px; font-style: italic; }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="bar-brand"><img src="../site/img/logo-circle.png" alt="AVRG" /></div>
+    <nav id="topnav" style="display:contents"></nav>
+    <a class="dm-mini" id="nav-dm" href="#" target="_blank" rel="noopener">Contact me</a>
+  </header>
+
+  <div class="pagehead">
+    <span class="label">Cards in context · white ground</span>
+    <p class="note">the site inverted — real collections, batch cutouts (39/39), placeholder dims &amp; statuses</p>
+  </div>
+
+  <main id="secs"></main>
+
+  <p class="foot">CL 3 shows sold, HS 2 shows pending, CL 5 &amp; the OG Orange wear the builder's mark — demo states, not real</p>
+
+  <div class="switch">
+    <span class="swhead label">Card style</span>
+    <div id="swbtns" style="display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end;max-width:260px"></div>
+    <a class="twin label" href="j-cards-black.html">→ black ground</a>
+  </div>
+
+  <script src="../site/data.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+    const CUT = b => "card-lab/cuts/" + b.thumb.split("/").pop().replace(/\.jpg$/, "") + "-cut.png";
+
+    const SHORT = { originals: "Original", "hand-shaped": "Shaped", classic: "Routed" };
+    const CARDNM = { "hand-shaped": "Shaped", classic: "Classic" };
+    const PRE = { originals: "OG", "hand-shaped": "HS", classic: "CL" };
+    const DIMS = {
+      originals: "ORIGINAL · ONE OF ONE",
+      "hand-shaped": "HAND-SHAPED · ONE OF ONE",
+      classic: "33.5 × 96 MM · MED KICK"
+    };
+    const SPARK = { "CL 5": 1, "OG 1": 1 };
+    const PEND = { "HS 2": 1 };
+    const GONE = { "CL 3": 1 };
+    /* real dims placeholders — only these boards decode their name into specs */
+    const PH_DIMS = { "OG 1": "33.5 × 97.5 MM", "HS 1": "33.5 × 97.5 MM" };
+
+    const dispTitle = c => c.title.replace(/\s*-\s*Completes/i, "").replace(/ - /g, " ");
+    const cleanDesc = s => (s || "").replace(/ Hover.*$/, "");
+
+    function meta(c, b, k) {
+      const ref = b.ref || PRE[c.id] + " " + (k + 1);
+      return {
+        ref,
+        nm: b.name || CARDNM[c.id] || SHORT[c.id],
+        img: CUT(b),
+        dims: DIMS[c.id],
+        spark: !!SPARK[ref],
+        dimsPh: PH_DIMS[ref] || "",
+        st: GONE[ref] ? "gone" : (PEND[ref] ? "pend" : "avail"),
+        stTxt: GONE[ref] ? "Sold" : (PEND[ref] ? "Pending" : "Available")
+      };
+    }
+    const stHtml = m => '<span class="st ' + m.st + '"><span class="dot"></span>' + m.stTxt + '</span>';
+    const sparkHtml = m => m.spark ? ' <span class="spark" title="Builder\'s mark — this one came out perfect">✱</span>' : "";
+    const soldCls = m => m.st === "gone" ? " sold" : "";
+
+    const T = {
+      slab: {
+        nm: "Slab", why: "the D5 black slab riding the white page",
+        card: m =>
+          '<div class="d5 sq' + soldCls(m) + '"><div class="panel">' +
+            '<div class="stage"><img loading="lazy" src="' + m.img + '" alt="' + esc(m.nm) + '"></div>' +
+            '<div class="info">' +
+              '<div class="r1"><span class="nm">' + esc(m.nm) + sparkHtml(m) + '</span><span class="wchip">' + esc(m.ref) + '</span></div>' +
+              '<div class="dims">' + m.dims + '</div>' +
+              '<div class="r2">' + stHtml(m) + (m.st === "gone" ? "" : '<button class="wchip">+ List</button>') + '</div>' +
+            '</div>' +
+          '</div></div>'
+      },
+      spread: {
+        nm: "Spread", why: "the spread slab on white",
+        card: m =>
+          '<div class="d5 spread' + soldCls(m) + '"><div class="panel">' +
+            '<div class="stage">' +
+              '<div class="corner"><span class="wchip">' + esc(m.ref) + '</span>' + sparkHtml(m) + '</div>' +
+              '<img loading="lazy" src="' + m.img + '" alt="' + esc(m.nm) + '"></div>' +
+            '<div class="info">' +
+              '<span class="nm">' + esc(m.nm) + '</span>' +
+              '<div class="dims">' + m.dims + '</div>' +
+              '<div class="r2">' + stHtml(m) + (m.st === "gone" ? "" : '<button class="wchip">+ List</button>') + '</div>' +
+            '</div>' +
+          '</div></div>'
+      },
+      paper: {
+        nm: "Paper", why: "the spread card inverted — ink on white, black chips",
+        card: m =>
+          '<div class="paper' + soldCls(m) + '"><div class="panel">' +
+            '<div class="stage">' +
+              '<div class="corner"><span class="bchip">' + esc(m.ref) + '</span>' + sparkHtml(m) + '</div>' +
+              '<img loading="lazy" src="' + m.img + '" alt="' + esc(m.nm) + '"></div>' +
+            '<div class="info">' +
+              '<span class="nm">' + esc(m.nm) + '</span>' +
+              '<div class="dims">' + m.dims + '</div>' +
+              '<div class="r2">' + stHtml(m) + (m.st === "gone" ? "" : '<button class="bchip">+ List</button>') + '</div>' +
+            '</div>' +
+          '</div></div>'
+      },
+      frame: {
+        nm: "⸺·⸺ frame", why: "the frame card inverted — flush chips wipe in, status decodes on hover",
+        card: m =>
+          '<div class="d7f' + soldCls(m) + '"><div class="panel">' +
+            '<div class="inframe"><i class="ctl"></i><i class="cbr"></i><i class="dgl"></i><i class="dgr"></i></div>' +
+            (m.spark ? '<span class="spark tspark" title="Builder\'s mark — this one came out perfect">✱</span>' : '') +
+            '<div class="stage">' +
+              '<div class="corner"><span class="fchip fc-ref"><span class="ft" data-ref="' + esc(m.ref) + '">' + esc(m.ref) + '</span></span></div>' +
+              '<img loading="lazy" src="' + m.img + '" alt="' + esc(m.nm) + '"></div>' +
+            '<div class="info">' +
+              '<span class="nm"><span class="nmt" data-nm="' + esc(m.nm) + '" data-dims="' + esc(m.dimsPh) + '">' + esc(m.nm) + '</span></span>' +
+            '</div>' +
+            (m.st === "gone" ? "" :
+              '<button class="fchip fc-list d7f-cta"><span class="ft">+ List</span></button>') +
+            '<span class="fst ' + m.st + '"><span class="dot"></span><span class="sttxt" data-txt="' + m.stTxt.toUpperCase() + '"></span></span>' +
+          '</div></div>'
+      },
+      framev: {
+        nm: "Frame v2", why: "same wipe in — the exit collapses vertically onto the centerline",
+        card: m => T.frame.card(m).replace('"d7f', '"d7f vexit')
+      },
+      framev3: {
+        nm: "Frame v3", why: "exits recede into the frame rails, whole card at half speed",
+        card: m => T.frame.card(m).replace('"d7f', '"d7f v3')
+      },
+      brutal: {
+        nm: "Brutal", why: "3px border, solid offset shadow, stacked hard buttons",
+        card: m =>
+          '<div class="d4b' + soldCls(m) + '"><div class="panel">' +
+            '<div class="stage"><img loading="lazy" src="' + m.img + '" alt="' + esc(m.nm) + '"></div>' +
+            '<div class="info">' +
+              '<div class="r1"><span class="nm">' + esc(m.nm) + sparkHtml(m) + '</span><span class="rf">' + esc(m.ref) + '</span></div>' +
+              '<div class="dims">' + m.dims + '</div>' +
+              stHtml(m) +
+              (m.st === "gone" ? "" :
+                '<div class="btcol"><button class="bbt">View board</button><button class="bbt solid">+ Add to list</button></div>') +
+            '</div>' +
+          '</div></div>'
+      },
+      bracket: {
+        nm: "Bracket", why: "the Valorant stash treatment — brackets, dots, slash sweep",
+        card: m =>
+          '<div class="d4c' + soldCls(m) + '"><div class="panel">' +
+            '<div class="stage"><img loading="lazy" src="' + m.img + '" alt="' + esc(m.nm) + '"></div>' +
+            '<div class="info">' +
+              '<div class="r1"><span class="nm">' + esc(m.nm) + sparkHtml(m) + '</span><span class="rf">' + esc(m.ref) + '</span></div>' +
+              '<div class="dims">' + m.dims + '</div>' +
+              '<div class="r2">' + stHtml(m) + (m.st === "gone" ? "" : '<button class="vbt">+ List</button>') + '</div>' +
+            '</div>' +
+          '</div></div>'
+      }
+    };
+
+    const COLS = COLLECTIONS.filter(c => c.boards.length);
+
+    document.getElementById("topnav").innerHTML = COLS.map(c =>
+      '<a class="tab" href="#' + c.id + '">' + esc(SHORT[c.id] || c.title) + '</a>').join("");
+
+    const handle = (typeof CONTACT === "object" && CONTACT && CONTACT.reddit) || "u/avrg";
+    document.getElementById("nav-dm").href =
+      "https://www.reddit.com/message/compose/?to=" + encodeURIComponent(handle.replace(/^\/?u\//i, ""));
+
+    const secs = document.getElementById("secs");
+    function render(key) {
+      const t = T[key];
+      secs.innerHTML = COLS.map(c =>
+        '<section class="colpage-inner" id="' + c.id + '">' +
+          '<h2>' + esc(dispTitle(c)) + '</h2>' +
+          '<p class="desc">' + esc(cleanDesc(c.description)) + '</p>' +
+          '<div class="cgrid">' +
+            c.boards.map((b, k) => t.card(meta(c, b, k))).join("") +
+          '</div>' +
+        '</section>'
+      ).join("");
+      document.querySelectorAll(".swbtn").forEach(x => x.classList.toggle("on", x.dataset.t === key));
+      if (location.hash.replace(/^#s-/, "") !== key) history.replaceState(null, "", "#s-" + key);
+    }
+
+    document.getElementById("swbtns").innerHTML = Object.keys(T).map(k =>
+      '<button class="swbtn" data-t="' + k + '" title="' + esc(T[k].why) + '">' + T[k].nm + '</button>').join("");
+    document.getElementById("swbtns").addEventListener("click", e => {
+      const b = e.target.closest(".swbtn");
+      if (b) render(b.dataset.t);
+    });
+
+    const initial = (location.hash.match(/^#s-(\w+)/) || [])[1];
+    render(T[initial] ? initial : "paper");
+
+    /* tab decode + DM glitch — the signatures ride along on the light page too */
+    const GLYPHS = "#%&?{}<>*+=/";
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const canHover = matchMedia("(hover: hover)").matches;
+    if (!reduced && canHover) document.addEventListener("pointerover", e => {
+      const btn = e.target.closest && e.target.closest(".tab");
+      if (!btn || btn.dataset.decoding) return;
+      const chars = [...btn.textContent];
+      if (!chars.length || chars.length > 40) return;
+      btn.dataset.decoding = "1";
+      const resolveAt = chars.map((c, i) => i * 0.4 + 1 + Math.random() * 2.2);
+      let f = 0;
+      const t = setInterval(() => {
+        f++;
+        let out = "", done = true;
+        for (let i = 0; i < chars.length; i++) {
+          if (!/\S/.test(chars[i])) { out += chars[i]; continue; }
+          if (f >= resolveAt[i]) { out += chars[i]; }
+          else { out += GLYPHS[(Math.random() * GLYPHS.length) | 0]; done = false; }
+        }
+        btn.textContent = out;
+        if (done) { clearInterval(t); delete btn.dataset.decoding; }
+      }, 30);
+    });
+    /* d7f frame card: on card entry the ref chip decodes to AVRG and the
+       status word decodes in beside its dot; both restore on exit */
+    function decodeInto(el, text) {
+      clearInterval(el._t);
+      const chars = [...text];
+      const resolveAt = chars.map((c, i) => i * 0.4 + 1 + Math.random() * 2.2);
+      let f = 0;
+      el._t = setInterval(() => {
+        f++;
+        let out = "", done = true;
+        for (let i = 0; i < chars.length; i++) {
+          if (!/\S/.test(chars[i])) { out += chars[i]; continue; }
+          if (f >= resolveAt[i]) { out += chars[i]; }
+          else { out += GLYPHS[(Math.random() * GLYPHS.length) | 0]; done = false; }
+        }
+        el.textContent = out;
+        if (done) clearInterval(el._t);
+      }, 30);
+    }
+    if (canHover) {
+      document.addEventListener("pointerover", e => {
+        const card = e.target.closest && e.target.closest(".d7f");
+        if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return;
+        card.classList.remove("left");
+        const ref = card.querySelector(".fc-ref .ft");
+        const stx = card.querySelector(".sttxt");
+        const nmt = card.querySelector(".nmt");
+        const dims = nmt && nmt.dataset.dims;
+        if (reduced) {
+          if (ref) ref.textContent = "AVRG";
+          if (stx) stx.textContent = stx.dataset.txt;
+          if (dims) nmt.textContent = dims;
+          return;
+        }
+        if (ref) decodeInto(ref, "AVRG");
+        if (stx) decodeInto(stx, stx.dataset.txt);
+        if (dims) decodeInto(nmt, dims);
+      });
+      document.addEventListener("pointerout", e => {
+        const card = e.target.closest && e.target.closest(".d7f");
+        if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return;
+        card.classList.add("left");
+        const ref = card.querySelector(".fc-ref .ft");
+        const stx = card.querySelector(".sttxt");
+        const nmt = card.querySelector(".nmt");
+        if (ref) { clearInterval(ref._t); ref.textContent = ref.dataset.ref; }
+        if (stx) { clearInterval(stx._t); stx.textContent = ""; }
+        if (nmt) { clearInterval(nmt._t); nmt.textContent = nmt.dataset.nm; }
+      });
+    }
+
+    if (!reduced && canHover) {
+      document.addEventListener("pointerover", e => {
+        const btn = e.target.closest && e.target.closest(".dm-mini");
+        if (!btn || btn.classList.contains("glitch-run")) return;
+        if (btn.contains(e.relatedTarget)) return;
+        btn.classList.add("glitch-run");
+      });
+      document.addEventListener("animationend", e => {
+        if (e.animationName === "dm-glitch") e.target.classList.remove("glitch-run");
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

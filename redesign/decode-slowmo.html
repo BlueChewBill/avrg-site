@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AVRG — decode slow-mo</title>
+<!-- Throwaway study tool: the frame card's name→dims decode, huge, with dials
+     for flicker rate, swap time, resolve direction per leg, and position lock.
+     Directions: L→R, R→L, IN (ends→center), OUT (center→ends), CLPS (two-phase:
+     the old text corrupts inward, then the new text resolves outward).
+     Not a site page. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  @font-face {
+    font-family: "Satoshi";
+    src: url("../site/fonts/Satoshi-Black.otf") format("opentype");
+    font-weight: 900;
+    font-display: swap;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #fff; color: #000;
+    font-family: "Satoshi", sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 28px;
+    -webkit-font-smoothing: antialiased;
+  }
+  #stage {
+    font-weight: 900; text-transform: uppercase; letter-spacing: .04em;
+    font-size: clamp(40px, 7.2vw, 110px); line-height: 1.1;
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  #stage .cell { display: inline-block; text-align: center; white-space: pre; }
+  .sub, label {
+    font-family: "Space Mono", monospace; font-size: 11px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase; color: #767676;
+  }
+  .panelrow { display: flex; gap: 34px; align-items: flex-end; flex-wrap: wrap; justify-content: center; }
+  .dial { display: flex; flex-direction: column; gap: 9px; align-items: center; }
+  .dial label { color: #000; font-size: 10px; }
+  .dial .val { color: #767676; font-size: 10px; letter-spacing: .18em; }
+  input[type=range] { width: 190px; accent-color: #000; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .dirrow { display: flex; gap: 7px; align-items: center; }
+  .dirrow .sub { font-size: 9px; min-width: 118px; text-align: right; color: #000; }
+  button {
+    font-family: "Space Mono", monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    background: none; border: 1.5px solid #000; color: #000;
+    padding: 9px 14px; cursor: pointer;
+  }
+  .dirrow button { padding: 7px 10px; font-size: 9px; }
+  button:hover, button.on { background: #000; color: #fff; }
+  .dircol { display: flex; flex-direction: column; gap: 9px; }
+</style>
+</head>
+<body>
+  <span class="sub" id="phase">name → dims</span>
+  <div id="stage">OG ORANGE PIRO</div>
+
+  <div class="panelrow">
+    <div class="dial">
+      <label for="tick">Effect flicker</label>
+      <input type="range" id="tick" min="30" max="150" step="15" value="120" />
+      <span class="val" id="tickval">120 MS</span>
+    </div>
+    <div class="dial">
+      <label for="dur">Text swap time</label>
+      <input type="range" id="dur" min="0.25" max="5" step="0.25" value="5" />
+      <span class="val" id="durval">5.00 S</span>
+    </div>
+    <div class="row">
+      <button id="replay">Replay</button>
+      <button id="carddef">Card defaults</button>
+      <button id="lock">Position lock: off</button>
+    </div>
+  </div>
+
+  <div class="dircol">
+    <div class="dirrow" id="dirF">
+      <span class="sub">Name → dims</span>
+      <button data-d="ltr" class="on">L→R</button>
+      <button data-d="rtl">R→L</button>
+      <button data-d="in">In</button>
+      <button data-d="out">Out</button>
+      <button data-d="clps">Collapse</button>
+      <button data-d="sweep">Sweep</button>
+      <button data-d="swp2">Sweep 2</button>
+      <button data-d="clps2">Clps 2</button>
+    </div>
+    <div class="dirrow" id="dirB">
+      <span class="sub">Dims → name</span>
+      <button data-d="ltr">L→R</button>
+      <button data-d="rtl" class="on">R→L</button>
+      <button data-d="in">In</button>
+      <button data-d="out">Out</button>
+      <button data-d="clps">Collapse</button>
+      <button data-d="sweep">Sweep</button>
+      <button data-d="swp2">Sweep 2</button>
+      <button data-d="clps2">Clps 2</button>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+    const NAME = "OG ORANGE PIRO";
+    const DIMS = "33.5 × 97.5 MM";
+    const GLYPHS = "#%&?{}<>*+=/";
+    const stage = document.getElementById("stage");
+    const phase = document.getElementById("phase");
+    let TICK = 120, DUR = 5, LOCK = false;
+    let DIR_F = "ltr", DIR_B = "rtl";
+    let timer = null, cycle = null;
+
+    /* per-character position weight 0..1 in resolve order for a direction */
+    function weights(len, dir) {
+      const out = [];
+      for (let i = 0; i < len; i++) {
+        const x = len === 1 ? 0 : i / (len - 1);
+        let v;
+        if (dir === "ltr") v = x;
+        else if (dir === "rtl") v = 1 - x;
+        else if (dir === "in") v = Math.min(x, 1 - x) * 2;   /* ends first, center last */
+        else v = 1 - Math.min(x, 1 - x) * 2;                 /* out: center first */
+        out.push(v);
+      }
+      return out;
+    }
+    /* schedule in ms: 12% base delay, 70% directional spread, 18% jitter */
+    function sched(len, dir, totalMs) {
+      return weights(len, dir).map(v => (0.12 + 0.7 * v + Math.random() * 0.18) * totalMs);
+    }
+
+    function buildCells(text) {
+      stage.textContent = "";
+      [...text].forEach(ch => {
+        const s = document.createElement("span");
+        s.className = "cell";
+        s.textContent = ch;
+        stage.appendChild(s);
+      });
+      const ws = [...stage.children].map(s => s.getBoundingClientRect().width);
+      [...stage.children].forEach((s, i) => { s.style.width = ws[i] + "px"; });
+    }
+    function paint(chars, showReal) {
+      /* showReal(i) -> bool; unresolved slots churn */
+      if (LOCK) {
+        const cells = stage.children;
+        for (let i = 0; i < chars.length; i++) {
+          if (!/\S/.test(chars[i])) continue;
+          cells[i].textContent = showReal(i) ? chars[i] : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+        }
+      } else {
+        let out = "";
+        for (let i = 0; i < chars.length; i++) {
+          if (!/\S/.test(chars[i])) { out += chars[i]; continue; }
+          out += showReal(i) ? chars[i] : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+        }
+        stage.textContent = out;
+      }
+    }
+
+    /* resolve INTO text: starts fully scrambled, chars lock in per direction */
+    function decodePhase(text, dir, totalMs, done) {
+      clearInterval(timer);
+      const chars = [...text];
+      const at = sched(chars.length, dir, totalMs);
+      if (LOCK) buildCells(text);
+      let f = 0;
+      timer = setInterval(() => {
+        f++;
+        const t = f * TICK;
+        paint(chars, i => t >= at[i]);
+        if (chars.every((c, i) => !/\S/.test(c) || t >= at[i])) {
+          clearInterval(timer);
+          paint(chars, () => true);
+          if (done) done();
+        }
+      }, TICK);
+    }
+    /* corrupt OUT OF text: starts intact, chars fall to glyphs per direction */
+    function corruptPhase(text, dir, totalMs, done) {
+      clearInterval(timer);
+      const chars = [...text];
+      const at = sched(chars.length, dir, totalMs);
+      if (LOCK) buildCells(text);
+      let f = 0;
+      timer = setInterval(() => {
+        f++;
+        const t = f * TICK;
+        paint(chars, i => t < at[i]);
+        if (chars.every((c, i) => !/\S/.test(c) || t >= at[i])) {
+          clearInterval(timer);
+          if (done) done();
+        }
+      }, TICK);
+    }
+    const BAND = 2;
+    const churn = n => {
+      let s = "";
+      for (let i = 0; i < n; i++) s += GLYPHS[(Math.random() * GLYPHS.length) | 0];
+      return s;
+    };
+    /* raw string painter for the sweep family. centered=true pads the string
+       into the middle of the locked cell row (for the symmetric modes);
+       otherwise lock mode fills cells left-anchored and blanks the rest. */
+    const paintRaw = (txt, centered) => {
+      if (LOCK) {
+        const cells = stage.children;
+        const off = centered ? Math.max(Math.floor((cells.length - txt.length) / 2), 0) : 0;
+        for (let i = 0; i < cells.length; i++) {
+          const j = i - off;
+          cells[i].textContent = (j >= 0 && j < txt.length) ? txt[j] : "";
+        }
+      } else {
+        stage.textContent = txt;
+      }
+    };
+
+    /* sweep: a 2-char scramble head consumes the old text right→left,
+       dragging the erasure behind it until only the head remains at the far
+       left, then reverses and prints the new text left→right, stopping at the
+       new text's natural end. */
+    function sweepTransition(from, to, done) {
+      clearInterval(timer);
+      const A = [...from], B = [...to];
+      const stepsA = Math.max(A.length - BAND, 0);
+      const steps = stepsA + B.length;
+      const stepMs = (DUR * 1000) / steps;
+      let elapsed = 0, inB = false;
+      if (LOCK) buildCells(from);
+      timer = setInterval(() => {
+        elapsed += TICK;
+        const k = Math.min(Math.floor(elapsed / stepMs), steps);
+        if (k < stepsA) {
+          const rem = A.length - k;
+          paintRaw(A.slice(0, Math.max(rem - BAND, 0)).join("") + churn(Math.min(BAND, rem)));
+        } else {
+          if (!inB) { inB = true; if (LOCK) buildCells(to); }
+          const q = Math.min(k - stepsA, B.length);
+          paintRaw(B.slice(0, q).join("") + churn(Math.min(BAND, B.length - q)));
+          if (q >= B.length) {
+            clearInterval(timer);
+            paintRaw(to);
+            if (done) done();
+          }
+        }
+      }, TICK);
+    }
+
+    /* sweep 2: four beats. The head scans right→left converting characters
+       to churn but the line keeps its full width; once everything is static
+       the line resorbs from the right down to just the head at the far left;
+       the glyphs then extend back out to the new text's full footprint (still
+       pure churn — no reveal yet); only once the glyphs have reached the end
+       point does the reveal front walk left→right, eating them. */
+    function sweep2Transition(from, to, done) {
+      clearInterval(timer);
+      const A = [...from], B = [...to];
+      const s1 = A.length, s2 = Math.max(A.length - BAND, 0);
+      const s3 = Math.max(B.length - BAND, 0), s4 = B.length;
+      const t1 = DUR * 1000 * 0.35, t2 = DUR * 1000 * 0.15;
+      const t3 = DUR * 1000 * 0.2, t4 = DUR * 1000 * 0.3;
+      let elapsed = 0, beat = 1, built = false;
+      if (LOCK) buildCells(from);
+      timer = setInterval(() => {
+        elapsed += TICK;
+        if (beat === 1) {
+          const k = Math.min(Math.floor(elapsed / (t1 / s1)), s1);
+          paintRaw(A.slice(0, A.length - k).join("") + churn(k));
+          if (k >= s1) { beat = 2; elapsed = 0; }
+        } else if (beat === 2) {
+          const j = Math.min(Math.floor(elapsed / (t2 / Math.max(s2, 1))), s2);
+          paintRaw(churn(A.length - j));
+          if (j >= s2) { beat = 3; elapsed = 0; }
+        } else if (beat === 3) {
+          if (!built) { built = true; if (LOCK) buildCells(to); }
+          const g = Math.min(Math.floor(elapsed / (t3 / Math.max(s3, 1))), s3);
+          paintRaw(churn(BAND + g));
+          if (g >= s3) { beat = 4; elapsed = 0; }
+        } else {
+          const r = Math.min(Math.floor(elapsed / (t4 / s4)), s4);
+          paintRaw(B.slice(0, r).join("") + churn(B.length - r));
+          if (r >= s4) {
+            clearInterval(timer);
+            paintRaw(to);
+            if (done) done();
+          }
+        }
+      }, TICK);
+    }
+
+    /* collapse 2: four beats. Corrupt in place from the edges to the center
+       (full width, no text left); the glyph line collapses onto its own
+       center down to a seed; the seed grows back out to the new text's
+       footprint (still all glyphs); then the new text resolves center→out —
+       the dims eat the glyphs. */
+    function clps2Transition(from, to, done) {
+      const A = [...from], B = [...to];
+      corruptPhase(from, "in", DUR * 1000 * 0.3, () => {
+        clearInterval(timer);
+        const S = Math.max(A.length - BAND, 0), G = Math.max(B.length - BAND, 0);
+        const t2 = DUR * 1000 * 0.2, t3 = DUR * 1000 * 0.2;
+        let elapsed = 0, beat = 2, built = false;
+        timer = setInterval(() => {
+          elapsed += TICK;
+          if (beat === 2) {
+            const j = Math.min(Math.floor(elapsed / (t2 / Math.max(S, 1))), S);
+            paintRaw(churn(A.length - j), true);
+            if (j >= S) { beat = 3; elapsed = 0; }
+          } else {
+            if (!built) { built = true; if (LOCK) buildCells(to); }
+            const g = Math.min(Math.floor(elapsed / (t3 / Math.max(G, 1))), G);
+            paintRaw(churn(BAND + g), true);
+            if (g >= G) {
+              clearInterval(timer);
+              decodePhase(to, "out", DUR * 1000 * 0.3, done);
+            }
+          }
+        }, TICK);
+      });
+    }
+
+    /* one leg of the loop. clps: old text corrupts ends→center (collapses in
+       on itself), then the new text resolves center→ends (expands out).
+       sweep family: the print-head passes above. */
+    function transition(from, to, dir, done) {
+      if (dir === "clps") {
+        corruptPhase(from, "in", DUR * 1000 * 0.45, () =>
+          decodePhase(to, "out", DUR * 1000 * 0.55, done));
+      } else if (dir === "sweep") {
+        sweepTransition(from, to, done);
+      } else if (dir === "swp2") {
+        sweep2Transition(from, to, done);
+      } else if (dir === "clps2") {
+        clps2Transition(from, to, done);
+      } else {
+        decodePhase(to, dir, DUR * 1000, done);
+      }
+    }
+
+    function setStatic(text) {
+      if (LOCK) buildCells(text);
+      else stage.textContent = text;
+    }
+    function run() {
+      clearTimeout(cycle); clearInterval(timer);
+      setStatic(NAME);
+      phase.textContent = "name → dims";
+      cycle = setTimeout(() => {
+        transition(NAME, DIMS, DIR_F, () => {
+          cycle = setTimeout(() => {
+            phase.textContent = "dims → name";
+            transition(DIMS, NAME, DIR_B, () => {
+              cycle = setTimeout(run, 1400);
+            });
+          }, 1600);
+        });
+      }, 900);
+    }
+
+    const tickEl = document.getElementById("tick");
+    const durEl = document.getElementById("dur");
+    const tickval = document.getElementById("tickval");
+    const durval = document.getElementById("durval");
+    function labels() {
+      tickval.textContent = TICK + " MS";
+      durval.textContent = DUR.toFixed(2) + " S";
+    }
+    tickEl.addEventListener("input", () => { TICK = +tickEl.value; labels(); run(); });
+    durEl.addEventListener("input", () => { DUR = +durEl.value; labels(); run(); });
+    document.getElementById("replay").addEventListener("click", run);
+    document.getElementById("carddef").addEventListener("click", () => {
+      TICK = 30; DUR = 0.25;
+      tickEl.value = 30; durEl.value = 0.25;
+      labels(); run();
+    });
+    document.getElementById("lock").addEventListener("click", e => {
+      LOCK = !LOCK;
+      e.target.textContent = "Position lock: " + (LOCK ? "on" : "off");
+      e.target.classList.toggle("on", LOCK);
+      run();
+    });
+    function wireDir(rowId, set) {
+      const row = document.getElementById(rowId);
+      row.addEventListener("click", e => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        set(b.dataset.d);
+        row.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+        run();
+      });
+    }
+    wireDir("dirF", d => { DIR_F = d; });
+    wireDir("dirB", d => { DIR_B = d; });
+    labels(); run();
+  })();
+  </script>
+</body>
+</html>
