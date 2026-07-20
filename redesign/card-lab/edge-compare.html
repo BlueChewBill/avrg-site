@@ -1,0 +1,80 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>AVRG · cutout edge A/B</title>
+<style>
+  :root { --ground:#0c0c0c; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--ground); color:#ddd1b6;
+         font:14px/1.4 "Space Mono", ui-monospace, monospace; padding:26px 30px 60px; }
+  h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:#9a8f76; font-weight:400; }
+  .note { color:#6a6155; max-width:70ch; margin:0 0 26px; }
+  .row { display:grid; grid-template-columns: 150px 1fr 1fr; gap:20px; align-items:center;
+         border-top:1px solid #1c1a17; padding:22px 0; }
+  .lbl { color:#8c8270; }
+  .lbl b { color:#ddd1b6; font-size:15px; display:block; }
+  .lbl small { color:#6a6155; }
+  /* full board, rendered exactly like the fv3 card board */
+  .full { display:flex; justify-content:center; }
+  .full img { width:120px; height:auto; filter: drop-shadow(7px 9px 0 rgba(0,0,0,.55)); }
+  /* magnified diagonal-edge crop: scale the rendered board+shadow so steps magnify faithfully */
+  .zoomwrap { overflow:hidden; height:210px; border:1px solid #201d19; position:relative;
+              background:
+                linear-gradient(#141414,#141414); }
+  .zoomwrap::after { content:"6× edge"; position:absolute; right:6px; bottom:5px;
+                     font-size:10px; color:#4d453a; letter-spacing:.1em; }
+  .zoom { position:absolute; transform-origin:0 0; }
+  .zoom img { display:block; filter: drop-shadow(7px 9px 0 rgba(0,0,0,.6));
+              image-rendering: pixelated; }
+  .col-h { display:grid; grid-template-columns:150px 1fr 1fr; gap:20px; color:#6a6155;
+           font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding-bottom:4px; }
+  .missing { display:flex; align-items:center; justify-content:center; height:210px;
+             border:1px dashed #2a2620; color:#4d453a; font-size:12px; }
+</style>
+<h1>Cutout edge — current (Vision) vs Canva bg-remove</h1>
+<p class="note">Each board rendered with the real frame-v3 treatment: hard <code>drop-shadow(7px 9px 0)</code>,
+zero blur. The 6× column magnifies one diagonal edge so the stair-stepping is visible. Right column fills in
+automatically once a matching <code>canva/&lt;name&gt;-cut.png</code> exists.</p>
+<div class="col-h"><div>board</div><div>current — Vision cutout</div><div>Canva bg-remove</div></div>
+<div id="rows"></div>
+<script>
+// board : {z: zoom factor, x/y: crop origin in source-px onto a diagonal edge}
+// crop origin targets the near-horizontal crown of the nose (top), where hard-edge steps are worst
+const BOARDS = [
+  ["hand-shaped-09","PS39", {z:7, x:108, y:2}],
+  ["classic-06",   "NR14", {z:7, x:108, y:2}],
+  ["hand-shaped-13","PS52", {z:7, x:95,  y:2}],
+  ["hand-shaped-05","PS19", {z:7, x:112, y:3}],
+  ["classic-03",   "NR08", {z:7, x:106, y:2}],
+  ["classic-11",   "NR30", {z:7, x:114, y:2}],
+];
+const rows = document.getElementById('rows');
+function panel(src, crop){
+  return `<div class="zoomwrap"><div class="zoom" style="transform:scale(${crop.z});left:${-crop.x*crop.z}px;top:${-crop.y*crop.z}px">
+    <img src="${src}"></div></div>`;
+}
+for (const [name, canva, crop] of BOARDS){
+  const cur = `cuts/${name}-1-cut.png`;
+  // accept whatever Dylan names the export — site name or the Canva NR/PS name, .png
+  const cands = [`canva/${name}.png`, `canva/${name}-cut.png`, `canva/${canva}.png`, `canva/${canva}-cut.png`];
+  const row = document.createElement('div'); row.className='row';
+  row.innerHTML = `<div class="lbl"><b>${name}</b><small>Canva src: ${canva}</small></div>`+
+    panel(cur, crop)+
+    `<div data-cands='${JSON.stringify(cands)}' data-crop='${JSON.stringify(crop)}'></div>`;
+  rows.appendChild(row);
+}
+// probe each candidate name; first that loads wins, else placeholder
+document.querySelectorAll('[data-cands]').forEach(cell=>{
+  const cands = JSON.parse(cell.getAttribute('data-cands'));
+  const crop = JSON.parse(cell.getAttribute('data-crop'));
+  let i = 0;
+  const tryNext = ()=>{
+    if (i >= cands.length){ cell.innerHTML = `<div class="missing">drop canva/${cands[0].split('/')[1]}</div>`; return; }
+    const src = cands[i++];
+    const img = new Image();
+    img.onload = ()=> cell.innerHTML = panel(src, crop);
+    img.onerror = tryNext;
+    img.src = src;
+  };
+  tryNext();
+});
+</script>

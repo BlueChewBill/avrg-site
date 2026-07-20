@@ -709,6 +709,11 @@
     position: absolute; bottom: 12px; right: 12px; z-index: 2;
     letter-spacing: .16em; padding: 7px 10px;
   }
+  /* static fill size: the want-word decode swaps labels of different
+     lengths — the chip box (and its black fill) must never resize.
+     Sized to the 6-char labels (+ List / Mine !) including the .16em
+     letter-spacing each character carries. */
+  .d7f .fc-list .ft { display: inline-block; min-width: calc(6ch + .96em); text-align: center; }
   .d7f .fc-list::before { transform-origin: center bottom; }
   .d7f.left .fchip::before { animation: chipdrop .36s ease; }
   .d7f:hover .fc-ref::before { transform-origin: left center; animation: chipwipe .44s ease forwards; }
@@ -855,6 +860,192 @@
     transform: scale(1.08);
     filter: drop-shadow(13px 16px 0 rgba(0, 0, 0, .3));
     transition: transform .94s ease, filter .94s ease;
+  }
+
+  /* ================= cart bay (sprint item 2) =================
+     A card bay docked to the right screen edge, speaking fv3. At REST
+     only the inner frame exists: two rail lines and the mid dot, floating
+     on the page ground near the edge — a strange mark, not yet a card.
+     On PROXIMITY the drawer starts its slow pull: the inner frame
+     converges onto its dot while riding toward center screen; the outer
+     frame's top and bottom lines emerge from the page edge and make
+     their way to the outside edge; then the outside edge closes
+     vertically onto itself (the face connecting echoes the inner
+     gesture). The connected card keeps pulling — a slow drawer — until
+     the bay is at full size. A CLICK anywhere on the drawer speeds it up
+     and locks it in; the inner collapse arrow shuts it quickly; with no
+     clicks, leaving lets the drawer slowly shut again. Marks are
+     page-colored at rest (bone on black, ink on white) and flip to ink
+     as the white body slides beneath them. The card shadow, count chip
+     and status dot land with the face connection. +List sends the
+     board's cutout flying onto a shelf (or onto the resting dot when
+     closed, answered by a dot pulse). fv3 card mode only; hidden on
+     touch/mobile.
+     PROGRESS-DRIVEN: a JS rAF driver advances one master progress value
+     p (0..1) and poses every piece from it each frame. The cursor is the
+     motor — p always advances while in the trigger zone, but the RATE
+     scales with proximity: parked at the outer bound it's a slow
+     continuous crawl that completes on its own; closing the distance
+     speeds the playback, so approaching feels like pulling the drawer
+     yourself. Threshold classes fire off p (.inked marks-to-ink,
+     .shadowed frame-complete → shadow/chip fade, .pulled shelf shadows,
+     .fullish collapse arrow). Speed knobs live in the JS driver
+     (BAY_TUNE); geometry knobs live here. */
+  .bay {
+    --bayW: 340px;
+    --sliver: 62px;        /* drawer face position when the frame connects */
+    --inner-rest: 4px;     /* rail's distance from the screen edge at rest */
+    --inner-slide: 46px;   /* how far the inner frame rides toward center */
+    --rp: 0;               /* rail-converge progress, written by the driver */
+    --fp: 0;               /* face-draw progress, written by the driver */
+    position: fixed; top: 50%; right: 0; height: 74vh; width: var(--bayW);
+    transform: translateY(-50%); z-index: 5500; pointer-events: none;
+  }
+  body:not([data-card="framev3"]) .bay { display: none; }
+  @media (hover: none), (max-width: 940px) { .bay { display: none; } }
+  /* proximity is detected on document pointermove (not an overlay zone —
+     an overlay would steal the belt's right-edge scroll acceleration);
+     only the true card body captures clicks */
+  .bay:not(.locked) .bay-panel { cursor: pointer; }
+  /* stage-2 carrier: the pull from connected face to full drawer. The
+     panel (stage 1) and the inner frame both ride it, so the connected
+     card travels as one piece. All transforms are posed by the driver —
+     no transitions on them. */
+  .bay-drawer { position: absolute; inset: 0; will-change: transform; }
+  /* the body: white fill with only top/bottom frame lines — sliding in
+     from the page edge IS those lines making their way to the outside
+     edge. The left (outside) edge is drawn separately by .bf-face. */
+  .bay-panel {
+    position: absolute; inset: 0; background: #fff;
+    border: 0 solid #000; border-top-width: 1.5px; border-bottom-width: 1.5px;
+    transform: translateX(calc(var(--bayW) + 10px));   /* parked off-page */
+    transition: box-shadow .45s ease;
+    box-shadow: -7px 9px 0 -1px rgba(0, 0, 0, 0);
+    pointer-events: auto; will-change: transform;
+  }
+  /* the shadow waits for the frame to complete — .shadowed fires off p */
+  .bay.shadowed .bay-panel { box-shadow: -7px 9px 0 -1px rgba(0, 0, 0, .85); }
+  /* black ground: a black drop is invisible on the page — announce with the
+     d5 idiom instead (faint white rim + solid black behind it) */
+  body:not(.light) .bay.shadowed .bay-panel {
+    box-shadow: -7px 9px 0 -1px rgba(255, 255, 255, .12), -7px 9px 0 0 rgba(0, 0, 0, .9);
+  }
+  /* the outside edge: two vertical halves closing onto themselves after
+     the top/bottom lines arrive — the face connecting, echoing the inner */
+  .bf-face { position: absolute; left: 0; top: -1.5px; bottom: -1.5px; width: 1.5px; pointer-events: none; }
+  .bf-face::before, .bf-face::after {
+    content: ""; position: absolute; left: 0; width: 1.5px; height: 50%;
+    background: #000; transform: scaleY(var(--fp));
+  }
+  .bf-face::before { top: 0; transform-origin: center top; }
+  .bf-face::after { bottom: 0; transform-origin: center bottom; }
+  /* the inner frame: rails + dot, riding the drawer but sliding on its own.
+     Marks are page-colored until the white body slides beneath (.inked). */
+  .bay-inner {
+    /* resting marks are trimmed ~3/4" top and bottom (82 = 10 + 72);
+       the driver grows them back to full card height (10px) when the
+       drawer assembles or a board is under inspection (the lean) */
+    position: absolute; top: 82px; bottom: 82px; right: var(--inner-rest);
+    width: 2px; z-index: 2; pointer-events: none;
+    color: #000;
+    transition: color .35s ease; will-change: transform;
+  }
+  body:not(.light) .bay-inner { color: var(--bone); }
+  body:not(.light) .bay.inked .bay-inner { color: #000; }
+  .bay-rail { position: absolute; inset: 0; }
+  /* rails converge with --rp: height rides 41% → calc(50% - 6px) */
+  .bay-rail::before, .bay-rail::after {
+    content: ""; position: absolute; left: 0; width: 2px;
+    height: calc(41% + var(--rp) * 9% - var(--rp) * 6px);
+    background: currentColor;
+  }
+  .bay-rail::before { top: 0; }
+  .bay-rail::after { bottom: 0; }
+  .bay-dot {
+    position: absolute; left: -1.5px; top: 50%; width: 5px; height: 5px;
+    margin-top: -2.5px; border-radius: 50%; background: currentColor;
+  }
+  /* closed-bay receive: the dot answers the landing */
+  @keyframes dotPulse { 0%, 100% { transform: scale(1); } 45% { transform: scale(2.4); } }
+  .bay-inner.pulse .bay-dot { animation: dotPulse .5s ease; }
+  /* chip + status arrive with the connection, not before */
+  .bay-ref {
+    position: absolute; top: 12px; left: 9px; z-index: 3;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase;
+    background: #000; color: #fff; padding: 4px 7px; pointer-events: none;
+    opacity: 0; transition: opacity .4s ease;
+  }
+  .bay-st {
+    position: absolute; bottom: 14px; left: 11px; z-index: 3; width: 7px; height: 7px;
+    border-radius: 50%; background: #3e7d3a; pointer-events: none;
+    opacity: 0; transition: opacity .4s ease;
+  }
+  .bay.shadowed .bay-ref, .bay.shadowed .bay-st {
+    opacity: 1;
+    transition: opacity .35s ease .15s;
+  }
+  .bay-st.none { background: #8b8175; }
+  /* collapse arrow: the lightbox nav gesture rerun at the bay's mid dot,
+     pointing back toward the screen edge. Transition-driven (enter and
+     exit share the horizontal axis here, and the close slides everything
+     off-screen anyway — no keyframe arming needed). */
+  .bay-navfx {
+    position: absolute; left: 9px; top: 50%; width: 62px; height: 40px;
+    transform: translateY(-50%); fill: none; stroke: #000; stroke-width: 2;
+    pointer-events: none;
+  }
+  .bay-navfx .ln-s { stroke-dasharray: 15; stroke-dashoffset: 15; transition: stroke-dashoffset .12s ease; }
+  .bay-navfx .sq { stroke-dasharray: 52; stroke-dashoffset: 52; transition: stroke-dashoffset .18s ease; }
+  /* the arrow earns its seat as the drawer nears full size (.fullish) */
+  .bay.fullish .bay-navfx .ln-s { stroke-dashoffset: 0; transition: stroke-dashoffset .14s ease; }
+  .bay.fullish .bay-navfx .sq { stroke-dashoffset: 0; transition: stroke-dashoffset .22s ease .12s; }
+  .bay-close {
+    position: absolute; left: 25px; top: 50%; margin-top: -13px; z-index: 2;
+    display: grid; place-items: center; overflow: hidden;
+    width: 26px; height: 26px;
+    font-family: var(--mono); font-size: 15px; font-weight: 700; line-height: 1;
+    color: #000; opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, box-shadow .15s ease;
+  }
+  .bay.fullish .bay-close { opacity: 1; pointer-events: auto; transition: opacity .2s ease .12s, box-shadow .15s ease; }
+  .bay-close::before {
+    content: ""; position: absolute; inset: 0; background: #000;
+    transform: scaleX(0); transform-origin: left center; transition: transform .3s ease;
+  }
+  .bay.fullish .bay-close::before { transform: scaleX(1); transition: transform .3s ease .32s; }
+  .bay-close .ft { position: relative; z-index: 1; transition: color .15s ease; }
+  .bay.fullish .bay-close .ft { color: #fff; transition: color .2s ease .45s; }
+  .bay.fullish .bay-close:hover { box-shadow: inset 0 0 0 1.5px #000; }
+  .bay.fullish .bay-close:hover::before { background: #fff; transition-delay: 0s; }
+  .bay.fullish .bay-close:hover .ft { color: #000; transition-delay: 0s; }
+  /* shelves: four lines between the bay frame edge and the screen edge,
+     each with a small faint shadow that fades in after the extend */
+  .bay-shelves {
+    position: absolute; left: 96px; right: 16px; top: 6%; bottom: 6%;
+    display: grid; grid-template-rows: repeat(4, 1fr);
+  }
+  .bay-shelf { position: relative; display: flex; align-items: flex-end; gap: 10px; padding: 0 6px 6px; }
+  .bay-shelf::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: #000;
+    box-shadow: 3px 4px 0 rgba(0, 0, 0, 0); transition: box-shadow .4s ease;
+  }
+  .bay.pulled .bay-shelf::after {
+    box-shadow: 3px 4px 0 rgba(0, 0, 0, .15);
+    transition-delay: calc(var(--i, 0) * .1s);
+  }
+  .bay-item {
+    height: 52px; width: auto; cursor: pointer;
+    filter: drop-shadow(3px 4px 0 rgba(0, 0, 0, .25));
+    transition: transform .2s ease;
+  }
+  .bay-item:hover { transform: translateY(-3px) scale(1.06); }
+  /* the flight: a cloned cutout riding from the card to the bay */
+  .bay-fly {
+    position: fixed; z-index: 6500; pointer-events: none;
+    filter: drop-shadow(6px 8px 0 rgba(0, 0, 0, .3));
+    transition: transform .62s cubic-bezier(.3, .7, .25, 1), opacity .18s ease .48s;
   }
 
   /* ================= ground switcher (tool chrome) ================= */
@@ -1071,6 +1262,33 @@
     </div>
   </div>
 
+  <!-- cart bay: right-edge card sliver that extends into the lisst bay (fv3 mode) -->
+  <aside class="bay" id="bay" aria-label="My lisst bay">
+    <div class="bay-drawer">
+    <div class="bay-panel" id="bay-panel" role="button" tabindex="0" aria-label="Open the lisst bay">
+      <span class="bf-face" aria-hidden="true"></span>
+      <span class="bay-ref" id="bay-ref">0</span>
+      <span class="bay-st none" id="bay-st" aria-hidden="true"></span>
+      <svg class="bay-navfx" viewBox="0 0 62 40" aria-hidden="true">
+        <line class="ln-s" x1="1.5" y1="20" x2="16" y2="20"/>
+        <path class="sq" d="M16 20 V7 H42 V20"/>
+        <path class="sq" d="M16 20 V33 H42 V20"/>
+      </svg>
+      <button class="bay-close" id="bay-close" type="button" aria-label="Collapse bay"><span class="ft">›</span></button>
+      <div class="bay-shelves" id="bay-shelves">
+        <div class="bay-shelf" style="--i:0"></div>
+        <div class="bay-shelf" style="--i:1"></div>
+        <div class="bay-shelf" style="--i:2"></div>
+        <div class="bay-shelf" style="--i:3"></div>
+      </div>
+    </div>
+    <div class="bay-inner" id="bay-inner" aria-hidden="true">
+      <span class="bay-rail"></span>
+      <span class="bay-dot" id="bay-dot"></span>
+    </div>
+    </div>
+  </aside>
+
   <div class="switch">
     <span class="swhead label">Ground</span>
     <div class="swrow">
@@ -1225,6 +1443,18 @@
         if (done) clearInterval(el._t);
       }, 30);
     }
+    /* the +List chip joins the card-hover decode family: it scrambles to
+       a random want-word — inflected, no immediate repeats — and back to
+       "+ List" on leave. The ✓ state keeps its meaning and never plays. */
+    const WANTS = ["Want?", "Like?", "Need?", "Mine !"];
+    function wantWord(card) {
+      const lft = card.querySelector(".fc-list .ft");
+      if (!lft || /✓/.test(lft.textContent)) return null;
+      const pool = WANTS.filter(w => w !== lft.dataset.lastWant);
+      const pick = pool[(Math.random() * pool.length) | 0];
+      lft.dataset.lastWant = pick;
+      return { lft, pick };
+    }
     if (canHover) {
       document.addEventListener("pointerover", e => {
         const card = e.target.closest && e.target.closest(".d7f");
@@ -1234,15 +1464,18 @@
         const stx = card.querySelector(".sttxt");
         const nmt = card.querySelector(".nmt");
         const dims = nmt && nmt.dataset.dims;
+        const want = wantWord(card);
         if (reduced) {
           if (ref) ref.textContent = "AVRG";
           if (stx) stx.textContent = stx.dataset.txt;
           if (dims) nmt.textContent = dims;
+          if (want) want.lft.textContent = want.pick;
           return;
         }
         if (ref) decodeInto(ref, "AVRG");
         if (stx) decodeInto(stx, stx.dataset.txt);
         if (dims) decodeInto(nmt, dims);
+        if (want) decodeInto(want.lft, want.pick);
       });
       document.addEventListener("pointerout", e => {
         const card = e.target.closest && e.target.closest(".d7f");
@@ -1254,6 +1487,11 @@
         if (ref) { clearInterval(ref._t); ref.textContent = ref.dataset.ref; }
         if (stx) { clearInterval(stx._t); stx.textContent = ""; }
         if (nmt) { clearInterval(nmt._t); nmt.textContent = nmt.dataset.nm; }
+        const lft = card.querySelector(".fc-list .ft");
+        if (lft && !/✓/.test(lft.textContent)) {
+          if (reduced) lft.textContent = "+ List";
+          else decodeInto(lft, "+ List");
+        }
       });
     }
 
@@ -1314,6 +1552,7 @@
       const ref = jref(c, b, k);
       return {
         ref,
+        id: b.id,
         nm: b.name || CARDNM[c.id] || "",
         img: CUT(b),
         dims: JDIMS[c.id] || "",
@@ -1339,7 +1578,8 @@
             '<span class="nm"><span class="nmt" data-nm="' + esc(m.nm) + '" data-dims="' + esc(m.dimsPh) + '">' + esc(m.nm) + '</span></span>' +
           '</div>' +
           (m.st === "gone" ? "" :
-            '<button class="fchip fc-list d7f-cta"><span class="ft">+ List</span></button>') +
+            '<button class="fchip fc-list d7f-cta" data-id="' + esc(m.id) + '"><span class="ft">' +
+              (inLisst(m.id) ? "✓ Lisst" : "+ List") + '</span></button>') +
           '<span class="fst ' + m.st + '"><span class="dot"></span><span class="sttxt" data-txt="' + m.stTxt.toUpperCase() + '"></span></span>' +
         '</div></div>',
       paper: m =>
@@ -1652,6 +1892,7 @@
         btn.addEventListener("click", e => {
           e.stopPropagation();
           toggleLisst(btn.dataset.id);
+          renderBay();
           renderLisst();
         });
       });
@@ -1922,6 +2163,7 @@
       toggleLisst(id);
       lbListBtn.textContent = inLisst(id) ? "✓ on the lisst" : "+ add to my lisst";
       lbListBtn.classList.toggle("on", inLisst(id));
+      renderBay();   /* bay is hidden outside fv3, but keep its count honest */
     });
     /* fv3 list chip proxies the same lisst toggle (lb-list-btn is hidden
        in fv3 mode but keeps carrying the board id) */
@@ -1929,10 +2171,16 @@
       e.stopPropagation();
       const id = lbListBtn.dataset.id;
       if (!id) return;
+      const adding = !inLisst(id);
       toggleLisst(id);
       e.currentTarget.querySelector(".ft").textContent = inLisst(id) ? "✓ Lisst" : "+ List";
       lbListBtn.textContent = inLisst(id) ? "✓ on the lisst" : "+ add to my lisst";
       lbListBtn.classList.toggle("on", inLisst(id));
+      /* card chips elsewhere on the page track the same board */
+      document.querySelectorAll('.fc-list[data-id="' + id + '"] .ft').forEach(t => {
+        t.textContent = inLisst(id) ? "✓ Lisst" : "+ List";
+      });
+      if (adding) flyToBay(lbCard); else renderBay();
     });
     document.getElementById("lb-close").addEventListener("click", () => closeLb());
     lbScrim.addEventListener("click", () => closeLb());
@@ -2131,6 +2379,220 @@
       b.classList.toggle("on", b.dataset.card === CARD);
       b.addEventListener("click", () => { if (b.dataset.card !== CARD) setCard(b.dataset.card); });
     });
+
+    /* ---- cart bay: right-edge card sliver (sprint item 2) ----
+       State classes on #bay: .near while the pointer is in the proximity
+       zone (rails close), .armed once the close finishes with the pointer
+       still there (card shadow fades in), .open after a click (panel
+       slides out, arrow draws, shelf shadows stagger in). The hit zone
+       sits OVER the sliver so hovering the sliver itself can't disarm. */
+    const bay = document.getElementById("bay");
+    const bayPanel = document.getElementById("bay-panel");
+    const bayInner = document.getElementById("bay-inner");
+    const bayDot = document.getElementById("bay-dot");
+    const bayRef = document.getElementById("bay-ref");
+    const baySt = document.getElementById("bay-st");
+    const bayShelves = Array.from(document.getElementById("bay-shelves").children);
+
+    function renderBay() {
+      bayRef.textContent = String(myLisst.length);
+      baySt.classList.toggle("none", !myLisst.length);
+      bayShelves.forEach(s => { s.innerHTML = ""; });
+      myLisst.forEach((id, n) => {
+        const { ci, b, k } = BOARD_INDEX[id];
+        const img = document.createElement("img");
+        img.className = "bay-item";
+        img.src = CUT(b);
+        img.alt = img.title = lisstLabel(id);
+        img.addEventListener("click", () => openLb(ci, k));
+        bayShelves[Math.min(3, (n / 4) | 0)].appendChild(img);
+      });
+    }
+
+    /* proximity: within 130px of the right screen edge, inside the bay's
+       vertical range. Tracked on the document so the belt underneath keeps
+       its own right-edge hover behavior. The emergence choreography is all
+       CSS off the .near class — enter fast-then-slow, exit long and quiet. */
+    /* the drawer driver: one master progress value p (0..1), advanced by
+       rAF; every piece is posed from it each frame. The cursor is the
+       motor — in the trigger zone p always climbs, but the RATE scales
+       with proximity: parked at the outer bound it's a slow continuous
+       crawl that completes on its own; at the page edge it's quick, so
+       the approach feels like doing the pull. Click locks it at full,
+       the arrow drains it fast, otherwise leaving drains it slowly.
+       Speed knobs here; geometry knobs on .bay in the CSS. */
+    const BAY_TUNE = {
+      trigger: 195,     /* px from the right edge that wakes the drawer */
+      durSlow: 6.5,     /* seconds to full with the cursor parked at the outer bound */
+      durFast: 1.1,     /* seconds to full with the cursor at the page edge */
+      durShut: 1.4,     /* the quiet drain when nothing was clicked */
+      durSnap: .45,     /* click: sped up / locked in */
+      durClose: .4,     /* the arrow's quick shut */
+      /* the outside frame is one continuous motion: top/bottom lines ride
+         to the outside edge (accelerating — the catching-up is theirs to
+         do, the inner line never slows), round the corner into the face
+         halves, and the face only lands (connects) at max visibility.
+         Horizontal motion is ONE eased distance over `travel`, split
+         between body and drawer arithmetically — the corner is not a
+         motion boundary, so there's nothing to stutter on. Shadow + chip
+         wait for the landing. */
+      seg: { inner: [0, .30], travel: [.02, 1], face: [.28, 1] },
+      at: { inked: .20, shadowed: .985, pulled: .55, fullish: .9 },
+      restTrim: 72,     /* ~3/4" shaved off the resting marks, top and bottom */
+      /* the lean: a board under inspection (lightbox open) makes the
+         marks grow to full height and pull off the edge — the familiar
+         line coming closer along with the board */
+      lean: { x: 20, durIn: .6, durOut: .45 }
+    };
+    const bayDrawerEl = bay.querySelector(".bay-drawer");
+    const bayCS = getComputedStyle(bay);
+    const BAY_W = parseFloat(bayCS.getPropertyValue("--bayW")) || 340;
+    const BAY_SLIVER = parseFloat(bayCS.getPropertyValue("--sliver")) || 62;
+    const BAY_SLIDE = parseFloat(bayCS.getPropertyValue("--inner-slide")) || 46;
+    let bayP = 0, bayLean = 0, bayLocked = false, bayClosing = false, bayPtr = null;
+    let bayPosedP = -1, bayPosedL = -1;
+    const segT = (p, s) => Math.min(1, Math.max(0, (p - s[0]) / (s[1] - s[0])));
+    const ssBay = t => t * t * (3 - 2 * t);
+    document.addEventListener("pointermove", e => { bayPtr = { x: e.clientX, y: e.clientY }; });
+
+    function bayPose() {
+      if (bayP === bayPosedP && bayLean === bayPosedL) return;
+      bayPosedP = bayP; bayPosedL = bayLean;
+      const e1 = segT(bayP, BAY_TUNE.seg.inner);              /* linear: the inner line never slows */
+      const ef = ssBay(segT(bayP, BAY_TUNE.seg.face));
+      const leanE = ssBay(bayLean);
+      /* vertical: trimmed at rest, full card height when the drawer
+         assembles OR a board is under inspection — whichever asks harder */
+      const vi = 10 + BAY_TUNE.restTrim * (1 - Math.max(e1, leanE));
+      bayInner.style.top = bayInner.style.bottom = vi.toFixed(1) + "px";
+      /* one continuous horizontal journey (off-page → full pull), eased
+         once, then split: the panel takes the first stretch (until its
+         face reaches the sliver position), the drawer takes the rest */
+      const bodyLeg = 10 + BAY_SLIVER;
+      const D = (bodyLeg + BAY_W - BAY_SLIVER) * ssBay(segT(bayP, BAY_TUNE.seg.travel));
+      const leanX = BAY_TUNE.lean.x * leanE * (1 - e1);       /* the lean yields to the drawer */
+      bayInner.style.transform = "translateX(" + (-(BAY_SLIDE * e1) - leanX).toFixed(2) + "px)";
+      bayPanel.style.transform = "translateX(" + ((BAY_W + 10) - Math.min(D, bodyLeg)).toFixed(2) + "px)";
+      bayDrawerEl.style.transform = "translateX(" + (-Math.max(0, D - bodyLeg)).toFixed(2) + "px)";
+      bay.style.setProperty("--rp", e1.toFixed(3));
+      bay.style.setProperty("--fp", ef.toFixed(3));
+      bay.classList.toggle("inked", bayP >= BAY_TUNE.at.inked);
+      bay.classList.toggle("shadowed", bayP >= BAY_TUNE.at.shadowed);
+      bay.classList.toggle("pulled", bayP >= BAY_TUNE.at.pulled);
+      bay.classList.toggle("fullish", bayP >= BAY_TUNE.at.fullish);
+      bay.classList.toggle("locked", bayLocked);
+    }
+    let bayLast = performance.now();
+    function bayTick(now) {
+      const dt = Math.min(.05, (now - bayLast) / 1000);
+      bayLast = now;
+      let rate;
+      if (bayLocked) rate = 1 / BAY_TUNE.durSnap;
+      else if (bayClosing) rate = -1 / BAY_TUNE.durClose;
+      else {
+        let near = false, closeness = 0;
+        if (bayPtr) {
+          const dist = innerWidth - bayPtr.x;
+          near = dist < BAY_TUNE.trigger && bayPtr.y > innerHeight * .13 && bayPtr.y < innerHeight * .87;
+          if (near) closeness = 1 - Math.max(0, dist) / BAY_TUNE.trigger;
+        }
+        /* speed ramp: linear across the first 3/4 of the zone, then a
+           steeper curve near the absolute page edge */
+        const ramp = closeness <= .75
+          ? closeness * .8
+          : .6 + .4 * Math.pow((closeness - .75) / .25, 2);
+        rate = near
+          ? 1 / (BAY_TUNE.durSlow + (BAY_TUNE.durFast - BAY_TUNE.durSlow) * ramp)
+          : -1 / BAY_TUNE.durShut;
+      }
+      if (reduced) rate *= 60;   /* no slow theater under reduced motion */
+      bayP = Math.min(1, Math.max(0, bayP + rate * dt));
+      if (bayClosing && bayP === 0) bayClosing = false;
+      /* the lean tracks the lightbox */
+      let lr = lb.hidden ? -dt / BAY_TUNE.lean.durOut : dt / BAY_TUNE.lean.durIn;
+      if (reduced) lr *= 60;
+      bayLean = Math.min(1, Math.max(0, bayLean + lr));
+      bayPose();
+      requestAnimationFrame(bayTick);
+    }
+    requestAnimationFrame(bayTick);
+
+    function openBay() { bayClosing = false; bayLocked = true; bayPosedP = -1; }
+    function closeBay() { bayLocked = false; bayClosing = true; bayPosedP = -1; }
+    bayPanel.addEventListener("click", openBay);
+    bayPanel.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openBay(); }
+    });
+    document.getElementById("bay-close").addEventListener("click", e => {
+      e.stopPropagation();   /* don't let the panel's own click re-lock it */
+      closeBay();
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && bayP > 0 && lb.hidden && vlb.hidden) closeBay();
+    });
+
+    /* the flight: clone the board cutout and ride it into the bay — onto
+       its shelf slot if open, onto the sliver's count chip if closed
+       (closed bay answers with the shadow pulse). renderBay waits for the
+       landing so the item doesn't appear before the flight arrives. */
+    function flyToBay(cardEl) {
+      const src = cardEl && cardEl.querySelector(".stage img, .frame img");
+      if (reduced || !src) { renderBay(); return; }
+      const sr = src.getBoundingClientRect();
+      const open = bayP > .5;   /* drawer visibly out → land on the shelf */
+      let tx, ty, th;
+      if (open) {
+        const n = myLisst.length - 1;   /* the slot this board will land in */
+        const shelf = bayShelves[Math.min(3, (n / 4) | 0)].getBoundingClientRect();
+        tx = shelf.left + 12 + (n % 4) * 62 + 26;
+        ty = shelf.bottom - 32;
+        th = 52;
+      } else {
+        /* closed: land on the resting dot */
+        const rr = bayDot.getBoundingClientRect();
+        tx = rr.left + rr.width / 2; ty = rr.top + rr.height / 2; th = 18;
+      }
+      const fly = src.cloneNode();
+      fly.className = "bay-fly";
+      fly.style.left = sr.left + "px"; fly.style.top = sr.top + "px";
+      fly.style.width = sr.width + "px"; fly.style.height = sr.height + "px";
+      document.body.appendChild(fly);
+      const s = th / sr.height;
+      const dx = tx - (sr.left + sr.width / 2);
+      const dy = ty - (sr.top + sr.height / 2);
+      requestAnimationFrame(() => {
+        fly.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s.toFixed(3) + ") rotate(5deg)";
+        fly.style.opacity = "0";
+      });
+      setTimeout(() => {
+        fly.remove();
+        renderBay();
+        if (!open) {
+          bayInner.classList.add("pulse");
+          bayInner.addEventListener("animationend", () => bayInner.classList.remove("pulse"), { once: true });
+        }
+      }, 620);
+    }
+
+    /* +List on belt/grid fv3 cards: capture phase, so the card's own
+       "open the lightbox" click never sees it. The lightbox chip keeps
+       its element handler (skipped by id here). */
+    document.addEventListener("click", e => {
+      const chip = e.target.closest && e.target.closest(".fc-list.d7f-cta");
+      if (!chip || chip.id === "lb-fv3-list") return;
+      const id = chip.dataset.id;
+      if (!id) return;
+      e.stopPropagation(); e.preventDefault();
+      const adding = !inLisst(id);
+      toggleLisst(id);
+      document.querySelectorAll('.fc-list[data-id="' + id + '"] .ft').forEach(t => {
+        t.textContent = inLisst(id) ? "✓ Lisst" : "+ List";
+      });
+      if (adding) flyToBay(chip.closest(".d7f"));
+      else renderBay();
+    }, true);
+
+    renderBay();
 
     route();
   })();
