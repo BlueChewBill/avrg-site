@@ -13,7 +13,7 @@ Static site for AVRG handmade fingerboards. No framework, no npm — plain HTML/
 ## Layout
 
 - `site/` — current live site source. `site/data.js` is **generated** by build_site.py; don't hand-edit it.
-- `redesign/` — lettered explorations (`a-` … `i-`). **`h-blackout.html` is the active direction.** Checkpoints are saved as `h-blackout.<date>-checkpoint.html`. `redesign/header-playground.html` is an interactive explorer for top-bar tab hover styles (self-contained tool, not a site page).
+- `redesign/` — lettered explorations (`a-` … `i-`). **`h-blackout.html` is the active direction.** Checkpoints are saved as `h-blackout.<date>-checkpoint.html`. `redesign/header-playground.html` is an interactive explorer for top-bar tab hover styles (self-contained tool, not a site page). `redesign/card-lab.html` is the product-card treatment explorer (A–B photo controls vs C–F background-removed cutouts; sample cutouts in `redesign/card-lab/`, made with the `cutout.swift` + `trim.swift` scripts there — `swift cutout.swift in.jpg out.png` then `swift trim.swift out.png`; macOS Vision, no deps. Batch those or rembg if the direction sticks).
 - `boards/`, `completes/`, `clean shots/` — photography. In a collection folder: a loose image = single-photo board; a subfolder = one board with multiple angles. Originals build from `completes/` and require a description `.txt` per board folder.
 - `deploy/` — deployable snapshot (assembled separately; build_site.py does not write here). Actual deployment = drag `site/` to Netlify Drop.
 - `videos/web/` — web-ready riding clips (clip-1/2.mp4 + posters); raw `.mov`s are gitignored.

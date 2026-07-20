@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AVRG — product card lab</title>
+<!-- Exploration tool, not a site page. Serve from repo root (:8123, avrg-root):
+     cutouts live in redesign/card-lab/, photos come from ../site/img/.
+     Six treatments: A/B keep the photo, C–F use background-removed cutouts. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  @font-face {
+    font-family: "Satoshi";
+    src: url("../site/fonts/Satoshi-Black.otf") format("opentype");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --bg: #000;
+    --bone: #ddd1b6;
+    --ink: #201a15;
+    --soft: #c7bda4;
+    --hint: #a29a89;
+    --line: #6b6d71;
+    --orange: #d8511f;
+    --blue: #1f6fb8;
+    --gold: #c98a12;
+    --disp: "Bricolage Grotesque", -apple-system, sans-serif;
+    --mono: "Space Mono", ui-monospace, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--bone);
+    font-family: var(--disp);
+    -webkit-font-smoothing: antialiased;
+    padding: 46px clamp(20px, 5vw, 72px) 90px;
+  }
+  ::selection { background: var(--bone); color: var(--ink); }
+  img { display: block; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+  .label {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: "Satoshi", var(--disp); font-weight: 900;
+    text-transform: uppercase; letter-spacing: -0.025em;
+    font-size: clamp(30px, 4.6vw, 54px); color: #fff;
+  }
+  .intro { max-width: 62ch; margin-top: 12px; color: var(--soft); font-size: 14px; line-height: 1.7; }
+  .intro .k { color: #fff; font-weight: 700; }
+
+  .lab {
+    margin-top: 54px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 64px 48px; align-items: start;
+  }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  .cellhead { align-self: stretch; display: flex; gap: 12px; align-items: baseline; }
+  .chip {
+    font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .18em;
+    color: #000; background: var(--bone); border-radius: 6px; padding: 4px 9px; flex: none;
+  }
+  .cellhead .why { font-size: 12.5px; line-height: 1.55; color: var(--hint); }
+  .cellhead .why b { color: var(--bone); font-weight: 700; }
+
+  /* shared button chrome (borrowed from the topbar tab language) */
+  .bt {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    border: 2px solid #fff; border-radius: 8px; color: #fff;
+    padding: 9px 13px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .bt:hover { background: #fff; color: #000; }
+  .bt.acc { border-color: var(--orange); color: var(--orange); }
+  .bt.acc:hover { background: var(--orange); color: #000; }
+
+  /* ---- A · baseline: current framed photo card ---- */
+  .scard { width: 232px; cursor: pointer; transition: transform .18s ease; }
+  .scard:hover { transform: translateY(-4px); }
+  .frame {
+    aspect-ratio: 4/5; overflow: hidden; border-radius: 6px;
+    background: #16120e;
+    box-shadow: 0 0 0 2px var(--ink), 7px 9px 0 -1px rgba(32, 26, 21, .34);
+  }
+  .frame img { width: 100%; height: 100%; object-fit: cover; }
+  .cap { margin-top: 12px; text-align: center; }
+  .cap .nm { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .cap .rf {
+    display: block; margin-top: 4px;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase; color: #fff;
+  }
+
+  /* ---- B · scrim: photo stays, text moves onto a gradient ---- */
+  .vscrim { width: 232px; cursor: pointer; transition: transform .18s ease; }
+  .vscrim:hover { transform: translateY(-4px); }
+  .vscrim .frame { position: relative; }
+  .vscrim .veil {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    justify-content: flex-end; align-items: flex-start; gap: 8px;
+    padding: 16px 14px 14px;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 46%, rgba(0,0,0,.82) 88%);
+  }
+  .vscrim .nm { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #fff; }
+  .vscrim .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .22em; color: var(--soft); text-transform: uppercase; }
+
+  /* ---- C · open float: cutout on bare black, caption alongside ---- */
+  .vfloat {
+    width: 250px; cursor: pointer;
+    display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: end;
+  }
+  .vfloat img {
+    height: 320px; width: auto;
+    filter: drop-shadow(9px 12px 0 rgba(32, 26, 21, .55));
+    transition: transform .22s ease;
+  }
+  .vfloat:hover img { transform: translateY(-6px) rotate(-2deg); }
+  .vfloat .side { padding-bottom: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .vfloat .rf { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .26em; color: var(--orange); text-transform: uppercase; }
+  .vfloat .nm {
+    font-family: "Satoshi", var(--disp); font-weight: 900; color: #fff;
+    text-transform: uppercase; letter-spacing: -0.02em; font-size: 21px; line-height: 1.02;
+  }
+  .vfloat .ln { font-size: 12px; line-height: 1.6; color: var(--hint); }
+  .vfloat .bt { margin-top: 6px; }
+
+  /* ---- D · bone panel: cutout staged on the bone card, ink text ---- */
+  .vpanel { width: 232px; cursor: pointer; transition: transform .18s ease; }
+  .vpanel:hover { transform: translateY(-4px); }
+  .vpanel .panel {
+    aspect-ratio: 4/5; border-radius: 6px; background: var(--bone);
+    box-shadow: 0 0 0 2px var(--ink), 7px 9px 0 -1px rgba(32, 26, 21, .34);
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    overflow: hidden; position: relative;
+  }
+  .vpanel .panel img {
+    position: absolute; top: 18px; height: calc(100% - 78px); width: auto;
+    filter: drop-shadow(7px 9px 0 rgba(32, 26, 21, .30));
+    transition: transform .22s ease;
+  }
+  .vpanel:hover .panel img { transform: rotate(2deg) scale(1.02); }
+  .vpanel .pcap {
+    position: relative; width: 100%; padding: 12px 14px 13px; text-align: center;
+    display: flex; align-items: baseline; justify-content: space-between;
+    border-top: 2px solid var(--ink); background: var(--bone); color: var(--ink);
+  }
+  .vpanel .nm { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+  .vpanel .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--orange); }
+
+  /* ---- E · ledger split: cutout + full text column + buttons ---- */
+  .vledger {
+    width: 330px; cursor: pointer;
+    display: grid; grid-template-columns: 108px 1fr; gap: 22px; align-items: center;
+    border: 2px solid var(--ink); border-radius: 10px;
+    background: #0b0906; padding: 20px 20px 20px 16px;
+    box-shadow: 7px 9px 0 -1px rgba(32, 26, 21, .34);
+    transition: transform .18s ease, border-color .18s ease;
+  }
+  .vledger:hover { transform: translateY(-4px); border-color: #3a2f24; }
+  .vledger img {
+    height: 250px; width: auto; margin: 0 auto;
+    filter: drop-shadow(6px 8px 0 rgba(0, 0, 0, .5));
+    transition: transform .22s ease;
+  }
+  .vledger:hover img { transform: rotate(-2.5deg); }
+  .vledger .col { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
+  .vledger .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .26em; color: var(--gold); text-transform: uppercase; }
+  .vledger .nm {
+    font-family: "Satoshi", var(--disp); font-weight: 900; color: #fff;
+    text-transform: uppercase; letter-spacing: -0.02em; font-size: 19px; line-height: 1.04;
+  }
+  .vledger .ln { font-size: 12px; line-height: 1.62; color: var(--hint); }
+  .vledger .row { display: flex; gap: 8px; margin-top: 5px; }
+
+  /* ---- F · poster: display type behind the deck, accent field ---- */
+  .vposter {
+    width: 258px; cursor: pointer; position: relative;
+    aspect-ratio: 4/5; border-radius: 6px; overflow: hidden;
+    background: var(--blue);
+    box-shadow: 0 0 0 2px var(--ink), 7px 9px 0 -1px rgba(32, 26, 21, .34);
+    transition: transform .18s ease;
+  }
+  .vposter:hover { transform: translateY(-4px); }
+  .vposter .big {
+    position: absolute; left: 8px; top: 6px;
+    font-family: "Satoshi", var(--disp); font-weight: 900;
+    text-transform: uppercase; letter-spacing: -0.03em; line-height: .82;
+    font-size: 88px; color: rgba(0, 0, 0, .38); user-select: none;
+  }
+  .vposter img {
+    position: absolute; left: 62%; bottom: -3%; height: 88%;
+    transform: translateX(-50%) rotate(8deg);
+    filter: drop-shadow(10px 10px 0 rgba(0, 0, 0, .35));
+    transition: transform .25s ease;
+  }
+  .vposter:hover img { transform: translateX(-50%) rotate(5deg) translateY(-6px); }
+  .vposter .pfoot {
+    position: absolute; left: 14px; bottom: 12px; right: 14px; z-index: 2;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .vposter .nm { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .24em; color: #fff; text-transform: uppercase; }
+
+  .note { margin-top: 70px; max-width: 62ch; color: var(--hint); font-size: 12.5px; line-height: 1.7; }
+  .note b { color: var(--bone); }
+
+  /* ================= D2 · info pass on the bone panel ================= */
+  h2 {
+    margin-top: 90px;
+    font-family: "Satoshi", var(--disp); font-weight: 900;
+    text-transform: uppercase; letter-spacing: -0.02em;
+    font-size: clamp(22px, 3vw, 34px); color: #fff;
+  }
+  .d2row {
+    margin-top: 40px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 48px 40px; align-items: start;
+  }
+  .d2 { width: 250px; cursor: pointer; transition: transform .18s ease; }
+  .d2:hover { transform: translateY(-4px); }
+  .d2 .panel {
+    border-radius: 6px; background: var(--bone); overflow: hidden;
+    box-shadow: 0 0 0 2px var(--ink), 7px 9px 0 -1px rgba(32, 26, 21, .34);
+  }
+  .d2 .stage {
+    position: relative; height: 250px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d2 .stage img {
+    height: 214px; width: auto;
+    filter: drop-shadow(7px 9px 0 rgba(32, 26, 21, .30));
+    transition: transform .22s ease;
+  }
+  .d2:hover .stage img { transform: rotate(2deg) scale(1.02); }
+  .d2 .info {
+    border-top: 2px solid var(--ink); background: var(--bone); color: var(--ink);
+    padding: 11px 13px 12px;
+  }
+  .d2 .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .d2 .nm { font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d2 .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--orange); }
+  .d2 .dims {
+    margin-top: 5px;
+    font-family: var(--mono); font-size: 8px; font-weight: 400;
+    letter-spacing: .18em; text-transform: uppercase; color: #6f6250;
+  }
+  .d2 .r2 {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 9px; padding-top: 9px; border-top: 1.5px solid rgba(32, 26, 21, .18);
+  }
+  .st {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+  }
+  .st .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .st.avail .dot { background: #3e7d3a; }
+  .st.avail { color: #3e7d3a; }
+  .st.pend .dot { background: var(--gold); animation: pulse 1.6s ease-in-out infinite; }
+  .st.pend { color: var(--gold); }
+  .st.gone .dot { background: #8b8175; }
+  .st.gone { color: #8b8175; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .plus {
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .16em; text-transform: uppercase;
+    color: var(--ink); border: 1.5px solid var(--ink); border-radius: 6px;
+    padding: 5px 9px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .plus:hover { background: var(--ink); color: var(--bone); }
+  /* the spark: builder's mark for the ones that came out perfect */
+  .spark { color: var(--orange); font-size: 12px; line-height: 1; cursor: help; }
+  /* sold: card stays (proof of one-of-one) but steps back */
+  .d2.sold { opacity: .55; }
+  .d2.sold .stage img { filter: grayscale(.7) drop-shadow(7px 9px 0 rgba(32, 26, 21, .22)); }
+  .d2.sold .rf { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .d2.sold:hover { transform: none; }
+  .d2.sold:hover .stage img { transform: none; }
+  .legend { margin-top: 26px; font-size: 12px; color: var(--hint); }
+  .legend .spark { font-size: 11px; }
+
+  /* ================= D3 · photo card, white plate, heavy shadow ================= */
+  .d3 { width: 250px; cursor: pointer; transition: transform .18s ease; }
+  .d3:hover { transform: translateY(-4px); }
+  .d3 .panel {
+    border-radius: 6px; background: #fff; overflow: hidden;
+    box-shadow: 0 0 0 2px var(--ink), 7px 9px 0 -1px rgba(32, 26, 21, .9);
+  }
+  .d3 .photo { height: 250px; overflow: hidden; }
+  .d3 .photo img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform .22s ease;
+  }
+  .d3:hover .photo img { transform: scale(1.03); }
+  .d3 .info {
+    border-top: 2px solid #000; background: #fff; color: #000;
+    padding: 11px 13px 12px;
+  }
+  .d3 .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .d3 .nm { font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d3 .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--orange); }
+  .d3 .dims {
+    margin-top: 5px;
+    font-family: var(--mono); font-size: 8px; font-weight: 400;
+    letter-spacing: .18em; text-transform: uppercase; color: #555;
+  }
+  .d3 .r2 {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 9px; padding-top: 9px; border-top: 1.5px solid rgba(0, 0, 0, .15);
+  }
+  .d3 .plus { color: #000; border-color: #000; }
+  .d3 .plus:hover { background: #000; color: #fff; }
+  .d3.sold { opacity: .55; }
+  .d3.sold .photo img { filter: grayscale(.7); }
+  .d3.sold .rf { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .d3.sold:hover { transform: none; }
+  .d3.sold:hover .photo img { transform: none; }
+
+  /* ================= D4 · white ground, three energies ================= */
+  .d4band {
+    margin: 90px calc(-1 * clamp(20px, 5vw, 72px)) -90px;
+    padding: 56px clamp(20px, 5vw, 72px) 80px;
+    background: #fff; color: #000;
+  }
+  .d4band h2 { margin-top: 0; color: #000; }
+  .d4band .intro { color: #444; }
+  .d4band .intro .k { color: #000; }
+
+  /* -- D4a · black card, cutout, white text -- */
+  .d4a { width: 250px; cursor: pointer; transition: transform .18s ease; }
+  .d4a:hover { transform: translateY(-4px); }
+  .d4a .panel {
+    border-radius: 6px; background: #0b0b0b; overflow: hidden;
+    box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .28);
+  }
+  .d4a .stage {
+    position: relative; height: 250px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d4a .stage img {
+    height: 214px; width: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .6));
+    transition: transform .22s ease;
+  }
+  .d4a:hover .stage img { transform: rotate(2deg) scale(1.02); }
+  .d4a .info { border-top: 2px solid #2a2a2a; padding: 11px 13px 12px; color: #fff; }
+  .d4a .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .d4a .nm { font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d4a .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--orange); }
+  .d4a .dims {
+    margin-top: 5px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #9a9a9a;
+  }
+  .d4a .r2 {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 9px; padding-top: 9px; border-top: 1.5px solid rgba(255, 255, 255, .18);
+  }
+  .d4a .st.avail, .d4a .st.avail .dot { color: #58a852; }
+  .d4a .st.avail .dot { background: #58a852; }
+  .d4a .plus { color: #fff; border-color: #fff; }
+  .d4a .plus:hover { background: #fff; color: #000; }
+
+  /* -- D4b · brutalist: hard border, solid offset shadow, stacked buttons -- */
+  .d4b { width: 250px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+  .d4b .panel {
+    background: #fff; border: 3px solid #000;
+    box-shadow: 9px 10px 0 0 #000;
+    transition: box-shadow .15s ease, transform .15s ease;
+  }
+  .d4b:hover .panel { transform: translate(3px, 3px); box-shadow: 5px 6px 0 0 #000; }
+  .d4b .stage {
+    position: relative; height: 236px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d4b .stage img {
+    height: 204px; width: auto;
+    filter: drop-shadow(6px 7px 0 rgba(0, 0, 0, .85));
+    transition: transform .22s ease;
+  }
+  .d4b:hover .stage img { transform: rotate(-2deg); }
+  .d4b .info { border-top: 3px solid #000; padding: 12px 13px 14px; color: #000; }
+  .d4b .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .d4b .nm { font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d4b .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+  .d4b .dims {
+    margin-top: 5px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #555;
+    padding-bottom: 10px; border-bottom: 2px solid #000;
+  }
+  .d4b .st { margin-top: 10px; }
+  .d4b .btcol { display: flex; flex-direction: column; gap: 9px; margin-top: 11px; }
+  .d4b .bbt {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase;
+    padding: 10px 0; text-align: center; width: 100%;
+    border: 2.5px solid #000; background: #fff; color: #000;
+    box-shadow: 4px 4px 0 0 #000;
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .d4b .bbt:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 0 #000; }
+  .d4b .bbt.solid { background: #000; color: #fff; }
+
+  /* -- D4c · valorant: bracket borders, corner dots, slash-sweep button -- */
+  .d4c { width: 262px; cursor: pointer; position: relative; }
+  /* bracket frame: two half-height outlines with a side gap, like the stash snippet */
+  .d4c::before, .d4c::after {
+    content: ""; position: absolute; left: -7px; width: calc(100% + 14px);
+    height: 48%; border: 2px solid #0E1822; pointer-events: none;
+  }
+  .d4c::before { top: -7px; border-bottom: 0; }
+  .d4c::after { bottom: -7px; border-top: 0; }
+  .d4c .panel {
+    position: relative; background: #0E1822; border: 1px solid #0E1822;
+    transition: border-color .2s ease;
+  }
+  .d4c:hover .panel { border-color: #FF4655; }
+  /* corner dots: dark top-left, red bottom-right, both flip white on hover */
+  .d4c .panel::before {
+    content: ""; position: absolute; width: 4px; height: 4px;
+    top: -1px; left: -1px; background: #0E1822; z-index: 2;
+    transition: background-color .15s ease;
+  }
+  .d4c .panel::after {
+    content: ""; position: absolute; width: 6px; height: 6px;
+    bottom: -1px; right: -1px; background: #FF4655; z-index: 2;
+    transition: background-color .15s ease;
+  }
+  .d4c:hover .panel::before, .d4c:hover .panel::after { background: #fff; }
+  .d4c .stage {
+    position: relative; height: 244px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d4c .stage img {
+    height: 210px; width: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .55));
+    transition: transform .22s ease;
+  }
+  .d4c:hover .stage img { transform: rotate(2deg); }
+  .d4c .info { border-top: 1px solid rgba(255, 255, 255, .16); padding: 11px 13px 13px; color: #fff; }
+  .d4c .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .d4c .nm { font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d4c .rf { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #FF4655; }
+  .d4c .dims {
+    margin-top: 5px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #8b95a1;
+  }
+  .d4c .r2 { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .d4c .st.avail, .d4c .st.avail .dot { color: #58a852; }
+  .d4c .st.avail .dot { background: #58a852; }
+  /* the slash-sweep button, straight from the stash snippet */
+  .d4c .vbt {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase; color: #fff;
+    border: 1px solid #fff; padding: 8px 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 531.28 200'%3E%3Cdefs%3E%3Cstyle%3E .shape %7B fill: %23FF4655 %7D %3C/style%3E%3C/defs%3E%3Cg id='Layer_2' data-name='Layer 2'%3E%3Cg id='Layer_1-2' data-name='Layer 1'%3E%3Cpolygon class='shape' points='415.81 200 0 200 115.47 0 531.28 0 415.81 200' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E%0A");
+    background-color: transparent;
+    background-size: 200%; background-position: 200%; background-repeat: no-repeat;
+    transition: .3s ease-in-out;
+    transition-property: background-position, border-color;
+  }
+  .d4c .vbt:hover { border-color: #FF4655; background-position: 40%; }
+
+  /* -- D4a refinements: white chips + spread info; grow-on-hover -- */
+  .d5 { width: 250px; cursor: pointer; }
+  .d5 .panel {
+    border-radius: 6px; background: #0b0b0b; overflow: hidden;
+    box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .28);
+    transition: box-shadow .22s ease;
+  }
+  /* card stays put — the deck and both shadows do the moving */
+  .d5:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .36); }
+  .d5 .stage {
+    position: relative; height: 250px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d5 .stage img {
+    height: 214px; width: auto;
+    filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .6));
+    transition: transform .22s ease, filter .22s ease;
+  }
+  .d5:hover .stage img {
+    transform: scale(1.07);
+    filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .6));
+  }
+  .d5 .info { padding: 11px 13px 12px; color: #fff; }
+  .d5 .r1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .d5 .nm { font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d5 .dims {
+    margin-top: 5px; font-family: var(--mono); font-size: 8px;
+    letter-spacing: .18em; text-transform: uppercase; color: #9a9a9a;
+  }
+  .d5 .r2 {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 9px; padding-top: 9px; border-top: 1.5px solid rgba(255, 255, 255, .18);
+  }
+  .d5 .st.avail, .d5 .st.avail .dot { color: #58a852; }
+  .d5 .st.avail .dot { background: #58a852; }
+  /* the white chip language: solid white, sharp corners, black text */
+  .wchip {
+    display: inline-block;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    background: #fff; color: #000; border: none; border-radius: 0;
+    padding: 5px 8px;
+  }
+  button.wchip { cursor: pointer; letter-spacing: .16em; padding: 6px 10px; transition: background .15s ease, color .15s ease; }
+  button.wchip:hover { background: #000; color: #fff; box-shadow: 0 0 0 1.5px #fff; }
+  /* v1 keeps the divider above the caption */
+  .d5.sq .info { border-top: 2px solid #2a2a2a; }
+  /* v2: info spread around the card */
+  .d5.spread .corner {
+    position: absolute; top: 12px; left: 12px; z-index: 2;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .d5.spread .info { text-align: center; padding-top: 0; }
+  .d5.spread .nm { display: block; }
+  .d5.spread .dims { color: #fff; margin-top: 6px; }
+  .d5.spread .r2 { border-top: 0; padding-top: 0; margin-top: 12px; }
+
+  /* ================= D5 · the spread card back on black, three frames ================= */
+  #d5sec { padding-top: 90px; }
+  /* on the black page the slab shadow needs a hint more presence */
+  #d5sec .d5 .panel { box-shadow: 7px 9px 0 -1px rgba(255, 255, 255, .07), 7px 9px 0 0 rgba(0, 0, 0, .9); }
+  #d5sec .d5:hover .panel { box-shadow: 12px 15px 0 -1px rgba(255, 255, 255, .09), 12px 15px 0 0 rgba(0, 0, 0, .9); }
+  /* v-white: white border defines the card */
+  .v-white .panel { border: 2px solid #fff; }
+  /* v-grey: grey inner fill, ink text */
+  .v-grey .panel { background: #a49d92; border: 2px solid #000; }
+  .v-grey .nm, .v-grey .dims { color: #16120e; }
+  .v-grey .st.avail, .v-grey .st.avail .dot { color: #2e6229; }
+  .v-grey .st.avail .dot { background: #2e6229; }
+  .v-grey .stage img { filter: drop-shadow(7px 9px 0 rgba(22, 18, 14, .45)); }
+  .v-grey:hover .stage img { filter: drop-shadow(11px 14px 0 rgba(22, 18, 14, .45)); }
+  .v-grey button.wchip { box-shadow: 0 0 0 1.5px #16120e; }
+  .v-grey button.wchip:hover { background: #16120e; color: #fff; box-shadow: 0 0 0 1.5px #16120e; }
+  /* v-brk: the D4c bracket frame, moved inside the card */
+  .v-brk .panel { position: relative; }
+  .v-brk .inframe { position: absolute; inset: 10px; z-index: 1; pointer-events: none; }
+  .v-brk .inframe::before, .v-brk .inframe::after {
+    content: ""; position: absolute; left: 0; width: calc(100% - 4px);
+    height: 46%; border: 2px solid #fff;
+  }
+  .v-brk .inframe::before { top: 0; border-bottom: 0; }
+  .v-brk .inframe::after { bottom: 0; border-top: 0; }
+  .v-brk .inframe .ctl, .v-brk .inframe .cbr { position: absolute; display: block; }
+  .v-brk .inframe .ctl { width: 4px; height: 4px; top: -1px; left: -1px; background: #fff; }
+  .v-brk .inframe .cbr { width: 6px; height: 6px; bottom: -1px; right: -1px; background: #FF4655; }
+  .v-brk .corner { top: 16px; left: 16px; }
+  .v-brk .stage { height: 244px; }
+  .v-brk .info { position: relative; z-index: 0; padding: 0 28px 24px; }
+
+  /* ================= D6 · zoned plates + four-corner spread ================= */
+  #d6sec { padding-top: 90px; }
+  #d6sec .d5 .panel { box-shadow: 7px 9px 0 -1px rgba(255, 255, 255, .07), 7px 9px 0 0 rgba(0, 0, 0, .9); }
+  #d6sec .d5:hover .panel { box-shadow: 12px 15px 0 -1px rgba(255, 255, 255, .09), 12px 15px 0 0 rgba(0, 0, 0, .9); }
+  /* zoned: white border wraps the whole card; the stage rides a plate,
+     everything from the dims down lives on the black between border and plate */
+  .d6z .panel { border: 2px solid #fff; background: #0b0b0b; }
+  .d6z .plate { background: #a49d92; }
+  .d6z.wp .plate { background: #fff; }
+  .d6z .plate .nm { display: block; text-align: center; color: #16120e; padding-bottom: 15px; letter-spacing: .13em; }
+  .d6z .plate .stage img { filter: drop-shadow(7px 9px 0 rgba(22, 18, 14, .45)); }
+  .d6z:hover .plate .stage img { filter: drop-shadow(11px 14px 0 rgba(22, 18, 14, .45)); }
+  .d6z .info { padding-top: 12px; }
+  /* four-corner spread on the grey card */
+  .d6c .panel {
+    position: relative; border-radius: 6px; overflow: hidden;
+    background: #a49d92; border: 2px solid #000;
+    padding: 44px 0 42px;
+  }
+  .d6c .nm { display: block; text-align: center; color: #16120e; margin-top: 6px; font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .d6c .tl {
+    position: absolute; top: 13px; left: 13px;
+    font-family: var(--mono); font-size: 8px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase; color: #16120e;
+  }
+  .d6c .tr { position: absolute; top: 10px; right: 11px; display: flex; align-items: center; gap: 7px; }
+  .d6c .bl { position: absolute; bottom: 11px; left: 11px; }
+  .d6c .br { position: absolute; bottom: 14px; right: 13px; }
+  .d6c .st.avail, .d6c .st.avail .dot { color: #2e6229; }
+  .d6c .st.avail .dot { background: #2e6229; }
+  .d6c .stage img { filter: drop-shadow(7px 9px 0 rgba(22, 18, 14, .45)); }
+  .d6c:hover .stage img { filter: drop-shadow(11px 14px 0 rgba(22, 18, 14, .45)); }
+  .d6c button.wchip:hover { background: #16120e; color: #fff; }
+  /* component shadows, hover-only */
+  .d6c .tl, .d6c .nm, .d6c .st, .d6c .spark { transition: text-shadow .22s ease; }
+  .d6c .wchip { transition: box-shadow .22s ease, background .15s ease, color .15s ease; }
+  .d6c:hover .tl, .d6c:hover .nm, .d6c:hover .st, .d6c:hover .spark { text-shadow: 3px 4px 0 rgba(22, 18, 14, .3); }
+  .d6c:hover .wchip { box-shadow: 4px 5px 0 rgba(22, 18, 14, .4); }
+
+  /* ================= D7 · the ⸺ · ⸺ frame ================= */
+  #d7sec { padding-top: 90px; }
+  #d7sec .d5 .panel { box-shadow: 7px 9px 0 -1px rgba(255, 255, 255, .07), 7px 9px 0 0 rgba(0, 0, 0, .9); }
+  #d7sec .d5:hover .panel { box-shadow: 12px 15px 0 -1px rgba(255, 255, 255, .09), 12px 15px 0 0 rgba(0, 0, 0, .9); }
+  /* shared: bracket frame with a roomier mid-gap, a dot holding its center
+     (the ⸺ · ⸺ from the logo). Hover: lines close onto the dot; unhover reopens. */
+  .d7 .panel { position: relative; background: #0b0b0b; }
+  .d7 .inframe { position: absolute; inset: 10px; z-index: 1; pointer-events: none; }
+  .d7 .inframe::before, .d7 .inframe::after {
+    content: ""; position: absolute; left: 0; width: calc(100% - 4px);
+    height: 41%; border: 2px solid #fff;
+    transition: height .28s ease;
+  }
+  .d7 .inframe::before { top: 0; border-bottom: 0; }
+  .d7 .inframe::after { bottom: 0; border-top: 0; }
+  .d7:hover .inframe::before, .d7:hover .inframe::after { height: calc(50% - 6px); }
+  .d7 .dgl, .d7 .dgr {
+    position: absolute; top: 50%; width: 5px; height: 5px; border-radius: 50%;
+    background: #fff; transform: translateY(-50%);
+  }
+  .d7 .dgl { left: -1.5px; }
+  .d7 .dgr { right: -1.5px; }
+  .d7 .inframe .ctl, .d7 .inframe .cbr { position: absolute; display: block; }
+  .d7 .inframe .ctl { width: 4px; height: 4px; top: -1px; left: -1px; background: #fff; }
+  .d7 .inframe .cbr { width: 6px; height: 6px; bottom: -1px; right: -1px; background: #FF4655; }
+  .d7 .corner {
+    position: absolute; top: 16px; left: 16px; z-index: 2;
+    display: flex; align-items: center; gap: 7px;
+  }
+  /* d7a: second thin white box outside — the black between the lines reads as a frame */
+  .d7a .panel { border: 1.5px solid #fff; }
+  .d7a .stage { height: 244px; }
+  .d7a .info { position: relative; z-index: 0; padding: 0 28px 24px; }
+  /* d7b: no outer box, stripped to the corners */
+  .d7b .stage { height: 326px; }
+  .d7b .dimtr {
+    position: absolute; top: 18px; right: 18px; z-index: 2;
+    font-family: var(--mono); font-size: 8px; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase; color: #fff;
+  }
+  .d7b .blist { position: absolute; bottom: 16px; right: 16px; z-index: 2; }
+  .d7b .stbr { position: absolute; bottom: 25px; left: 28px; z-index: 2; }
+  .d7b .st.avail, .d7b .st.avail .dot { color: #58a852; }
+  .d7b .st.avail .dot { background: #58a852; }
+</style>
+</head>
+<body>
+
+<h1>Card lab</h1>
+<p class="intro">Six product-card treatments for the blackout draft. <span class="k">A–B</span> keep the countertop photo (control group). <span class="k">C–F</span> use background-removed cutouts — the pivot candidate. Cutouts here were made with macOS Vision on four sample boards; a real pass would batch the whole library.</p>
+
+<div class="lab">
+
+  <div class="cell">
+    <div class="cellhead"><span class="chip">A</span>
+      <p class="why"><b>Baseline.</b> The current shelf card — framed photo, caption below. The countertop is doing a lot of talking.</p></div>
+    <div class="scard">
+      <div class="frame"><img src="../site/img/thumb/classic-01-1.jpg" alt="" /></div>
+      <div class="cap"><span class="nm">Classic</span><span class="rf">CL 1</span></div>
+    </div>
+  </div>
+
+  <div class="cell">
+    <div class="cellhead"><span class="chip">B</span>
+      <p class="why"><b>Scrim.</b> No cutout needed — text rides a gradient on the photo. The cheap fix if the pivot doesn't earn its keep.</p></div>
+    <div class="vscrim">
+      <div class="frame"><img src="../site/img/thumb/classic-03-2.jpg" alt="" />
+        <div class="veil"><span class="rf">CL 3 · One of one</span><span class="nm">Classic</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cell">
+    <div class="cellhead"><span class="chip">C</span>
+      <p class="why"><b>Open float.</b> Deck loose on the black, hard offset shadow. Caption and button live beside it — no box at all.</p></div>
+    <div class="vfloat">
+      <img src="card-lab/classic-01-1-cut.png" alt="" />
+      <div class="side">
+        <span class="rf">CL 1</span>
+        <span class="nm">Classic</span>
+        <span class="ln">Hand-shaped, one of one. Blue stain over raw grain.</span>
+        <button class="bt">View</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cell">
+    <div class="cellhead"><span class="chip">D</span>
+      <p class="why"><b>Bone panel.</b> Cutout staged on the bone card — inverts the page, reads like a spec plate. Text sits on solid ground.</p></div>
+    <div class="vpanel">
+      <div class="panel"><img src="card-lab/classic-05-1-cut.png" alt="" />
+        <div class="pcap"><span class="nm">Classic</span><span class="rf">CL 5</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cell">
+    <div class="cellhead"><span class="chip">E</span>
+      <p class="why"><b>Ledger split.</b> The full pitch on one card: deck, name, a line of copy, both buttons. Only possible because the photo gave up its rectangle.</p></div>
+    <div class="vledger">
+      <img src="card-lab/hand-shaped-02-1-cut.png" alt="" />
+      <div class="col">
+        <span class="rf">HS 2</span>
+        <span class="nm">Peach Piro</span>
+        <span class="ln">Hand-shaped from scratch — no molds, no templates.</span>
+        <div class="row"><button class="bt">View</button><button class="bt acc">DM to claim</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cell">
+    <div class="cellhead"><span class="chip">F</span>
+      <p class="why"><b>Poster.</b> Collection accent field, display type behind the deck. Louder — maybe a cover card per collection rather than every board.</p></div>
+    <div class="vposter">
+      <span class="big">Clas&shy;sic</span>
+      <img src="card-lab/classic-03-2-cut.png" alt="" />
+      <div class="pfoot"><span class="nm">CL 3</span><span class="nm">One of one</span></div>
+    </div>
+  </div>
+
+</div>
+
+<p class="note"><b>Reading the room:</b> hover any card — every variant keeps the lift, C–F add a small rotate on the cutout so the deck feels loose from the card. Ref accents borrow the per-collection colors (orange / gold / blue). Copy lines are placeholders pulled from the brand text, not final.</p>
+
+<h2>D2 · Info pass</h2>
+<p class="intro">The bone panel carrying the full info set: name + ref, status, add-to-list, the builder's mark (<span style="color:var(--orange)">✱</span>), and a reserved spec line (placeholder numbers — dims stay unlisted for launch).</p>
+
+<div class="d2row">
+
+  <div class="d2">
+    <div class="panel">
+      <div class="stage"><img src="card-lab/classic-05-1-cut.png" alt="" /></div>
+      <div class="info">
+        <div class="r1"><span class="nm">Classic <span class="spark" title="Builder's mark — this one came out perfect">✱</span></span><span class="rf">CL 5</span></div>
+        <div class="dims">33.5 × 96 MM · MED KICK</div>
+        <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="plus">+ List</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d2">
+    <div class="panel">
+      <div class="stage"><img src="card-lab/hand-shaped-02-1-cut.png" alt="" /></div>
+      <div class="info">
+        <div class="r1"><span class="nm">Peach Piro</span><span class="rf" style="color:var(--gold)">HS 2</span></div>
+        <div class="dims">HAND-SHAPED · ONE OF ONE</div>
+        <div class="r2"><span class="st pend"><span class="dot"></span>Pending</span><button class="plus">+ List</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d2 sold">
+    <div class="panel">
+      <div class="stage"><img src="card-lab/classic-03-2-cut.png" alt="" /></div>
+      <div class="info">
+        <div class="r1"><span class="nm">Classic</span><span class="rf">CL 3</span></div>
+        <div class="dims">ONE OF ONE · GONE BUT LOGGED</div>
+        <div class="r2"><span class="st gone"><span class="dot"></span>Sold</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="legend"><span class="spark">✱</span> = builder's mark — shaped / rounded / countersunk exactly right. Not a tier, an annotation: it never sorts, filters, or prices; it just sits by the name like a signature. Sold cards keep their place in the grid — the archive is the proof these are one-of-one.</p>
+
+<h2>D3 · Photo + white plate</h2>
+<p class="intro">Same info set, no cutout — the countertop photo stays, the lower plate goes white with black text, and the card's offset shadow cranks to 90% opacity.</p>
+
+<div class="d2row">
+
+  <div class="d3">
+    <div class="panel">
+      <div class="photo"><img src="../site/img/thumb/classic-05-1.jpg" alt="" /></div>
+      <div class="info">
+        <div class="r1"><span class="nm">Classic <span class="spark" title="Builder's mark — this one came out perfect">✱</span></span><span class="rf">CL 5</span></div>
+        <div class="dims">33.5 × 96 MM · MED KICK</div>
+        <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="plus">+ List</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d3">
+    <div class="panel">
+      <div class="photo"><img src="../site/img/thumb/hand-shaped-02-1.jpg" alt="" /></div>
+      <div class="info">
+        <div class="r1"><span class="nm">Peach Piro</span><span class="rf" style="color:var(--gold)">HS 2</span></div>
+        <div class="dims">HAND-SHAPED · ONE OF ONE</div>
+        <div class="r2"><span class="st pend"><span class="dot"></span>Pending</span><button class="plus">+ List</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d3 sold">
+    <div class="panel">
+      <div class="photo"><img src="../site/img/thumb/classic-03-2.jpg" alt="" /></div>
+      <div class="info">
+        <div class="r1"><span class="nm">Classic</span><span class="rf">CL 3</span></div>
+        <div class="dims">ONE OF ONE · GONE BUT LOGGED</div>
+        <div class="r2"><span class="st gone"><span class="dot"></span>Sold</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="d4band">
+  <h2>D4 · White ground</h2>
+  <p class="intro">Same cutouts, flipped page. <span class="k">Left:</span> the D2 card gone black — white text on the dark slab. <span class="k">Middle:</span> brutalist — 3px border, solid offset shadow, stacked hard buttons; the whole card presses down on hover. <span class="k">Right:</span> the Valorant treatment from the stash — bracket frame, corner dots, slash-sweep on the button.</p>
+
+  <div class="d2row">
+
+    <div class="d4a">
+      <div class="panel">
+        <div class="stage"><img src="card-lab/classic-05-1-cut.png" alt="" /></div>
+        <div class="info">
+          <div class="r1"><span class="nm">Classic <span class="spark" title="Builder's mark — this one came out perfect">✱</span></span><span class="rf">CL 5</span></div>
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="plus">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d4b">
+      <div class="panel">
+        <div class="stage"><img src="card-lab/classic-03-2-cut.png" alt="" /></div>
+        <div class="info">
+          <div class="r1"><span class="nm">Classic <span class="spark" title="Builder's mark — this one came out perfect">✱</span></span><span class="rf">CL 3</span></div>
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <span class="st avail"><span class="dot"></span>Available</span>
+          <div class="btcol">
+            <button class="bbt">View board</button>
+            <button class="bbt solid">+ Add to list</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d4c">
+      <div class="panel">
+        <div class="stage"><img src="card-lab/hand-shaped-02-1-cut.png" alt="" /></div>
+        <div class="info">
+          <div class="r1"><span class="nm">Peach Piro</span><span class="rf">HS 2</span></div>
+          <div class="dims">HAND-SHAPED · ONE OF ONE</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="vbt">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="intro" style="margin-top:56px">Refining the black slab. <span class="k">Left:</span> ref + button as sharp solid-white chips. <span class="k">Right:</span> info spread around the card — ref chip and mark ride the top corner, no divider, dims centered in white. Hover either: the card holds still while the deck and both shadows grow.</p>
+
+  <div class="d2row">
+
+    <div class="d5 sq">
+      <div class="panel">
+        <div class="stage"><img src="card-lab/classic-05-1-cut.png" alt="" /></div>
+        <div class="info">
+          <div class="r1"><span class="nm">Classic <span class="spark" title="Builder's mark — this one came out perfect">✱</span></span><span class="wchip">CL 5</span></div>
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="wchip">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d5 spread">
+      <div class="panel">
+        <div class="stage">
+          <div class="corner"><span class="wchip">CL 5</span><span class="spark" title="Builder's mark — this one came out perfect">✱</span></div>
+          <img src="card-lab/classic-05-1-cut.png" alt="" />
+        </div>
+        <div class="info">
+          <span class="nm">Classic</span>
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="wchip">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="d5sec">
+  <h2>D5 · Spread, back on black</h2>
+  <p class="intro">The spread card returned to the blackout page, three ways of holding its edge: <span class="k">white border</span>, <span class="k">grey fill</span> (ink text), and the <span class="k">bracket frame from D4's Valorant card moved inside</span> the panel. Same grow-on-hover on all three.</p>
+
+  <div class="d2row">
+
+    <div class="d5 spread v-white">
+      <div class="panel">
+        <div class="stage">
+          <div class="corner"><span class="wchip">CL 5</span><span class="spark" title="Builder's mark — this one came out perfect">✱</span></div>
+          <img src="card-lab/classic-05-1-cut.png" alt="" />
+        </div>
+        <div class="info">
+          <span class="nm">Classic</span>
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="wchip">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d5 spread v-grey">
+      <div class="panel">
+        <div class="stage">
+          <div class="corner"><span class="wchip">CL 5</span><span class="spark" title="Builder's mark — this one came out perfect">✱</span></div>
+          <img src="card-lab/classic-05-1-cut.png" alt="" />
+        </div>
+        <div class="info">
+          <span class="nm">Classic</span>
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="wchip">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d5 spread v-brk">
+      <div class="panel">
+        <div class="inframe"><i class="ctl"></i><i class="cbr"></i></div>
+        <div class="stage">
+          <div class="corner"><span class="wchip">CL 5</span><span class="spark" title="Builder's mark — this one came out perfect">✱</span></div>
+          <img src="card-lab/classic-05-1-cut.png" alt="" />
+        </div>
+        <div class="info">
+          <span class="nm">Classic</span>
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="wchip">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="d6sec">
+  <h2>D6 · Zoned + corners</h2>
+  <p class="intro">From your annotation: <span class="k">left</span> — just the stage section grey, white border around the whole card, the black between border and plate holding the dims and lower. <span class="k">Middle</span> — same zoning, white plate. <span class="k">Right</span> — the grey card with info pushed to the four corners (dims top-left, ref top-right, list bottom-left, status bottom-right); hover floats every component off the card.</p>
+
+  <div class="d2row">
+
+    <div class="d5 spread d6z">
+      <div class="panel">
+        <div class="plate">
+          <div class="stage">
+            <div class="corner"><span class="wchip">CL 5</span><span class="spark" title="Builder's mark — this one came out perfect">✱</span></div>
+            <img src="card-lab/classic-05-1-cut.png" alt="" />
+          </div>
+          <span class="nm">Classic</span>
+        </div>
+        <div class="info">
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="wchip">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d5 spread d6z wp">
+      <div class="panel">
+        <div class="plate">
+          <div class="stage">
+            <div class="corner"><span class="wchip" style="box-shadow:0 0 0 1.5px #16120e">CL 5</span><span class="spark" title="Builder's mark — this one came out perfect">✱</span></div>
+            <img src="card-lab/classic-05-1-cut.png" alt="" />
+          </div>
+          <span class="nm">Classic</span>
+        </div>
+        <div class="info">
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="wchip">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d5 d6c">
+      <div class="panel">
+        <span class="tl">33.5 × 96 MM</span>
+        <div class="tr"><span class="wchip">CL 5</span><span class="spark" title="Builder's mark — this one came out perfect">✱</span></div>
+        <div class="stage"><img src="card-lab/classic-05-1-cut.png" alt="" /></div>
+        <span class="nm">Classic</span>
+        <button class="wchip bl">+ List</button>
+        <span class="st avail br"><span class="dot"></span>Available</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="d7sec">
+  <h2>D7 · The ⸺ · ⸺ frame</h2>
+  <p class="intro">The bracket card, logo-ified: the frame's mid-gap widens and a dot holds its center — the ⸺ · ⸺ from the main logo. Hover closes the lines onto the dot; unhover breathes the gap back open. <span class="k">Left:</span> a second thin white box outside, so the black between the lines reads as a frame. <span class="k">Right:</span> no outer box, info stripped to the corners — dims top-right, list flush bottom-right, status riding its baseline.</p>
+
+  <div class="d2row">
+
+    <div class="d5 spread d7 d7a">
+      <div class="panel">
+        <div class="inframe"><i class="ctl"></i><i class="cbr"></i><i class="dgl"></i><i class="dgr"></i></div>
+        <div class="stage">
+          <div class="corner"><span class="wchip">CL 5</span><span class="spark" title="Builder's mark — this one came out perfect">✱</span></div>
+          <img src="card-lab/classic-05-1-cut.png" alt="" />
+        </div>
+        <div class="info">
+          <span class="nm">Classic</span>
+          <div class="dims">33.5 × 96 MM · MED KICK</div>
+          <div class="r2"><span class="st avail"><span class="dot"></span>Available</span><button class="wchip">+ List</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d5 d7 d7b">
+      <div class="panel">
+        <div class="inframe"><i class="ctl"></i><i class="cbr"></i><i class="dgl"></i><i class="dgr"></i></div>
+        <span class="dimtr">33.5 × 96 MM</span>
+        <div class="stage">
+          <div class="corner"><span class="wchip">CL 5</span><span class="spark" title="Builder's mark — this one came out perfect">✱</span></div>
+          <img src="card-lab/classic-05-1-cut.png" alt="" />
+        </div>
+        <button class="wchip blist">+ List</button>
+        <span class="st avail stbr"><span class="dot"></span>Available</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
