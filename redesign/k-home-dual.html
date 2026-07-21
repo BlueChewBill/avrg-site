@@ -491,19 +491,52 @@
       gap: 22px 14px; margin-top: 24px; text-align: left;
     }
     .tile { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    /* the video tile keeps the old photo-frame look */
     .tile .tframe {
       aspect-ratio: 3/4; overflow: hidden; border-radius: 6px;
       background: #16120e;
       box-shadow: 0 0 0 2px var(--ink), 6px 8px 0 -1px rgba(32, 26, 21, .34);
     }
-    .tile .tframe img, .tile .tframe video { width: 100%; height: 100%; object-fit: cover; }
-    .tile .tcap { margin-top: 11px; text-align: center; }
-    .tile .tcap .nm { font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; display: block; }
-    .tile .tcap .sub {
-      display: block; margin-top: 4px;
-      font-family: var(--mono); font-size: 8.5px; font-weight: 700;
-      letter-spacing: .18em; text-transform: uppercase; color: #fff;
+    .tile .tframe video { width: 100%; height: 100%; object-fit: cover; }
+    /* collection card, frame-idiom lite: white ground on both page grounds
+       (the collision is the point, same as the product cards) */
+    .tile .tcard {
+      position: relative; aspect-ratio: 3/4;
+      background: #fff; border-radius: 8px;
+      box-shadow: 6px 8px 0 -1px rgba(32, 26, 21, .34);
+      display: flex; align-items: center; justify-content: center;
     }
+    .tile .tcard::before {
+      content: ""; position: absolute; inset: 9px;
+      border: 1.5px solid #000; pointer-events: none;
+    }
+    .tile .tcard img {
+      width: 58%; height: 72%; object-fit: contain;
+      filter: drop-shadow(5px 7px 5px rgba(0, 0, 0, .38));
+    }
+    .tile .tcount {
+      position: absolute; top: 9px; left: 9px;
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      letter-spacing: .1em; color: #fff; background: #000;
+      padding: 4px 7px;
+    }
+    .tile .tnm {
+      position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+      text-align: center;
+      font-size: 19px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+      color: #000;
+    }
+    .tile .tsub {
+      position: absolute; left: 0; right: 0; bottom: 16px;
+      text-align: center;
+      font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+      letter-spacing: .18em; text-transform: uppercase; color: #000;
+    }
+    .tile .tsub .tdot {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--tacc); margin-right: 7px; vertical-align: 1px;
+    }
+    body.light .tile .tcard { box-shadow: 6px 8px 0 -1px rgba(32, 26, 21, .18); }
     .pitch { max-width: 44ch; }
 
     /* collection pages: boards surface two across instead of one */
@@ -1665,15 +1698,18 @@
     ).join("");
 
     /* ---- home: tile grid (mobile) ---- */
-    /* every tile gets a single-deck beauty shot; the classic cover is the
-       multi-deck stack, so that one falls back to a board thumb */
-    const tileShot = c => (c.id === "classic" ? c.boards[0].thumb : (c.cover || (c.boards[0] && c.boards[0].thumb)));
+    /* collection cards in the frame idiom: white card, inner frame, count
+       chip at the corner, collection name bold over the board cutout, and
+       a "N BOARDS" line so the card clearly reads as a door to a section */
     const tilegrid = document.getElementById("tilegrid");
     tilegrid.insertAdjacentHTML("beforeend", HOME.map(({ c, i }) =>
       '<div class="tile" data-col="' + i + '" role="link" tabindex="0" style="--tacc:' + accOf(c) + '">' +
-        '<div class="tframe"><img loading="lazy" src="' + IMG(tileShot(c)) + '" alt="' + esc(SHORT[c.id] || c.title) + '"></div>' +
-        '<div class="tcap"><span class="nm">' + esc(SHORT[c.id] || c.title) + '</span>' +
-        '<span class="sub">' + esc(SUB[c.id] || "") + '</span></div>' +
+        '<div class="tcard">' +
+          '<span class="tcount">' + c.boards.length + '</span>' +
+          '<img loading="lazy" src="' + CUT(c.boards[0]) + '" alt="">' +
+          '<span class="tnm">' + esc(SHORT[c.id] || c.title) + '</span>' +
+          '<span class="tsub label"><i class="tdot"></i>' + c.boards.length + ' boards</span>' +
+        '</div>' +
       '</div>'
     ).join(""));
     tilegrid.querySelectorAll(".tile[data-col]").forEach(t => {
@@ -1828,17 +1864,22 @@
       });
     }
 
+    /* no collection gets its own page: the selection leads, then the whole
+       set continues below it — one scroll through everything, on every
+       screen size */
     function renderColPage(c, i) {
       const links =
         '<div class="colpage-links">' +
           '<a class="back label" href="#">← Back to collections</a>' +
-          '<a class="back label" href="#shop-all">Shop all collections →</a>' +
         '</div>';
+      const order = [i].concat(COLLECTIONS.map((_, j) => j).filter(j => j !== i));
       colpage.innerHTML =
-        '<section class="colpage-inner" data-col="' + i + '" style="--acc:' + accOf(c) + '">' +
-          colSectionHtml(c, i, links) +
-          colnavHtml(i, false) +
-        '</section>';
+        order.map((j, n) =>
+          '<section class="colpage-inner' + (n ? " shopall-sec" : "") + '" data-col="' + j + '" style="--acc:' + accOf(COLLECTIONS[j]) + '">' +
+            colSectionHtml(COLLECTIONS[j], j, n === 0 ? links : "") +
+          '</section>'
+        ).join("") +
+        '<section class="colpage-inner shopall-foot">' + colnavHtml(i, true) + '</section>';
       bindScards();
     }
 
