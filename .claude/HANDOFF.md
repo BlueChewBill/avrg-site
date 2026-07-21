@@ -1,64 +1,69 @@
-# Handoff — avrg-site — 2026-07-20 (evening)
+# Handoff — avrg-site — 2026-07-21
 
 ## Where we are
-Two things happened today in k-home-dual. First, a scoping session produced the
-full mobile dock spec + the site thesis (both written into CLAUDE.md — the spec
-is the "Mobile deck" open-thread entry, the thesis lives in the tone check).
-Second, mobile pass 1 SHIPPED: fv3 default, SW-chip switcher collapse,
-collection cards on the mobile home, the one-scroll shop (selection first, all
-sections below, both platforms), and the touch lightbox chip decoding to n/N
-position per swipe. All committed and pushed; GitHub Pages now serves main at
-https://bluechewbill.github.io/avrg-site/redesign/k-home-dual.html (rebuilds
-~1 min after every push — Dylan reviews on his phone at that URL).
+Bay seating sprint SHIPPED in k-home-dual: the +List flight into the desktop
+drawer is now a rAF arc that lands on the shelf item's measured rect (no
+crossfade seam, count holds until touchdown, landing answered by shelf thunk /
+rack recoil / count bump), with THREE seat variants on a temporary SEAT row in
+the dev switcher — drop / skid / seatdraw. Mobile side: the dock add-animation
+timing toy exists at redesign/dock-add-lab.html (the 1.5s wind-up S-curve with
+knobs). Separately, the Canva mass-export blocker is DEAD — solved via the
+Canva MCP connector; batch 1 (12 boards) is trimmed and sitting in
+redesign/card-lab/canva/ awaiting names. Everything committed.
 
 ## Next task
-**Mobile polish sprint** — Dylan's call: "thats the thing most people will
-see." No fixed ticket list; start by asking what he saw on his phone since the
-pass shipped, then fix what he flags. Known candidates already on record (in
-the "Mobile pass 1" open-thread entry): name-over-board legibility on busy
-cutouts (top-bold / bottom-bold variants ready as fallbacks), the
-collection-card decode flourish trigger (scroll-into-view vs idle cycle vs
-on-tap), and whether the n/N decode resolves fast enough at swipe speed.
-"Done" = mobile feels intentional end-to-end at the Pages URL.
+**Seat-variant reaction session.** Dylan flips the SEAT row on :8123
+(k-home-dual, Frame v3 card, open the drawer, add boards) and reacts; you tune
+the winner's numbers (SEAT_TUNE + the keyframes) live, then retire the loser
+variants and the SEAT switcher row. "Done" = one seating, tuned, switcher row
+gone, and the choice logged in CLAUDE.md. If reactions run fast, same session
+can continue into dock-add-lab knob tuning (that's a pick-numbers session, not
+a build).
 
 ## Read these, skip the rest
-- CLAUDE.md — open threads: "Mobile pass 1" (what shipped + open questions),
-  "Mobile deck" (the dock spec), and the three new bullets at the bottom
-  (buttons, Canva pipeline, more board sections). Densest orientation; read first.
-- redesign/k-home-dual.html — only what the task touches: mobile tile CSS is in
-  the `@media (max-width: 940px)` block (search "tcard"), collection-card markup
-  in the JS (search "tilegrid.insertAdjacentHTML"), one-scroll nav in
-  `renderColPage`, position decode in `populate` (search "wayfinding"),
-  switcher collapse (search "swtoggle").
+- CLAUDE.md — sprint item 2's "SEATING REWORKED" paragraph (what each variant
+  does + where the knobs live). Read first, it's dense and current.
+- redesign/k-home-dual.html — ONLY the bay flight region: search `SEAT_TUNE`
+  (flight knobs + bayFlight driver + flyToBay), and the seat CSS: search
+  `seatDrop` (keyframes for drop/skid/seatline/thunk/recoil/bump). The SEAT
+  switcher wiring is at search `SEAT_KEY`.
+- redesign/dock-add-lab.html — only if the session gets to mobile tuning.
 
 Everything else in the repo is NOT needed. Do not explore beyond this list.
 
 ## Context that isn't in the code
-- Preview: `avrg-root` (:8123), never file://. The Claude browser pane reports
-  hover:hover even at mobile size — touch-gated code (`!canHover`) can't be
-  seen there; verify by temporarily forcing the gate (worked today), and the
-  phone is the real test.
-- Both counts on the collection cards (corner chip + "N BOARDS" line) are
-  DELIBERATE — Dylan: "twice is the move." Don't dedupe.
-- The n/N chip decode is touch-only on purpose; desktop keeps ref→AVRG hover.
-  On touch the hover delegation never binds, so nothing fights the chip.
-- The tone law (decided today, in CLAUDE.md): when a ceremony risks tiring,
-  never shorten or hide it — escalate absurdity at the same speed.
-- The site thesis (his words, paraphrased in CLAUDE.md): polish is the setup,
-  "it's just a fingerboard, man" is the punchline. Discovery ladder: angry
-  cart → MINE! decode → taglines.
-- The Canva mass-export problem is HIS homework, but it now gates mobile card
-  quality — if he brings exported cutouts, drop them in redesign/card-lab/canva/
-  and swap; edge-compare.html is his comparison tool.
-- He has WAY more physical inventory than the 39 boards on site (photo of the
-  stacks seen today) — that's what "more board sections" is about.
-- Untracked at repo root: nnnoise-whiteBG-turq.svg — his file (likely a
-  web-assets candidate), not session output. Left alone; ask before touching.
+- Preview: `avrg-root` (:8123), never file://. The belt moves — clicking card
+  chips by screenshot coordinates misses; dispatch clicks on `.fc-list` nodes
+  or use the lightbox chip. Clear localStorage for a clean lisst.
+- Flight design decisions (don't re-litigate): the real item renders hidden
+  (.preseat) BEFORE the flight so the landing rect is measured, never guessed;
+  the clone becomes the item in the same frame; the count chip waits for
+  touchdown (pendingSeat set). Variant offsets are matched pairs — the flight
+  END equals the seat animation's FROM (drop: -9px y; skid: +19px x, 2deg),
+  so if you retune one side, retune both.
+- The closed-drawer add rides the same bayFlight to the resting dot — it's not
+  a variant, it stays regardless of the pick.
+- Seatdraw's line lives in the shelf and is wiped by any renderBay — fine at
+  normal click rates, known cosmetic loss under rapid-fire adds.
+- Canva pipeline (parked but primed): recipe in CLAUDE.md's Canva bullet.
+  batch1-pNN naming is a 1-minute human step via card-lab/batch-review.html
+  (STRONG guesses near-certain; p04≈p05 same board). Next batches: Dylan adds
+  a NAME COLUMN to the Canva sheet → page order = row order → names automate.
+  Dylan wants a hand-holding walkthrough of Sheet→Bulk Create when he's ready
+  ("like im 90") — that's a guided-clicks session, budget patience.
+- Desktop photo folder ~/Desktop/backgroundremovalcanva deduped this session
+  (33 exact copies → Trash, 237 unique remain). Nothing left to do there.
+- Tone check for tuning: the bar is "doesn't corrupt the clean cards" —
+  landings should read quiet-but-physical, not bouncy.
 
 ## Parked / later
-- The dock build (mobile deck) — spec is ready, but polish comes first.
-- The 1.5s add-animation timing toy — natural first build when dock work starts.
-- Desktop home-screen deck behavior (ambient vs acknowledger) — still undecided.
-- Sprint item 3 (board weight / cursor gravity); header cleanup; home-logo motion.
-- Buttons reaction session; more-board-sections bolt-on point; caliper dims;
-  video section; colpage h2 font question; port blackout → production site/.
+- Retiring the SEAT switcher is part of THIS next task; the ground/card rows stay.
+- Dock build proper (mobile) — after the toy's numbers feel right.
+- Bay drag-and-drop (proximity + drag release), cursor-gravity board physics
+  (sprint item 3), header cleanup, home-logo motion, buttons reaction session.
+- Mobile polish list from the 2026-07-20 handoff (legibility variants,
+  collection-card decode trigger) — superseded in priority by the seat pick,
+  still open.
+- Canva: export remaining designs once Dylan bulk-removes them (one MCP call);
+  possible duplicate 13-page design DAHP73pk2x4 in his account — confirm
+  before exporting to avoid double batches.
