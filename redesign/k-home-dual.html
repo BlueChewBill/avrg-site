@@ -1133,6 +1133,55 @@
     100% { transform: none; }
   }
 
+  /* ================= mobile dock-lite (from dock-add-lab) =================
+     The bay's mobile sibling: a right-edge display-case sliver that opens
+     during the add flight and carries the seated card out. The full dock
+     (screen-takeover display case) is a later build — this is the add
+     choreography + the receipt-icon confirmation. */
+  .kdock {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 6000;
+    width: min(150px, 39vw);
+    background: #fff; border-left: 2px solid #000;
+    transform: translateX(102%);
+    pointer-events: none; display: none;
+  }
+  .kdock .krail { position: absolute; inset: 10px 8px; border-left: 1.5px solid #000; }
+  .kdock .kslot { position: absolute; left: 18px; right: 14px; top: 35%; height: 2px; background: #000; }
+  .kdock-fly {
+    position: fixed; left: 0; top: 0; z-index: 6001;
+    background: #fff; pointer-events: none; will-change: transform, filter;
+  }
+  .kdock-fly .kin { position: absolute; inset: 4.3%; border: 1.5px solid #000; display: flex; align-items: center; justify-content: center; }
+  .kdock-fly img { height: 76%; width: auto; }
+  .kdock-fly .knm {
+    position: absolute; left: 0; right: 0; bottom: 5%; text-align: center;
+    color: #000; font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+  }
+  /* topbar receipt icon: replaces the lisst text tab on mobile */
+  .picon { display: none; position: relative; align-items: center; gap: 7px; padding: 8px 8px; flex: 0 0 auto; cursor: pointer; }
+  .picon svg { display: block; }
+  .picon .pcnt {
+    font-family: var(--mono); background: #ddd1b6; color: #000;
+    font-size: 10px; font-weight: 700; padding: 2px 6px; min-width: 10px; text-align: center;
+  }
+  body.light .picon svg { stroke: #000; }
+  body.light .picon .pcnt { background: #000; color: #fff; }
+  .picon.shake { animation: kpshake .45s ease; }
+  @keyframes kpshake {
+    20% { transform: translateX(-2.5px) rotate(-4deg); }
+    45% { transform: translateX(2.5px) rotate(3deg); }
+    70% { transform: translateX(-1.5px) rotate(-2deg); }
+    100% { transform: none; }
+  }
+  .picon .pcnt.bump { animation: kcbump .32s ease; }
+  @keyframes kcbump { 35% { transform: scale(1.35); } 100% { transform: none; } }
+  @media (hover: none), (max-width: 940px) {
+    .kdock { display: block; }
+    .picon { display: flex; }
+    #nav-lisst { display: none; }
+  }
+
   /* ================= ground switcher (tool chrome) ================= */
   .switch {
     position: fixed; right: 18px; bottom: 18px; z-index: 6000;
@@ -1266,6 +1315,14 @@
     <div class="bar-brand" id="bar-brand" title="AVRG"><img id="bar-logo" src="" alt="AVRG" /></div>
     <nav id="topnav" style="display:contents"></nav>
     <a class="dm-mini" id="nav-dm" href="#" target="_blank" rel="noopener"></a>
+    <a class="picon" id="picon" href="#my-lisst" aria-label="My lisst">
+      <!-- receipt glyph, lead candidate from the dock scoping -->
+      <svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="#ddd1b6" stroke-width="1.5">
+        <path d="M2 1 h12 v15 l-2-1.4 -2 1.4 -2-1.4 -2 1.4 -2-1.4 -2 1.4 z"/>
+        <path d="M5 5.5 h6 M5 8.5 h6 M5 11.5 h4"/>
+      </svg>
+      <span class="pcnt" id="pcnt">0</span>
+    </a>
   </header>
 
   <div id="home">
@@ -1415,7 +1472,19 @@
       <button class="swbtn" type="button" data-seat="skid">Skid</button>
       <button class="swbtn" type="button" data-seat="seatdraw">Seatdraw</button>
     </div>
+    <span class="swhead label" style="margin-top:6px">Dock</span>
+    <div class="swrow">
+      <button class="swbtn" type="button" data-dock="ramp">Ramp</button>
+      <button class="swbtn" type="button" data-dock="toss">Toss</button>
+      <button class="swbtn" type="button" data-dock="swoop">Swoop</button>
+    </div>
   </div>
+
+  <!-- mobile dock-lite: receives the add flight; the full display case comes later -->
+  <aside class="kdock" id="kdock" aria-hidden="true">
+    <div class="krail"></div>
+    <div class="kslot" id="kslot"></div>
+  </aside>
 
   <script src="../site/data.js"></script>
   <script>
@@ -2122,6 +2191,8 @@
     const navLisst = document.getElementById("nav-lisst");
     function lisstTab() {
       navLisst.textContent = "My Lisst" + (myLisst.length ? " (" + myLisst.length + ")" : "");
+      const pc = document.getElementById("pcnt");
+      if (pc) pc.textContent = myLisst.length;
     }
     lisstTab();
     function toggleLisst(id) {
@@ -2289,10 +2360,12 @@
     lbListBtn.addEventListener("click", () => {
       const id = lbListBtn.dataset.id;
       if (!id) return;
+      const adding = !inLisst(id);
       toggleLisst(id);
       lbListBtn.textContent = inLisst(id) ? "✓ on the lisst" : "+ add to my lisst";
       lbListBtn.classList.toggle("on", inLisst(id));
       renderBay();   /* bay is hidden outside fv3, but keep its count honest */
+      if (adding && dockActive()) dockAdd(id, lbCard);
     });
     /* fv3 list chip proxies the same lisst toggle (lb-list-btn is hidden
        in fv3 mode but keeps carrying the board id) */
@@ -2309,7 +2382,8 @@
       document.querySelectorAll('.fc-list[data-id="' + id + '"] .ft').forEach(t => {
         t.textContent = inLisst(id) ? "✓ Lisst" : "+ List";
       });
-      if (adding) flyToBay(lbCard, id); else renderBay();
+      if (adding) { if (dockActive()) dockAdd(id, lbCard); else flyToBay(lbCard, id); }
+      else renderBay();
     });
     document.getElementById("lb-close").addEventListener("click", () => closeLb());
     lbScrim.addEventListener("click", () => closeLb());
@@ -2525,6 +2599,147 @@
           x.classList.toggle("on", x.dataset.seat === SEAT));
       });
     });
+
+    /* ---- mobile dock-lite: the dock-add-lab spline flight, scaled to the
+       viewport. Numbers are the saved presets from redesign/dock-add-lab.html
+       (2026-07-21) — retune in the lab, re-bake here. The Dock switcher row
+       flips paths (comparison chrome, same deal as the Seat row). ---- */
+    const DOCK_KEY = "avrg-k-dock";
+    let DOCK = "ramp";
+    try { DOCK = localStorage.getItem(DOCK_KEY) || "ramp"; } catch (e) {}
+    document.querySelectorAll(".swbtn[data-dock]").forEach(b => {
+      b.classList.toggle("on", b.dataset.dock === DOCK);
+      b.addEventListener("click", () => {
+        DOCK = b.dataset.dock;
+        try { localStorage.setItem(DOCK_KEY, DOCK); } catch (e) {}
+        document.querySelectorAll(".swbtn[data-dock]").forEach(x =>
+          x.classList.toggle("on", x.dataset.dock === DOCK));
+      });
+    });
+    const DOCK_TUNE = {
+      ramp:  { dur: 1.9, dip: 0.70, crest: 1.25, side: 0.20, lead: 0.60 },
+      toss:  { dur: 1.9, dip: 0.85, crest: 1.25, side: 0.20, lead: 0.60 },
+      swoop: { dur: 1.9, dip: 0.85, crest: 1.25, side: 0.20, lead: 0.60 }
+    };
+    const kdock = document.getElementById("kdock");
+    const dockActive = () => matchMedia("(hover: none), (max-width: 940px)").matches;
+    const kss = t => t * t * (3 - 2 * t);
+    const kcl = v => Math.min(1, Math.max(0, v));
+    /* Catmull-Rom over {x,y,s,r} with p as the knot vector — the lab's driver */
+    function kpose(p, K) {
+      if (p <= K[0].p) return K[0];
+      if (p >= K[K.length - 1].p) return K[K.length - 1];
+      let i = 0;
+      while (p > K[i + 1].p) i++;
+      const k0 = K[Math.max(0, i - 1)], k1 = K[i], k2 = K[i + 1], k3 = K[Math.min(K.length - 1, i + 2)];
+      const t = (p - k1.p) / (k2.p - k1.p);
+      const h = (a, b, c, d) => {
+        const m1 = (c - a) / 2, m2 = (d - b) / 2, t2 = t * t, t3 = t2 * t;
+        return (2 * t3 - 3 * t2 + 1) * b + (t3 - 2 * t2 + t) * m1 + (-2 * t3 + 3 * t2) * c + (t3 - t2) * m2;
+      };
+      return { x: h(k0.x, k1.x, k2.x, k3.x), y: h(k0.y, k1.y, k2.y, k3.y),
+               s: h(k0.s, k1.s, k2.s, k3.s), r: h(k0.r, k1.r, k2.r, k3.r) };
+    }
+    /* landing thunk: low sine drop, synthesized — no asset */
+    let kactx = null;
+    function kthunk() {
+      try {
+        kactx = kactx || new (window.AudioContext || window.webkitAudioContext)();
+        const t = kactx.currentTime;
+        const o = kactx.createOscillator(), g = kactx.createGain();
+        o.type = "sine";
+        o.frequency.setValueAtTime(150, t);
+        o.frequency.exponentialRampToValueAtTime(52, t + .09);
+        g.gain.setValueAtTime(.18, t);
+        g.gain.exponentialRampToValueAtTime(.001, t + .13);
+        o.connect(g).connect(kactx.destination);
+        o.start(t); o.stop(t + .14);
+      } catch (e) { /* no audio — land silently */ }
+    }
+    function dockPing() {
+      const pc = document.getElementById("pcnt"), pi = document.getElementById("picon");
+      pc.classList.add("bump"); pi.classList.add("shake");
+      setTimeout(() => { pc.classList.remove("bump"); pi.classList.remove("shake"); }, 500);
+    }
+    let dockFlying = false;
+    function dockAdd(id, cardEl) {
+      if (dockFlying || reduced) { dockPing(); return; }
+      const src = cardEl && cardEl.querySelector(".stage img, .frame img");
+      if (!src) { dockPing(); return; }
+      const vw = innerWidth, vh = innerHeight;
+      const X = u => u / 390 * vw, Y = u => u / 720 * vh;   /* lab phone-space → viewport */
+      const T = DOCK_TUNE[DOCK] || DOCK_TUNE.ramp;
+      /* the flying card: the lab's white mini-card with this board's cutout */
+      const bw = Math.min(230, vw * .59), bh = bw * 300 / 230;
+      const fly = document.createElement("div");
+      fly.className = "kdock-fly";
+      fly.style.width = bw.toFixed(1) + "px"; fly.style.height = bh.toFixed(1) + "px";
+      const bmeta = BOARD_INDEX[id];
+      fly.innerHTML = '<div class="kin"><img src="' + esc(src.src) + '" alt=""></div>' +
+        (bmeta && bmeta.b.name ? '<span class="knm">' + esc(bmeta.b.name) + "</span>" : "");
+      document.body.appendChild(fly);
+      /* start = the real card's measured rect; seat = the slot's geometry
+         (offset*, not rects — the dock is transformed offscreen) */
+      const sr = cardEl.getBoundingClientRect();
+      const dockW = kdock.offsetWidth, slotY = document.getElementById("kslot").offsetTop;
+      const seatS = dockW * .52 / bw;
+      const seat = { p: 0.88, x: vw - dockW + 18 + (dockW - 32) / 2, y: slotY - bh * seatS / 2, s: seatS, r: 0 };
+      const start = { p: 0, x: sr.left + sr.width / 2, y: sr.top + sr.height / 2, s: sr.width / bw, r: 0 };
+      const dip = T.dip, crest = T.crest;
+      const K = DOCK === "swoop" ? [
+        start,
+        { p: 0.18, x: start.x - X(30), y: Y(190), s: 1.10, r: -5 },
+        { p: 0.42, x: X(195 - 120 * dip), y: Y(84 * (2 - crest)), s: 1.18, r: -2 },
+        { p: 0.66, x: X(192), y: Y(268), s: .80, r: 6 },
+        seat
+      ] : DOCK === "toss" ? [
+        start,
+        { p: 0.16, x: start.x - X(60 * dip), y: start.y + Y(80 * dip), s: .90, r: -8 * dip },
+        { p: 0.50, x: X(195), y: Y(90 * (2 - crest)), s: 1.10, r: 4 },
+        { p: 0.72, x: X(322), y: Y(128), s: .58, r: 7 },
+        seat
+      ] : [
+        start,
+        { p: 0.12, x: start.x - X(34), y: start.y + Y(92 * dip), s: .92, r: -8 * dip },
+        { p: 0.28, x: X(58), y: start.y + Y(170 * dip), s: .66, r: -3 },
+        { p: 0.42, x: X(178), y: start.y + Y(128 * dip), s: 1.00, r: 3 },
+        { p: 0.60, x: X(272), y: Y(96 * (2 - crest)), s: 1.10, r: 6 },
+        { p: 0.76, x: X(296), y: Y(138), s: .60, r: 2 },
+        seat
+      ];
+      /* size field over the screen: max at center-x, fading out into the seat */
+      const sideMul = (x, p) => 1 - T.side * Math.pow(Math.abs(x - vw / 2) / (vw / 2), 2) * (1 - kss(kcl((p - .70) / .18)));
+      dockFlying = true;
+      let landed = false;
+      const t0 = performance.now(), dur = T.dur * 1000;
+      (function frame(now) {
+        const p = kcl((now - t0) / dur);
+        const q = kpose(p, K);
+        const s = q.s * sideMul(q.x, p);
+        /* landing press: compress about the bottom edge, planted on the slot */
+        const press = Math.sin(Math.PI * kcl((p - .88) / .09));
+        const carry = (dockW * 1.04) * kss(kcl((p - .93) / .07));
+        let tr = "translate(" + (q.x - bw / 2 + carry).toFixed(1) + "px," + (q.y - bh / 2).toFixed(1) + "px) scale(" + s.toFixed(3) + ") rotate(" + q.r.toFixed(2) + "deg)";
+        if (press > 0) {
+          const k = 1 - .16 * press;
+          tr += " translate(0," + (bh / 2 * (1 - k)).toFixed(1) + "px) scale(" + (1 + .06 * press).toFixed(3) + "," + k.toFixed(3) + ")";
+        }
+        fly.style.transform = tr;
+        const alt = kcl((s - seatS) / Math.max(.2, start.s - seatS));
+        const o = (2 + 9 * alt) * (1 - .6 * press);
+        fly.style.filter = "drop-shadow(" + o.toFixed(1) + "px " + (o * 1.25).toFixed(1) + "px 0 rgba(0,0,0," + (.5 + .2 * alt + .18 * press).toFixed(2) + "))";
+        const open = kss(kcl((p - .04) / (.34 / T.lead)));
+        const shut = kss(kcl((p - .93) / .07));
+        kdock.style.transform = "translateX(" + (102 * (1 - open) + 104 * shut) + "%)";
+        if (!landed && p >= .88) { landed = true; kthunk(); dockPing(); }
+        if (p < 1) requestAnimationFrame(frame);
+        else {
+          fly.remove();
+          kdock.style.transform = "translateX(102%)";
+          dockFlying = false;
+        }
+      })(t0);
+    }
 
     /* ---- cart bay: right-edge card sliver (sprint item 2) ----
        State classes on #bay: .near while the pointer is in the proximity
@@ -2815,8 +3030,10 @@
       document.querySelectorAll('.fc-list[data-id="' + id + '"] .ft').forEach(t => {
         t.textContent = inLisst(id) ? "✓ Lisst" : "+ List";
       });
-      if (adding) flyToBay(chip.closest(".d7f"), id);
-      else renderBay();
+      if (adding) {
+        if (dockActive()) dockAdd(id, chip.closest(".d7f"));
+        else flyToBay(chip.closest(".d7f"), id);
+      } else renderBay();
     }, true);
 
     renderBay();

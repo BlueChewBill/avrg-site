@@ -146,24 +146,40 @@
 
 <div class="ctl">
   <h1>Dock add — timing toy</h1>
-  <p class="sub">The wind-up S-curve: dip away left + shrink (drawer opens
-  right, overlapped) → swing up across the full width with a grow → crest →
-  curved settle down-and-right into the slot → drawer shuts on the landing.
+  <p class="sub">The ramp path: tilted drop that flattens out into a ramp
+  at bottom-left (beat) → big sweep across the screen to a top-right crest
+  (beat) → feather float down into the slot (landing beat) → drawer shuts.
+  Card size is a field over the screen — max at center, lower at the sides.
   One master p, beats are windows on it — no seams.</p>
 
-  <div class="knob"><label>Total duration <output id="o-dur">1.50s</output></label>
-    <input type="range" id="k-dur" min="0.6" max="3" step="0.05" value="1.5"></div>
-  <div class="knob"><label>Dip depth <output id="o-dip">1.00</output></label>
-    <input type="range" id="k-dip" min="0.3" max="2" step="0.05" value="1"></div>
-  <div class="knob"><label>Crest height <output id="o-crest">1.00</output></label>
-    <input type="range" id="k-crest" min="0.3" max="1.6" step="0.05" value="1"></div>
-  <div class="knob"><label>Drawer lead (overlap) <output id="o-lead">1.00</output></label>
-    <input type="range" id="k-lead" min="0.2" max="2" step="0.05" value="1"></div>
+  <!-- defaults = Dylan's tuned pick for the ramp path, 2026-07-21:
+       1.90s / dip .70 / crest 1.25 / side .20 / lead .60 -->
+  <div class="knob"><label>Total duration <output id="o-dur">1.90s</output></label>
+    <input type="range" id="k-dur" min="0.6" max="3" step="0.05" value="1.9"></div>
+  <div class="knob"><label>Dip depth <output id="o-dip">0.70</output></label>
+    <input type="range" id="k-dip" min="0.3" max="2" step="0.05" value="0.7"></div>
+  <div class="knob"><label>Crest height <output id="o-crest">1.25</output></label>
+    <input type="range" id="k-crest" min="0.3" max="1.6" step="0.05" value="1.25"></div>
+  <div class="knob"><label>Side shrink (center = max size) <output id="o-side">0.20</output></label>
+    <input type="range" id="k-side" min="0" max="1" step="0.05" value="0.2"></div>
+  <div class="knob"><label>Drawer lead (overlap) <output id="o-lead">0.60</output></label>
+    <input type="range" id="k-lead" min="0.2" max="2" step="0.05" value="0.6"></div>
+
+  <div class="knob"><label>Scrub p (drag to freeze any frame) <output id="o-scrub">—</output></label>
+    <input type="range" id="k-scrub" min="0" max="1" step="0.005" value="0"></div>
+
+  <div class="row" style="gap:16px">
+    <span class="chk" style="cursor:default">path:</span>
+    <label class="chk"><input type="radio" name="kpath" value="ramp" checked> ramp</label>
+    <label class="chk"><input type="radio" name="kpath" value="toss"> toss</label>
+    <label class="chk"><input type="radio" name="kpath" value="swoop"> swoop</label>
+  </div>
 
   <div class="row">
     <button class="go" id="replay">Replay</button>
     <label class="chk"><input type="checkbox" id="slow"> ×0.25 slow-mo</label>
     <label class="chk"><input type="checkbox" id="showpath"> path</label>
+    <label class="chk"><input type="checkbox" id="snd" checked> sound</label>
   </div>
   <div class="beat" id="beat">beat: <b>rest</b></div>
 </div>
@@ -179,20 +195,70 @@
   /* rest pose: card centered in the phone's upper-middle */
   const PH = { w: 390, h: 720 };
   const REST = { x: PH.w / 2, y: 300, s: 1 };
+  const SEAT = 0.34;                        /* seated scale; card bottom stays on the slot line */
+  const SLOT_LINE = 252;                    /* y of the slot shelf in the dock */
 
   /* the path is a Catmull-Rom spline through the beat poses — one curve,
      C1-continuous, so the dip, swing, crest, and settle are shapes of a
      single motion rather than chained segments (the bay driver's lesson,
      restated for a spline) */
+  let PATH = "ramp";
+  /* each path remembers its own knob numbers. These are the saved picks
+     (2026-07-21); switching paths stashes your current tweaks and loads the
+     target's set, so flipping back and forth never loses a tune. */
+  const PRESETS = {
+    ramp:  { "k-dur": 1.9, "k-dip": 0.70, "k-crest": 1.25, "k-side": 0.20, "k-lead": 0.60 },
+    toss:  { "k-dur": 1.9, "k-dip": 0.85, "k-crest": 1.25, "k-side": 0.20, "k-lead": 0.60 },
+    swoop: { "k-dur": 1.9, "k-dip": 0.85, "k-crest": 1.25, "k-side": 0.20, "k-lead": 0.60 }  /* starting guess, untuned */
+  };
+  const KNOBS = Object.keys(PRESETS.ramp);
   function keys() {
     const dip = +$("k-dip").value, crest = +$("k-crest").value;
-    const slotY = 210;                      /* where the slot sits in the dock */
+    const slotY = SLOT_LINE - 150 * SEAT;   /* card center such that its bottom rests on the shelf */
+    const rest = { p: 0.00, x: REST.x, y: REST.y, s: 1.00, r: 0 };
+    const seat = { p: 0.88, x: PH.w - 76, y: slotY, s: SEAT, r: 0 };                /* BEAT: seated in the slot */
+    if (PATH === "swoop") {
+      /* swoop path: convex ramp up-and-left, growing the whole climb;
+         then a concave ramp back — sagging through center, gliding up
+         onto the shelf. dip = leftward reach, crest = peak height. */
+      return [
+        rest,
+        { p: 0.18, x: REST.x - 30, y: 190, s: 1.10, r: -5 },                        /* convex climb: rises fast, bows outward */
+        { p: 0.42, x: REST.x - 120 * dip, y: 84 * (2 - crest), s: 1.18, r: -2 },    /* BEAT: peak top-left, fully grown */
+        { p: 0.66, x: 192, y: 268, s: .80, r: 6 },                                  /* concave return: sags through center... */
+        seat                                                                         /* ...and glides up onto the shelf */
+      ];
+    }
+    if (PATH === "toss") {
+      /* toss path: pull back into the throw, one high parabola over center,
+         steep fall into the case with the feather right at the end */
+      return [
+        rest,
+        { p: 0.16, x: REST.x - 60 * dip, y: REST.y + 80 * dip, s: .90, r: -8 * dip }, /* the wind: pulled back, cocked */
+        { p: 0.50, x: 195, y: 90 * (2 - crest), s: 1.10, r: 4 },                      /* BEAT: apex, tossed high over center */
+        { p: 0.72, x: 322, y: 128, s: .58, r: 7 },                                    /* falling in, leaning toward the case */
+        seat
+      ];
+    }
+    /* ramp path: the beat keys sit at the ramp turns, so the Catmull-Rom
+       tangents flatten the approach and the true low/high points land just
+       past each beat — skate-ramp reversals, not corners */
     return [
-      { p: 0.00, x: REST.x, y: REST.y, s: 1.00, r: 0 },                          /* rest */
-      { p: 0.22, x: REST.x - 92 * dip, y: REST.y + 96 * dip, s: .80, r: -7 * dip }, /* the wind-up: away, down-left, receding */
-      { p: 0.56, x: 205, y: 96 * (2 - crest), s: 1.08, r: 5 },                   /* crest: full-width swing, picked-up grow */
-      { p: 0.88, x: PH.w - 76, y: slotY, s: .26, r: 0 }                          /* seated in the slot */
+      rest,
+      { p: 0.12, x: REST.x - 34, y: REST.y + 92 * dip, s: .92, r: -8 * dip },       /* tilted drop, already leaning into it */
+      { p: 0.28, x: 58, y: REST.y + 170 * dip, s: .66, r: -3 },                     /* BEAT: ramp bottom-left, flattened out */
+      { p: 0.42, x: 178, y: REST.y + 128 * dip, s: 1.00, r: 3 },                    /* sweep runs low across the bottom... */
+      { p: 0.60, x: 272, y: 96 * (2 - crest), s: 1.10, r: 6 },                      /* ...then ramps up into the crest */
+      { p: 0.76, x: 296, y: 138, s: .60, r: 2 },                                    /* feather: drifting down-right, shrinking */
+      seat
     ];
+  }
+  /* size is a field over the screen: max at center-x, lower at the sides.
+     Fades out through the feather so the seat lands at slot size exactly. */
+  function sideMul(x, p) {
+    const side = Math.abs(x - REST.x) / REST.x;
+    const fade = 1 - ss(clamp01((p - .70) / .18));
+    return 1 - (+$("k-side").value) * side * side * fade;
   }
   /* Catmull-Rom (centripetal-ish, uniform is fine at these scales) over
      {x,y,s,r} with p as the knot vector */
@@ -218,28 +284,68 @@
   function drawerX(p) {
     const lead = +$("k-lead").value;
     const open = ss(clamp01((p - .04) / (.34 / lead)));
-    const shut = ss(clamp01((p - .88) / .12));
+    const shut = ss(clamp01((p - .93) / .07));   /* waits a beat so the landing press reads first */
     return 100 * (1 - open) + 104 * shut;   /* % of dock width; shut leaves the 2px spine visible */
   }
   /* shadow narrates altitude: recedes in the dip, big at the crest,
      snaps tight at the seat */
-  function shadow(p, K) {
-    const alt = clamp01((pose(p, K).s - .26) / .82);
-    const dipRecede = 1 - .5 * ss(clamp01((p - .02) / .2)) * (1 - ss(clamp01((p - .3) / .2)));
-    const o = (2 + 9 * alt) * dipRecede;
-    return "drop-shadow(" + o.toFixed(1) + "px " + (o * 1.25).toFixed(1) + "px 0 rgba(0,0,0," + (.5 + .2 * alt).toFixed(2) + "))";
+  function shadow(p, s, press) {
+    const alt = clamp01((s - SEAT) / (1 - SEAT));
+    const dipRecede = 1 - .5 * ss(clamp01((p - .02) / .22)) * (1 - ss(clamp01((p - .34) / .22)));
+    /* the press compresses the shadow with the card, then it decompresses back */
+    const o = (2 + 9 * alt) * dipRecede * (1 - .6 * press);
+    return "drop-shadow(" + o.toFixed(1) + "px " + (o * 1.25).toFixed(1) + "px 0 rgba(0,0,0," + (.5 + .2 * alt + .18 * press).toFixed(2) + "))";
   }
 
   function setPose(p) {
     const K = keys();
     const q = pose(p, K);
-    /* on the shut, the seated card rides out WITH the drawer — it landed
-       into the case, so the case carries it */
-    const carry = 156 * ss(clamp01((p - .88) / .12));
-    card.style.transform = "translate(" + (q.x - 115 + carry).toFixed(1) + "px," + (q.y - 150).toFixed(1) + "px) scale(" + q.s.toFixed(3) + ") rotate(" + q.r.toFixed(2) + "deg)";
-    card.style.filter = shadow(p, K);
+    const s = q.s * sideMul(q.x, p);        /* spline scale × the screen-position field */
+    /* landing press: button-like compress/decompress, squashed about the
+       card's BOTTOM edge so it stays planted on the slot line. Lives in the
+       p domain so slow-mo stretches it with everything else. */
+    const w = clamp01((p - .88) / .09);
+    const press = Math.sin(Math.PI * w);
+    let t = "translate(" + (q.x - 115 + 156 * ss(clamp01((p - .93) / .07))).toFixed(1) + "px," + (q.y - 150).toFixed(1) + "px) scale(" + s.toFixed(3) + ") rotate(" + q.r.toFixed(2) + "deg)";
+    if (press > 0) {
+      const k = 1 - .16 * press;            /* vertical compress */
+      t += " translate(0," + (150 * (1 - k)).toFixed(1) + "px) scale(" + (1 + .06 * press).toFixed(3) + "," + k.toFixed(3) + ")";
+    }
+    card.style.transform = t;
+    card.style.filter = shadow(p, s, press);
     dock.style.transform = "translateX(" + drawerX(p) + "%)";
-    beatEl.innerHTML = "beat: <b>" + (p === 0 ? "rest" : p < .22 ? "wind-up" : p < .6 ? "swing" : p < .88 ? "settle" : "shut") + "</b> — p " + p.toFixed(2);
+    const name = p === 0 ? "rest"
+      : p >= .93 ? "shut" : p >= .88 ? "land"
+      : PATH === "swoop" ? (p < .42 ? "climb" : "swoop")
+      : PATH === "toss" ? (p < .16 ? "wind" : p < .5 ? "toss" : "fall")
+      : (p < .28 ? "drop" : p < .6 ? "sweep" : "feather");
+    beatEl.innerHTML = "beat: <b>" + name + "</b> — p " + p.toFixed(2);
+  }
+
+  /* the landing thunk: a low sine drop + a 10ms whisper of noise for the
+     contact click. Synthesized so the toy stays a single file. */
+  let actx = null;
+  function thunk() {
+    if (!$("snd").checked) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = actx.currentTime;
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(150, t);
+      o.frequency.exponentialRampToValueAtTime(52, t + .09);
+      g.gain.setValueAtTime(.22, t);
+      g.gain.exponentialRampToValueAtTime(.001, t + .13);
+      o.connect(g).connect(actx.destination);
+      o.start(t); o.stop(t + .14);
+      const nb = actx.createBuffer(1, 441, actx.sampleRate);
+      const d = nb.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      const n = actx.createBufferSource(), ng = actx.createGain();
+      n.buffer = nb; ng.gain.value = .06;
+      n.connect(ng).connect(actx.destination);
+      n.start(t);
+    } catch (e) { /* no audio context — stay silent */ }
   }
 
   function drawViz() {
@@ -266,6 +372,7 @@
       setPose(p);
       if (!landed && p >= .88) {
         landed = true;
+        thunk();
         count++; cnt.textContent = count;
         cnt.classList.add("bump"); picon.classList.add("shake");
         setTimeout(() => { cnt.classList.remove("bump"); picon.classList.remove("shake"); }, 450);
@@ -282,17 +389,35 @@
 
   $("add").addEventListener("click", play);
   $("replay").addEventListener("click", play);
-  ["k-dur", "k-dip", "k-crest", "k-lead"].forEach(id => {
+  function syncOuts() {
+    $("o-dur").textContent = (+$("k-dur").value).toFixed(2) + "s";
+    $("o-dip").textContent = (+$("k-dip").value).toFixed(2);
+    $("o-crest").textContent = (+$("k-crest").value).toFixed(2);
+    $("o-side").textContent = (+$("k-side").value).toFixed(2);
+    $("o-lead").textContent = (+$("k-lead").value).toFixed(2);
+  }
+  KNOBS.forEach(id => {
     $(id).addEventListener("input", () => {
-      $("o-dur").textContent = (+$("k-dur").value).toFixed(2) + "s";
-      $("o-dip").textContent = (+$("k-dip").value).toFixed(2);
-      $("o-crest").textContent = (+$("k-crest").value).toFixed(2);
-      $("o-lead").textContent = (+$("k-lead").value).toFixed(2);
+      syncOuts();
       drawViz();
       if (!playing) setPose(0);
     });
   });
   $("showpath").addEventListener("change", drawViz);
+  document.querySelectorAll('input[name="kpath"]').forEach(r => r.addEventListener("change", () => {
+    KNOBS.forEach(id => PRESETS[PATH][id] = +$(id).value);   /* stash the outgoing path's tweaks */
+    PATH = document.querySelector('input[name="kpath"]:checked').value;
+    KNOBS.forEach(id => $(id).value = PRESETS[PATH][id]);    /* load the incoming path's saved set */
+    syncOuts();
+    drawViz();
+    if (!playing) setPose(0);
+  }));
+  $("k-scrub").addEventListener("input", () => {
+    if (playing) return;                    /* the driver owns p while a run plays */
+    const p = +$("k-scrub").value;
+    $("o-scrub").textContent = p.toFixed(3);
+    setPose(p);
+  });
   setPose(0);
 })();
 </script>
