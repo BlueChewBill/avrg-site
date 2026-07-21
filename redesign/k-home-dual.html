@@ -1072,6 +1072,27 @@
   body.light .switch .swbtn { color: #000; border-color: #bbb; }
   body.light .switch .swbtn:hover { border-color: #000; }
   body.light .switch .swbtn.on { background: #000; color: #fff; border-color: #000; }
+  /* on phones the tool chrome collapses to a chip — a third of the screen
+     is too much to spend on dev switches; tap SW to unfold */
+  .switch .swtoggle { display: none; }
+  @media (max-width: 940px) {
+    .switch { padding: 0; background: none; border: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+    .switch .swtoggle {
+      display: block;
+      font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .16em;
+      color: #fff; background: rgba(20, 20, 20, .9); border: 1.5px solid #555; border-radius: 6px;
+      padding: 8px 10px;
+    }
+    body.light .switch .swtoggle { color: #000; background: rgba(255, 255, 255, .9); border-color: #bbb; }
+    .switch:not(.open) .swhead, .switch:not(.open) .swrow { display: none; }
+    .switch.open {
+      padding: 12px 12px 12px 14px;
+      background: rgba(20, 20, 20, .9); border: 1px solid #333; border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .4);
+    }
+    body.light .switch.open { background: rgba(255, 255, 255, .9); border-color: #ddd; }
+    .switch.open .swtoggle { margin-bottom: 4px; }
+  }
 
   /* ================= light ground: the inversion =================
      j-cards-white idiom. --bg/--bone/--soft/--hint flip via inheritance
@@ -1290,6 +1311,7 @@
   </aside>
 
   <div class="switch">
+    <button class="swtoggle label" type="button" aria-label="Toggle ground/card switcher">SW</button>
     <span class="swhead label">Ground</span>
     <div class="swrow">
       <button class="swbtn" type="button" data-ground="black">Black</button>
@@ -1339,9 +1361,9 @@
        Read before the belts/grids first render; the switch wiring lives
        after the conveyor init because switching rebuilds the rails. */
     const CARD_KEY = "avrg-k-card";
-    let CARD = "photo";
-    try { CARD = localStorage.getItem(CARD_KEY) || "photo"; } catch (e) {}
-    if (!/^(photo|framev3|paper|zoned)$/.test(CARD)) CARD = "photo";
+    let CARD = "framev3";
+    try { CARD = localStorage.getItem(CARD_KEY) || "framev3"; } catch (e) {}
+    if (!/^(photo|framev3|paper|zoned)$/.test(CARD)) CARD = "framev3";
     document.body.dataset.card = CARD;
 
 
@@ -2379,6 +2401,8 @@
       b.classList.toggle("on", b.dataset.card === CARD);
       b.addEventListener("click", () => { if (b.dataset.card !== CARD) setCard(b.dataset.card); });
     });
+    document.querySelector(".swtoggle").addEventListener("click", () =>
+      document.querySelector(".switch").classList.toggle("open"));
 
     /* ---- cart bay: right-edge card sliver (sprint item 2) ----
        State classes on #bay: .near while the pointer is in the proximity
