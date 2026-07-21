@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>card-lab — canva batch review</title>
+<style>
+  body { background: #111; color: #ddd1b6; font-family: ui-monospace, monospace; padding: 24px; }
+  h1 { font-size: 14px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 6px; }
+  p { color: #767676; font-size: 11px; max-width: 720px; line-height: 1.7; margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
+  figure { background: #1a1a1a; padding: 12px; }
+  img { width: 100%; height: 340px; object-fit: contain;
+        background: conic-gradient(#222 25%, #2b2b2b 0 50%, #222 0 75%, #2b2b2b 0) 0 0/16px 16px; }
+  figcaption { font-size: 10px; line-height: 1.7; margin-top: 8px; }
+  .guess { color: #d8511f; }
+  .conf-STRONG { color: #7dba6a; }
+  .conf-ok { color: #c98a12; }
+  .conf-WEAK { color: #767676; }
+</style>
+</head>
+<body>
+<h1>Canva batch 1 — name these</h1>
+<p>The 12 pages exported from the Canva design (DAHP8HCfS4o), trimmed to the
+cut format. Captions show the pixel-matcher's best guess against the current
+Vision cuts — STRONG is probably right, WEAK is a coin toss (several pages
+look like second angles of the same board). Once named, rename the file to
+<code>&lt;site-name&gt;.png</code> so edge-compare.html picks it up.</p>
+<div class="grid" id="grid"></div>
+<script>
+const PAGES = [
+  ["batch1-p01.png", "hand-shaped-05", "WEAK"],
+  ["batch1-p02.png", "hand-shaped-06", "WEAK"],
+  ["batch1-p03.png", "classic-05", "WEAK"],
+  ["batch1-p04.png", "hand-shaped-09", "WEAK"],
+  ["batch1-p05.png", "hand-shaped-09 (dup of p04?)", "WEAK"],
+  ["batch1-p06.png", "hand-shaped-06", "ok"],
+  ["batch1-p07.png", "hand-shaped-03", "STRONG"],
+  ["batch1-p08.png", "hand-shaped-05", "STRONG"],
+  ["batch1-p09.png", "hand-shaped-03", "STRONG"],
+  ["batch1-p10.png", "hand-shaped-05", "ok"],
+  ["batch1-p11.png", "hand-shaped-12", "STRONG"],
+  ["batch1-p12.png", "classic-14", "WEAK"],
+];
+document.getElementById("grid").innerHTML = PAGES.map(([f, g, c]) =>
+  `<figure><img src="canva/${f}" loading="lazy">
+   <figcaption>${f}<br>guess: <span class="guess">${g}</span>
+   <span class="conf-${c.split(" ")[0]}">[${c}]</span></figcaption></figure>`).join("");
+</script>
+</body>
+</html>

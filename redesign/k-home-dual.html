@@ -1074,11 +1074,63 @@
     transition: transform .2s ease;
   }
   .bay-item:hover { transform: translateY(-3px) scale(1.06); }
-  /* the flight: a cloned cutout riding from the card to the bay */
+  /* the flight: a cloned cutout riding from the card to the bay. Posed
+     per-frame by the flight driver (position, scale, rotation, shadow all
+     ride one progress value — same one-master-p lesson as the drawer);
+     no transitions here on purpose. */
   .bay-fly {
     position: fixed; z-index: 6500; pointer-events: none;
-    filter: drop-shadow(6px 8px 0 rgba(0, 0, 0, .3));
-    transition: transform .62s cubic-bezier(.3, .7, .25, 1), opacity .18s ease .48s;
+    will-change: transform, filter;
+  }
+  /* seating: the real shelf item exists (hidden) from the moment the
+     flight launches — the flight lands on its measured rect, then the
+     item takes over in the same frame. No crossfade seam. */
+  .bay-item.preseat { visibility: hidden; }
+  /* Drop: last inches are a fall — touch, a whisper of squash, done */
+  .bay-item.seat-drop { animation: seatDrop .2s cubic-bezier(.2, .8, .3, 1) both; transform-origin: bottom center; }
+  @keyframes seatDrop {
+    0%   { transform: translateY(-9px); }
+    70%  { transform: translateY(0) scaleY(.965); }
+    100% { transform: none; }
+  }
+  /* Skid: carried momentum — lands past the slot and friction drags it
+     back into place along the shelf */
+  .bay-item.seat-skid { animation: seatSkid .34s cubic-bezier(.12, .75, .15, 1) both; }
+  @keyframes seatSkid {
+    0%   { transform: translateX(19px) rotate(2deg); }
+    100% { transform: none; }
+  }
+  /* Seatdraw's landing is a short, flat drop — the drawn seat line is
+     the ceremony, the card just takes its chair */
+  .bay-item.seat-set { animation: seatDrop .16s ease-out both; transform-origin: bottom center; }
+  /* the seat line: a segment the slot draws under the incoming card
+     (nav-arrow seat language — drawn, then filled, then part of the
+     furniture). Sits on the shelf line and fades into it after landing. */
+  .bay-seatline {
+    position: absolute; bottom: -1px; height: 3px; background: #000;
+    transform: scaleX(0); transform-origin: center;
+    transition: transform .24s cubic-bezier(.3, .7, .25, 1);
+  }
+  .bay-seatline.drawn { transform: scaleX(1); }
+  .bay-seatline.done { opacity: 0; transition: opacity .5s ease .15s; }
+  /* the landing answered: the target shelf's shadow thunks darker for a
+     beat, and the whole rack absorbs a couple px of the hit */
+  .bay-shelf.landed::after { animation: shelfThunk .45s ease; }
+  @keyframes shelfThunk {
+    0% { box-shadow: 3px 4px 0 rgba(0, 0, 0, .15); }
+    25% { box-shadow: 4px 5px 0 rgba(0, 0, 0, .4); }
+    100% { box-shadow: 3px 4px 0 rgba(0, 0, 0, .15); }
+  }
+  .bay-shelves.recoil { animation: bayRecoil .2s ease; }
+  @keyframes bayRecoil {
+    30% { transform: translateX(3px); }
+    100% { transform: none; }
+  }
+  /* the count only ticks when the card is actually shelved — and pops */
+  .bay-ref.bump { animation: refBump .32s ease; }
+  @keyframes refBump {
+    35% { transform: scale(1.22); }
+    100% { transform: none; }
   }
 
   /* ================= ground switcher (tool chrome) ================= */
@@ -1356,6 +1408,12 @@
       <button class="swbtn" type="button" data-card="framev3">Frame v3</button>
       <button class="swbtn" type="button" data-card="paper">Paper</button>
       <button class="swbtn" type="button" data-card="zoned">Zoned</button>
+    </div>
+    <span class="swhead label" style="margin-top:6px">Seat</span>
+    <div class="swrow">
+      <button class="swbtn" type="button" data-seat="drop">Drop</button>
+      <button class="swbtn" type="button" data-seat="skid">Skid</button>
+      <button class="swbtn" type="button" data-seat="seatdraw">Seatdraw</button>
     </div>
   </div>
 
@@ -2251,7 +2309,7 @@
       document.querySelectorAll('.fc-list[data-id="' + id + '"] .ft').forEach(t => {
         t.textContent = inLisst(id) ? "✓ Lisst" : "+ List";
       });
-      if (adding) flyToBay(lbCard); else renderBay();
+      if (adding) flyToBay(lbCard, id); else renderBay();
     });
     document.getElementById("lb-close").addEventListener("click", () => closeLb());
     lbScrim.addEventListener("click", () => closeLb());
@@ -2453,6 +2511,21 @@
     document.querySelector(".swtoggle").addEventListener("click", () =>
       document.querySelector(".switch").classList.toggle("open"));
 
+    /* seat switch (tool chrome, temporary): how a card lands on its
+       shelf — comparison row until one variant wins */
+    const SEAT_KEY = "avrg-k-seat";
+    let SEAT = "drop";
+    try { SEAT = localStorage.getItem(SEAT_KEY) || "drop"; } catch (e) {}
+    document.querySelectorAll(".swbtn[data-seat]").forEach(b => {
+      b.classList.toggle("on", b.dataset.seat === SEAT);
+      b.addEventListener("click", () => {
+        SEAT = b.dataset.seat;
+        try { localStorage.setItem(SEAT_KEY, SEAT); } catch (e) {}
+        document.querySelectorAll(".swbtn[data-seat]").forEach(x =>
+          x.classList.toggle("on", x.dataset.seat === SEAT));
+      });
+    });
+
     /* ---- cart bay: right-edge card sliver (sprint item 2) ----
        State classes on #bay: .near while the pointer is in the proximity
        zone (rails close), .armed once the close finishes with the pointer
@@ -2465,16 +2538,27 @@
     const bayDot = document.getElementById("bay-dot");
     const bayRef = document.getElementById("bay-ref");
     const baySt = document.getElementById("bay-st");
-    const bayShelves = Array.from(document.getElementById("bay-shelves").children);
+    const bayShelvesEl = document.getElementById("bay-shelves");
+    const bayShelves = Array.from(bayShelvesEl.children);
 
-    function renderBay() {
-      bayRef.textContent = String(myLisst.length);
+    /* boards still mid-flight render hidden (.preseat) — the flight lands
+       on the hidden item's measured rect and reveals it. The count chip
+       also waits for the touchdown, so the tally never runs ahead of the
+       cards actually shelved. */
+    const pendingSeat = new Set();
+    function updateBayCount() {
+      bayRef.textContent = String(myLisst.length - pendingSeat.size);
       baySt.classList.toggle("none", !myLisst.length);
+    }
+    function renderBay() {
+      updateBayCount();
       bayShelves.forEach(s => { s.innerHTML = ""; });
       myLisst.forEach((id, n) => {
         const { ci, b, k } = BOARD_INDEX[id];
         const img = document.createElement("img");
         img.className = "bay-item";
+        if (pendingSeat.has(id)) img.classList.add("preseat");
+        img.dataset.id = id;
         img.src = CUT(b);
         img.alt = img.title = lisstLabel(id);
         img.addEventListener("click", () => openLb(ci, k));
@@ -2604,47 +2688,117 @@
       if (e.key === "Escape" && bayP > 0 && lb.hidden && vlb.hidden) closeBay();
     });
 
-    /* the flight: clone the board cutout and ride it into the bay — onto
-       its shelf slot if open, onto the sliver's count chip if closed
-       (closed bay answers with the shadow pulse). renderBay waits for the
-       landing so the item doesn't appear before the flight arrives. */
-    function flyToBay(cardEl) {
-      const src = cardEl && cardEl.querySelector(".stage img, .frame img");
-      if (reduced || !src) { renderBay(); return; }
-      const sr = src.getBoundingClientRect();
-      const open = bayP > .5;   /* drawer visibly out → land on the shelf */
-      let tx, ty, th;
-      if (open) {
-        const n = myLisst.length - 1;   /* the slot this board will land in */
-        const shelf = bayShelves[Math.min(3, (n / 4) | 0)].getBoundingClientRect();
-        tx = shelf.left + 12 + (n % 4) * 62 + 26;
-        ty = shelf.bottom - 32;
-        th = 52;
-      } else {
-        /* closed: land on the resting dot */
-        const rr = bayDot.getBoundingClientRect();
-        tx = rr.left + rr.width / 2; ty = rr.top + rr.height / 2; th = 18;
-      }
+    /* the flight: clone the board cutout and ride it into the bay on a
+       rAF-driven arc — position, scale, rotation, and shadow all posed
+       from one progress value (the drawer's own lesson: one master p,
+       no seams). Open drawer: the real shelf item renders first (hidden,
+       .preseat) and the flight lands on its MEASURED rect, so the clone
+       becomes the item in the same frame — no crossfade, no guessed
+       coordinates. The count chip holds until touchdown. Closed drawer:
+       same arc to the resting dot, answered by the dot pulse.
+       Seat variants (SEAT switcher, avrg-k-seat):
+         drop     — peak hangs over the slot, falls the last 9px, whisper of squash
+         skid     — shallow arc, overshoots 19px, friction drags it home
+         seatdraw — the slot draws its seat line while the card is inbound */
+    const SEAT_TUNE = {
+      dur: .68,        /* flight seconds, open drawer */
+      durDot: .5,      /* flight seconds to the resting dot */
+      liftMax: 120,    /* arc height ceiling (lift scales with distance) */
+      pickup: .07      /* early "picked up" grow, fades over the ride */
+    };
+    function bayFlight(src, sr, end, opts, onLand) {
       const fly = src.cloneNode();
       fly.className = "bay-fly";
       fly.style.left = sr.left + "px"; fly.style.top = sr.top + "px";
       fly.style.width = sr.width + "px"; fly.style.height = sr.height + "px";
       document.body.appendChild(fly);
-      const s = th / sr.height;
-      const dx = tx - (sr.left + sr.width / 2);
-      const dy = ty - (sr.top + sr.height / 2);
-      requestAnimationFrame(() => {
-        fly.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s.toFixed(3) + ") rotate(5deg)";
-        fly.style.opacity = "0";
-      });
-      setTimeout(() => {
-        fly.remove();
-        renderBay();
-        if (!open) {
-          bayInner.classList.add("pulse");
-          bayInner.addEventListener("animationend", () => bayInner.classList.remove("pulse"), { once: true });
+      const sx = sr.left + sr.width / 2, sy = sr.top + sr.height / 2;
+      const dist = Math.hypot(end.x - sx, end.y - sy);
+      const lift = Math.min(SEAT_TUNE.liftMax, 40 + dist * .18) * (opts.shallow ? .5 : 1);
+      /* control point: shallow arcs peak mid-route; steep ones hang the
+         peak over the target so the last leg reads as a fall */
+      const cx = opts.shallow ? (sx + end.x) / 2 : sx * .3 + end.x * .7;
+      const cy = Math.min(sy, end.y) - lift;
+      const s1 = end.h / sr.height;
+      const t0 = performance.now(), dur = opts.dur * 1000;
+      (function frame(now) {
+        const t = Math.min(1, (now - t0) / dur);
+        const e = 1 - Math.pow(1 - t, 2.6);   /* launched hard, arrives damped */
+        const u = 1 - e;
+        const px = u * u * sx + 2 * u * e * cx + e * e * end.x;
+        const py = u * u * sy + 2 * u * e * cy + e * e * end.y;
+        const sc = 1 + (s1 - 1) * e + SEAT_TUNE.pickup * Math.sin(Math.PI * Math.min(1, e / .5)) * u;
+        const rot = 5 * Math.sin(Math.PI * e) + (opts.endRot || 0) * e;
+        const f = 4 * e * u;                  /* altitude: peaks mid-flight, 0 at both ends */
+        fly.style.transform = "translate(" + (px - sx).toFixed(1) + "px," + (py - sy).toFixed(1) + "px) scale(" + sc.toFixed(3) + ") rotate(" + rot.toFixed(2) + "deg)";
+        fly.style.filter = "drop-shadow(" + (3 + 8 * f).toFixed(1) + "px " + (4 + 10 * f).toFixed(1) + "px 0 rgba(0,0,0," + (.3 - .08 * f).toFixed(3) + "))";
+        if (t < 1) requestAnimationFrame(frame);
+        else { fly.remove(); onLand(); }
+      })(performance.now());
+    }
+    function flyToBay(cardEl, id) {
+      const src = cardEl && cardEl.querySelector(".stage img, .frame img");
+      if (reduced || !src) { renderBay(); return; }
+      const sr = src.getBoundingClientRect();
+      if (bayP <= .5) {
+        /* closed: arc to the resting dot; the dot answers */
+        const rr = bayDot.getBoundingClientRect();
+        bayFlight(src, sr,
+          { x: rr.left + rr.width / 2, y: rr.top + rr.height / 2, h: 18 },
+          { dur: SEAT_TUNE.durDot }, () => {
+            renderBay();
+            bayInner.classList.add("pulse");
+            bayInner.addEventListener("animationend", () => bayInner.classList.remove("pulse"), { once: true });
+          });
+        return;
+      }
+      pendingSeat.add(id);
+      renderBay();   /* the item now exists, hidden — its rect is the target */
+      const item = bay.querySelector('.bay-item.preseat[data-id="' + id + '"]');
+      if (!item) { pendingSeat.delete(id); renderBay(); return; }
+      const launch = () => {
+        const tr = item.getBoundingClientRect();
+        const skid = SEAT === "skid";
+        const seatClass = skid ? "seat-skid" : (SEAT === "seatdraw" ? "seat-set" : "seat-drop");
+        /* the flight ends exactly where the seat animation begins */
+        const end = {
+          x: tr.left + tr.width / 2 + (skid ? 19 : 0),
+          y: tr.top + tr.height / 2 + (skid ? 0 : -9),
+          h: tr.height
+        };
+        let seatline = null;
+        if (SEAT === "seatdraw") {
+          seatline = document.createElement("div");
+          seatline.className = "bay-seatline";
+          seatline.style.left = item.offsetLeft + "px";
+          seatline.style.width = tr.width.toFixed(1) + "px";
+          item.parentElement.appendChild(seatline);
+          setTimeout(() => seatline.classList.add("drawn"), Math.round(SEAT_TUNE.dur * 1000 * .35));
         }
-      }, 620);
+        bayFlight(src, sr, end, { dur: SEAT_TUNE.dur, shallow: skid, endRot: skid ? 2 : 0 }, () => {
+          /* re-query: a renderBay may have rebuilt the shelves mid-flight */
+          const seated = bay.querySelector('.bay-item.preseat[data-id="' + id + '"]');
+          pendingSeat.delete(id);
+          if (!seated) { updateBayCount(); if (seatline) seatline.remove(); return; }
+          seated.classList.remove("preseat");
+          seated.classList.add(seatClass);
+          seated.addEventListener("animationend", () => seated.classList.remove(seatClass), { once: true });
+          const shelf = seated.parentElement;
+          shelf.classList.add("landed");
+          setTimeout(() => shelf.classList.remove("landed"), 500);
+          bayShelvesEl.classList.add("recoil");
+          setTimeout(() => bayShelvesEl.classList.remove("recoil"), 250);
+          updateBayCount();
+          bayRef.classList.add("bump");
+          setTimeout(() => bayRef.classList.remove("bump"), 350);
+          if (seatline) {
+            seatline.classList.add("done");
+            setTimeout(() => seatline.remove(), 900);
+          }
+        });
+      };
+      if (item.complete && item.naturalWidth) launch();
+      else item.addEventListener("load", launch, { once: true });
     }
 
     /* +List on belt/grid fv3 cards: capture phase, so the card's own
@@ -2661,7 +2815,7 @@
       document.querySelectorAll('.fc-list[data-id="' + id + '"] .ft').forEach(t => {
         t.textContent = inLisst(id) ? "✓ Lisst" : "+ List";
       });
-      if (adding) flyToBay(chip.closest(".d7f"));
+      if (adding) flyToBay(chip.closest(".d7f"), id);
       else renderBay();
     }, true);
 

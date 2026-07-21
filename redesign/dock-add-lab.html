@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVRG — dock add-animation lab</title>
+<style>
+  /* Study tool, not a site page (decode-slowmo's sibling): the mobile
+     dock's add animation — the wind-up S-curve from the 2026-07-20 spec —
+     on a fake phone, with the timing knobs exposed. One master p drives
+     every piece (card path, scale, shadow, drawer, badge); beats are
+     overlapping windows on p, never sequential steps. */
+  :root { --bone: #ddd1b6; --hint: #767676; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000; color: var(--bone);
+    font-family: "Space Mono", ui-monospace, monospace;
+    display: flex; gap: 42px; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 30px;
+  }
+  /* ---------- the fake phone ---------- */
+  .phone {
+    position: relative; width: 390px; height: 720px; flex: none;
+    border: 2px solid #333; background: #000; overflow: hidden;
+  }
+  .ptop {
+    position: absolute; top: 0; left: 0; right: 0; height: 44px; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; border-bottom: 1px solid #222; background: #000;
+    font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+  }
+  /* the receipt icon wears the count; it shakes when a card lands */
+  .picon { position: relative; display: flex; align-items: center; gap: 7px; }
+  .picon svg { display: block; }
+  .picon .cnt {
+    min-width: 16px; height: 16px; padding: 0 4px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bone); color: #000; font-size: 9px; font-weight: 700;
+  }
+  .picon.shake { animation: iconShake .4s ease; }
+  @keyframes iconShake {
+    20% { transform: translateX(-2.5px) rotate(-4deg); }
+    45% { transform: translateX(2.5px) rotate(3deg); }
+    70% { transform: translateX(-1.5px) rotate(-2deg); }
+    100% { transform: none; }
+  }
+  .picon .cnt.bump { animation: cntBump .32s ease; }
+  @keyframes cntBump { 35% { transform: scale(1.35); } 100% { transform: none; } }
+  /* dim mock product page behind the action */
+  .pbg {
+    position: absolute; inset: 44px 0 0; padding: 26px 20px;
+    color: #2a2a2a; font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+    line-height: 2.6;
+  }
+  .pbg .rule { border-top: 1px solid #1a1a1a; margin: 10px 0; }
+  /* ---------- the card (posed per frame by the driver) ---------- */
+  .card {
+    position: absolute; left: 0; top: 0; width: 230px; height: 300px; z-index: 30;
+    background: #fff; will-change: transform, filter;
+    transform-origin: center;
+  }
+  .card .inner {
+    position: absolute; inset: 10px; border: 1.5px solid #000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card img { height: 76%; width: auto; }
+  .card .nm {
+    position: absolute; left: 0; right: 0; bottom: 16px; text-align: center;
+    color: #000; font-size: 10px; font-weight: 700; letter-spacing: .2em;
+  }
+  .addbtn {
+    position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: 35;
+    background: #000; color: var(--bone); border: 1.5px solid var(--bone);
+    font: 700 11px/1 "Space Mono", monospace; letter-spacing: .18em;
+    padding: 13px 26px; cursor: pointer; text-transform: uppercase;
+  }
+  .addbtn:hover { background: var(--bone); color: #000; }
+  /* ---------- the dock (right edge; opens as a display-case sliver) ---------- */
+  .dock {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 150px; z-index: 20;
+    background: #fff; border-left: 2px solid #000;
+    transform: translateX(100%); will-change: transform;
+  }
+  .dock .drail {
+    position: absolute; inset: 10px 8px; border-left: 1.5px solid #000;
+  }
+  .dock .slot {
+    position: absolute; left: 18px; right: 14px; height: 2px; background: #000;
+  }
+  .dock .slot .ghost {
+    position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+    height: 58px; width: auto; opacity: .95;
+  }
+  /* ---------- controls ---------- */
+  .ctl { width: 330px; display: flex; flex-direction: column; gap: 20px; }
+  h1 { font-size: 13px; letter-spacing: .22em; text-transform: uppercase; font-weight: 700; }
+  .sub { color: var(--hint); font-size: 10px; line-height: 1.8; }
+  .knob label { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 7px; }
+  .knob output { color: var(--bone); }
+  input[type="range"] { width: 100%; accent-color: #d8511f; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  button.go {
+    background: var(--bone); color: #000; border: none; cursor: pointer;
+    font: 700 11px/1 "Space Mono", monospace; letter-spacing: .18em;
+    padding: 12px 22px; text-transform: uppercase;
+  }
+  button.go:hover { background: #fff; }
+  .chk { display: flex; gap: 8px; align-items: center; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--hint); cursor: pointer; }
+  .beat { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--hint); }
+  .beat b { color: var(--bone); }
+  svg.pathviz { position: absolute; inset: 0; z-index: 25; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="ptop">
+    <span style="color:#555">AVRG</span>
+    <span class="picon" id="picon">
+      <!-- receipt glyph, lead candidate from the dock scoping -->
+      <svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="#ddd1b6" stroke-width="1.5">
+        <path d="M2 1 h12 v15 l-2-1.4 -2 1.4 -2-1.4 -2 1.4 -2-1.4 -2 1.4 z"/>
+        <path d="M5 5.5 h6 M5 8.5 h6 M5 11.5 h4"/>
+      </svg>
+      <span class="cnt" id="cnt">0</span>
+    </span>
+  </div>
+  <div class="pbg">
+    <div>CLASSIC 05</div>
+    <div class="rule"></div>
+    <div>ONE OF A KIND BOARDS THAT SHRED</div>
+    <div class="rule"></div>
+    <div>INTERESTED? — DM U/AVRG_FB</div>
+  </div>
+  <div class="card" id="card">
+    <div class="inner"><img src="card-lab/cuts/classic-05-1-cut.png" alt=""></div>
+    <span class="nm">CLASSIC 05</span>
+  </div>
+  <button class="addbtn" id="add">+ Add to my lisst</button>
+  <div class="dock" id="dock">
+    <div class="drail"></div>
+    <div class="slot" style="top: 252px"></div>
+  </div>
+  <svg class="pathviz" id="viz" width="390" height="720" hidden></svg>
+</div>
+
+<div class="ctl">
+  <h1>Dock add — timing toy</h1>
+  <p class="sub">The wind-up S-curve: dip away left + shrink (drawer opens
+  right, overlapped) → swing up across the full width with a grow → crest →
+  curved settle down-and-right into the slot → drawer shuts on the landing.
+  One master p, beats are windows on it — no seams.</p>
+
+  <div class="knob"><label>Total duration <output id="o-dur">1.50s</output></label>
+    <input type="range" id="k-dur" min="0.6" max="3" step="0.05" value="1.5"></div>
+  <div class="knob"><label>Dip depth <output id="o-dip">1.00</output></label>
+    <input type="range" id="k-dip" min="0.3" max="2" step="0.05" value="1"></div>
+  <div class="knob"><label>Crest height <output id="o-crest">1.00</output></label>
+    <input type="range" id="k-crest" min="0.3" max="1.6" step="0.05" value="1"></div>
+  <div class="knob"><label>Drawer lead (overlap) <output id="o-lead">1.00</output></label>
+    <input type="range" id="k-lead" min="0.2" max="2" step="0.05" value="1"></div>
+
+  <div class="row">
+    <button class="go" id="replay">Replay</button>
+    <label class="chk"><input type="checkbox" id="slow"> ×0.25 slow-mo</label>
+    <label class="chk"><input type="checkbox" id="showpath"> path</label>
+  </div>
+  <div class="beat" id="beat">beat: <b>rest</b></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const card = $("card"), dock = $("dock"), cnt = $("cnt"), picon = $("picon");
+  const beatEl = $("beat"), viz = $("viz");
+  let count = 0, playing = false;
+
+  /* rest pose: card centered in the phone's upper-middle */
+  const PH = { w: 390, h: 720 };
+  const REST = { x: PH.w / 2, y: 300, s: 1 };
+
+  /* the path is a Catmull-Rom spline through the beat poses — one curve,
+     C1-continuous, so the dip, swing, crest, and settle are shapes of a
+     single motion rather than chained segments (the bay driver's lesson,
+     restated for a spline) */
+  function keys() {
+    const dip = +$("k-dip").value, crest = +$("k-crest").value;
+    const slotY = 210;                      /* where the slot sits in the dock */
+    return [
+      { p: 0.00, x: REST.x, y: REST.y, s: 1.00, r: 0 },                          /* rest */
+      { p: 0.22, x: REST.x - 92 * dip, y: REST.y + 96 * dip, s: .80, r: -7 * dip }, /* the wind-up: away, down-left, receding */
+      { p: 0.56, x: 205, y: 96 * (2 - crest), s: 1.08, r: 5 },                   /* crest: full-width swing, picked-up grow */
+      { p: 0.88, x: PH.w - 76, y: slotY, s: .26, r: 0 }                          /* seated in the slot */
+    ];
+  }
+  /* Catmull-Rom (centripetal-ish, uniform is fine at these scales) over
+     {x,y,s,r} with p as the knot vector */
+  function pose(p, K) {
+    if (p <= K[0].p) return K[0];
+    if (p >= K[K.length - 1].p) return K[K.length - 1];
+    let i = 0;
+    while (p > K[i + 1].p) i++;
+    const k0 = K[Math.max(0, i - 1)], k1 = K[i], k2 = K[i + 1], k3 = K[Math.min(K.length - 1, i + 2)];
+    const t = (p - k1.p) / (k2.p - k1.p);
+    const h = (a, b, c, d) => {
+      const m1 = (c - a) / 2, m2 = (d - b) / 2, t2 = t * t, t3 = t2 * t;
+      return (2 * t3 - 3 * t2 + 1) * b + (t3 - 2 * t2 + t) * m1 + (-2 * t3 + 3 * t2) * c + (t3 - t2) * m2;
+    };
+    return { x: h(k0.x, k1.x, k2.x, k3.x), y: h(k0.y, k1.y, k2.y, k3.y),
+             s: h(k0.s, k1.s, k2.s, k3.s), r: h(k0.r, k1.r, k2.r, k3.r) };
+  }
+  const clamp01 = v => Math.min(1, Math.max(0, v));
+  const ss = t => t * t * (3 - 2 * t);
+
+  /* drawer: opens during the wind-up (lead knob widens the overlap),
+     holds while the card is airborne, shuts on the landing */
+  function drawerX(p) {
+    const lead = +$("k-lead").value;
+    const open = ss(clamp01((p - .04) / (.34 / lead)));
+    const shut = ss(clamp01((p - .88) / .12));
+    return 100 * (1 - open) + 104 * shut;   /* % of dock width; shut leaves the 2px spine visible */
+  }
+  /* shadow narrates altitude: recedes in the dip, big at the crest,
+     snaps tight at the seat */
+  function shadow(p, K) {
+    const alt = clamp01((pose(p, K).s - .26) / .82);
+    const dipRecede = 1 - .5 * ss(clamp01((p - .02) / .2)) * (1 - ss(clamp01((p - .3) / .2)));
+    const o = (2 + 9 * alt) * dipRecede;
+    return "drop-shadow(" + o.toFixed(1) + "px " + (o * 1.25).toFixed(1) + "px 0 rgba(0,0,0," + (.5 + .2 * alt).toFixed(2) + "))";
+  }
+
+  function setPose(p) {
+    const K = keys();
+    const q = pose(p, K);
+    /* on the shut, the seated card rides out WITH the drawer — it landed
+       into the case, so the case carries it */
+    const carry = 156 * ss(clamp01((p - .88) / .12));
+    card.style.transform = "translate(" + (q.x - 115 + carry).toFixed(1) + "px," + (q.y - 150).toFixed(1) + "px) scale(" + q.s.toFixed(3) + ") rotate(" + q.r.toFixed(2) + "deg)";
+    card.style.filter = shadow(p, K);
+    dock.style.transform = "translateX(" + drawerX(p) + "%)";
+    beatEl.innerHTML = "beat: <b>" + (p === 0 ? "rest" : p < .22 ? "wind-up" : p < .6 ? "swing" : p < .88 ? "settle" : "shut") + "</b> — p " + p.toFixed(2);
+  }
+
+  function drawViz() {
+    if (!$("showpath").checked) { viz.hidden = true; return; }
+    viz.hidden = false;
+    const K = keys();
+    let d = "";
+    for (let i = 0; i <= 100; i++) {
+      const q = pose(.88 * i / 100, K);
+      d += (i ? "L" : "M") + q.x.toFixed(1) + " " + q.y.toFixed(1);
+    }
+    viz.innerHTML = '<path d="' + d + '" fill="none" stroke="#d8511f" stroke-width="1.5" stroke-dasharray="4 5"/>' +
+      keys().map(k => '<circle cx="' + k.x + '" cy="' + k.y + '" r="3.5" fill="#d8511f"/>').join("");
+  }
+
+  function play() {
+    if (playing) return;
+    playing = true;
+    const dur = +$("k-dur").value * 1000 * ($("slow").checked ? 4 : 1);
+    const t0 = performance.now();
+    let landed = false;
+    (function frame(now) {
+      const p = clamp01((now - t0) / dur);
+      setPose(p);
+      if (!landed && p >= .88) {
+        landed = true;
+        count++; cnt.textContent = count;
+        cnt.classList.add("bump"); picon.classList.add("shake");
+        setTimeout(() => { cnt.classList.remove("bump"); picon.classList.remove("shake"); }, 450);
+      }
+      if (p < 1) requestAnimationFrame(frame);
+      else {
+        playing = false;
+        /* the card is behind the shut drawer now; quietly reset for the
+           next run once the shut beat has landed */
+        setTimeout(() => { if (!playing) setPose(0); }, 350);
+      }
+    })(t0);
+  }
+
+  $("add").addEventListener("click", play);
+  $("replay").addEventListener("click", play);
+  ["k-dur", "k-dip", "k-crest", "k-lead"].forEach(id => {
+    $(id).addEventListener("input", () => {
+      $("o-dur").textContent = (+$("k-dur").value).toFixed(2) + "s";
+      $("o-dip").textContent = (+$("k-dip").value).toFixed(2);
+      $("o-crest").textContent = (+$("k-crest").value).toFixed(2);
+      $("o-lead").textContent = (+$("k-lead").value).toFixed(2);
+      drawViz();
+      if (!playing) setPose(0);
+    });
+  });
+  $("showpath").addEventListener("change", drawViz);
+  setPose(0);
+})();
+</script>
+</body>
+</html>
