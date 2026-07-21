@@ -2112,6 +2112,14 @@
         const jm = jmeta(c, b, k);
         const rft = document.getElementById("lb-fv3-ref");
         rft.dataset.ref = jm.ref; rft.textContent = jm.ref;
+        /* touch never sees the hover choreography, so the corner chip does
+           wayfinding instead: it decodes to the position in this chunk
+           (6/7) — a swipe sesh should know when the end is coming */
+        if (!canHover) {
+          const pos = (k + 1) + "/" + c.boards.length;
+          rft.dataset.ref = pos;
+          if (reduced) rft.textContent = pos; else decodeInto(rft, pos);
+        }
         const nmt = document.getElementById("lb-fv3-nmt");
         nmt.dataset.nm = jm.nm; nmt.dataset.dims = b.dims || jm.dimsPh; nmt.textContent = jm.nm;
         document.getElementById("lb-fv3-st").className = "fst lb-fv3only " + jm.st;
