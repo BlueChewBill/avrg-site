@@ -1,62 +1,64 @@
-# Handoff — avrg-site — 2026-07-20
+# Handoff — avrg-site — 2026-07-20 (evening)
 
 ## Where we are
-Sprint item 2 (the card bay / cart / "the deck") is BUILT and tuned in
-`redesign/k-home-dual.html`, after heavy iteration: resting marks → proximity-driven
-drawer crawl → lock/quick-close, the lightbox "lean", live +List chips with fly-in,
-and the want-word chip decode. Item 1 (nav arrows on the card) was already done.
-Item 3 (board weight / cursor gravity) is NOT started. The session ended clean;
-animation fine-tuning from here is safe — the driver architecture isolates each knob.
+Two things happened today in k-home-dual. First, a scoping session produced the
+full mobile dock spec + the site thesis (both written into CLAUDE.md — the spec
+is the "Mobile deck" open-thread entry, the thesis lives in the tone check).
+Second, mobile pass 1 SHIPPED: fv3 default, SW-chip switcher collapse,
+collection cards on the mobile home, the one-scroll shop (selection first, all
+sections below, both platforms), and the touch lightbox chip decoding to n/N
+position per swipe. All committed and pushed; GitHub Pages now serves main at
+https://bluechewbill.github.io/avrg-site/redesign/k-home-dual.html (rebuilds
+~1 min after every push — Dylan reviews on his phone at that URL).
 
 ## Next task
-A THINKING-OUT-LOUD session, not a build. Dylan wants to scope before touching code:
-- How the deck/drawer behaves on the home screen (still undecided — don't decide it for him).
-- Card behavior around the deck: the eventual drag-and-drop with a satisfying "click"
-  into place (trigger: proximity + drag release, or auto-animate from the +List chip).
-- What fun placeholders look like for cards that have been moved into the deck
-  (a hole in the shelf where the board was — treatment unexplored).
-Expect the card-lab pattern: build small concrete variants for him to react to,
-don't ask him for a spec. Header cleanup + home-logo motion are also queued in
-CLAUDE.md open threads if he steers there.
+**Mobile polish sprint** — Dylan's call: "thats the thing most people will
+see." No fixed ticket list; start by asking what he saw on his phone since the
+pass shipped, then fix what he flags. Known candidates already on record (in
+the "Mobile pass 1" open-thread entry): name-over-board legibility on busy
+cutouts (top-bold / bottom-bold variants ready as fallbacks), the
+collection-card decode flourish trigger (scroll-into-view vs idle cycle vs
+on-tap), and whether the n/N decode resolves fast enough at swipe speed.
+"Done" = mobile feels intentional end-to-end at the Pages URL.
 
 ## Read these, skip the rest
-- CLAUDE.md — sprint item 2 entry (full driver architecture + NEXT direction) and
-  the open-threads list. Read this FIRST; it's the densest summary.
-- redesign/k-home-dual.html — only the bay CSS block (search "cart bay") and the
-  bay JS driver (search "BAY_TUNE"). The rest of the file is the h-blackout engine
-  plus j-card treatments; don't re-read it for this task.
+- CLAUDE.md — open threads: "Mobile pass 1" (what shipped + open questions),
+  "Mobile deck" (the dock spec), and the three new bullets at the bottom
+  (buttons, Canva pipeline, more board sections). Densest orientation; read first.
+- redesign/k-home-dual.html — only what the task touches: mobile tile CSS is in
+  the `@media (max-width: 940px)` block (search "tcard"), collection-card markup
+  in the JS (search "tilegrid.insertAdjacentHTML"), one-scroll nav in
+  `renderColPage`, position decode in `populate` (search "wayfinding"),
+  switcher collapse (search "swtoggle").
 
 Everything else in the repo is NOT needed. Do not explore beyond this list.
 
 ## Context that isn't in the code
-- The bay is progress-driven for a reason: CSS-transition staging caused a corner
-  stutter (two eased segments meeting = velocity discontinuity). Horizontal motion
-  is now ONE eased distance split arithmetically between panel and drawer. Do not
-  reintroduce per-segment easing on the travel.
-- The cursor is the motor: p always climbs in-zone, rate scales with distance
-  (linear ramp first 3/4 of the 195px zone, quadratic kick near the edge). This was
-  Dylan's key feel decision: "youre doing the drawer opening just as much as
-  cueing the animation."
-- The inner line never slows; the outer frame does all catching-up. Also his call.
-- Face connects only at max visibility; shadow/chip gate on that landing.
-- Invite stays live over the lightbox scrim ON PURPOSE — likely becomes the
-  "add to deck from inspection" flow.
-- Want-word decode: card-hover triggered, pool Want?/Like?/Need?/Mine ! (inflection
-  matters to him), no immediate repeats, chip fill is width-locked (letter-spacing
-  made 6ch insufficient — min-width calc(6ch + .96em)).
-- Tone direction, in his words: AVRG ("average" / "a very real goober") having an
-  over-the-top website IS the joke. Lean maximal, keep it quiet-clean per card.
-- Side thread, Canva cutouts: mass background-drop is figured out, MASS EXPORT is
-  still a struggle (his homework). Canva removal is a 2–3x quality jump over the
-  swift pipeline — "necessary now that the shadows do heavy lifting." Last touches
-  reserved for the home stretch; new files sit in redesign/card-lab/canva/ +
-  redesign/card-lab/edge-compare.html (his comparison tool, uncommitted).
-- Preview: serve repo root (avrg-root, :8123) — k-home-dual needs ../site/ paths.
-  fv3 card mode only for the bay; hidden on touch/mobile.
+- Preview: `avrg-root` (:8123), never file://. The Claude browser pane reports
+  hover:hover even at mobile size — touch-gated code (`!canHover`) can't be
+  seen there; verify by temporarily forcing the gate (worked today), and the
+  phone is the real test.
+- Both counts on the collection cards (corner chip + "N BOARDS" line) are
+  DELIBERATE — Dylan: "twice is the move." Don't dedupe.
+- The n/N chip decode is touch-only on purpose; desktop keeps ref→AVRG hover.
+  On touch the hover delegation never binds, so nothing fights the chip.
+- The tone law (decided today, in CLAUDE.md): when a ceremony risks tiring,
+  never shorten or hide it — escalate absurdity at the same speed.
+- The site thesis (his words, paraphrased in CLAUDE.md): polish is the setup,
+  "it's just a fingerboard, man" is the punchline. Discovery ladder: angry
+  cart → MINE! decode → taglines.
+- The Canva mass-export problem is HIS homework, but it now gates mobile card
+  quality — if he brings exported cutouts, drop them in redesign/card-lab/canva/
+  and swap; edge-compare.html is his comparison tool.
+- He has WAY more physical inventory than the 39 boards on site (photo of the
+  stacks seen today) — that's what "more board sections" is about.
+- Untracked at repo root: nnnoise-whiteBG-turq.svg — his file (likely a
+  web-assets candidate), not session output. Left alone; ask before touching.
 
 ## Parked / later
-- Sprint item 3 (board weight: cursor-gravity lean, aim-assist damping) — after the
-  scoping session.
-- Header reveal-animation cleanup; home-logo gap/dot animation (open threads).
-- Caliper dims for PH_DIMS, video section home, colpage h2 font question,
-  eventual port of blackout → production site/.
+- The dock build (mobile deck) — spec is ready, but polish comes first.
+- The 1.5s add-animation timing toy — natural first build when dock work starts.
+- Desktop home-screen deck behavior (ambient vs acknowledger) — still undecided.
+- Sprint item 3 (board weight / cursor gravity); header cleanup; home-logo motion.
+- Buttons reaction session; more-board-sections bolt-on point; caliper dims;
+  video section; colpage h2 font question; port blackout → production site/.
