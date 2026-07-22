@@ -451,7 +451,13 @@
   /* mobile lightbox: the card rides in a scrollable sheet instead of being
      pinned to viewport center — short phones (12 mini) can reach the buttons */
   @media (max-width: 720px) {
-    .lb { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    /* the sheet starts below the (still-live) topbar and centers the card in
+       what's left; margin:auto collapses to 0 on overflow, so tall content
+       degrades to a plain scroll instead of clipping the top */
+    .lb {
+      overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+      top: var(--tbh, 0px); display: flex; flex-direction: column;
+    }
     /* mobile fade = the site content itself goes to 0 over the page's own
        ground — no overlay at all. Every scrim variant banded at the iOS bar
        (fixed-inside-a-scroller mispins while the sheet scrolls; translucent
@@ -462,16 +468,18 @@
        scrim override below). */
     #lb-scrim, #vlb-scrim { position: absolute; inset: 0; height: auto; min-height: 100lvh; background: transparent; }
     .topbar, #home, #colpage { transition: opacity .45s ease; }
-    body.lb-fade .topbar, body.lb-fade #home, body.lb-fade #colpage { opacity: 0; pointer-events: none; }
+    /* header stays at full opacity and live — the sheet starts below it */
+    body.lb-fade #home, body.lb-fade #colpage { opacity: 0; pointer-events: none; }
     /* the card is the hero on mobile — no text under it. Thumbs stay (photo
        nav); the corner chip's n/N decode already does the wayfinding the
        bottom count did. DM path on mobile = add to lisst -> #my-lisst. */
     .lb-desc, .lb-product, .lb-count { display: none; }
     .lb-card {
       position: relative; left: auto; top: auto; translate: none; z-index: 1;
-      margin: 72px auto calc(52px + env(safe-area-inset-bottom));
+      margin: auto;
+      padding: 24px 0 calc(24px + env(safe-area-inset-bottom));
     }
-    .lb-close { position: fixed; top: 16px; right: 16px; z-index: 3; }
+    .lb-close { position: fixed; top: calc(var(--tbh, 0px) + 12px); right: 16px; z-index: 3; }
     .lb-count {
       position: fixed; bottom: calc(10px + env(safe-area-inset-bottom));
       pointer-events: none;
@@ -706,6 +714,10 @@
     border: 1.5px solid #000;
     box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .85);
     transition: box-shadow .44s ease;
+    /* top room so the board sits optically centered — the caption zone
+       weighs the bottom (~66px of chrome below the stage vs ~24px above
+       the board without this) */
+    padding-top: 52px;
   }
   @media (hover: hover) { .d7f:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .85); } }
   .d7f .inframe { position: absolute; inset: 10px; z-index: 1; pointer-events: none; }
@@ -824,6 +836,7 @@
   .card .d5 .r2, .card .paper .r2 { margin-top: 8px; }
   .card .d5 .corner, .card .paper .corner, .card .d7f .corner { top: 8px; left: 8px; gap: 5px; }
   .card .d6z .plate .nm { padding-bottom: 10px; }
+  .card .d7f .panel { padding-top: 38px; }   /* 52px scaled to the belt's 172px slot */
   .card .d7f .inframe { inset: 7px; }
   .card .d7f .inframe::before, .card .d7f .inframe::after { border-width: 1.5px; }
   .card .d7f .dgl, .card .d7f .dgr { width: 4px; height: 4px; }
@@ -853,7 +866,7 @@
     aspect-ratio: 1; border-radius: 0; background: transparent; box-shadow: none;
   }
   #lb.fv3 .lb-card .frame img {
-    padding: 34px 38px 12px;
+    padding: 44px 38px 12px;   /* top room mirrors the grid card's new balance */
     filter: drop-shadow(9px 11px 0 rgba(0, 0, 0, .3));
   }
   #lb.fv3 .inframe { inset: 12px; }
@@ -2617,9 +2630,15 @@
     /* rebuild belts when the breakpoint flips their card width (or the
        window outgrows the loop) — debounced so drag-resizing stays cheap */
     let beltResizeT = null;
+    /* topbar height feeds the mobile lightbox sheet's top offset (the header
+       stays visible + live above the inspection view) */
+    const setTbh = () =>
+      document.body.style.setProperty("--tbh", document.querySelector(".topbar").offsetHeight + "px");
+    setTbh();
     addEventListener("resize", () => {
       clearTimeout(beltResizeT);
       beltResizeT = setTimeout(() => {
+        setTbh();
         lockCardScale();
         rails.forEach(rail => {
           const cw = parseFloat(getComputedStyle(rail.belt).getPropertyValue("--cardW")) || 172;
