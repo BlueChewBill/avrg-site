@@ -2589,27 +2589,70 @@
        so the light has weight; pointerleave eases home to the house
        diagonal (7,9) and hands the shadow back to CSS. Lerp math runs in
        ref-px (the 232 spec space) — one tune, every card size. */
-    /* four channels: DIRECTION (minL..maxL by cursor distance, fast ease —
-       the light angle snaps to the hand) + LIFT (a flat length bonus that
-       swells in on its own slow ease, pacing the board grow — the board
-       rises and its shadow throws further, the old hover's depth cue) +
-       PULL (gravity: the board strains toward the cursor, pull×d ref-px,
-       opposite the shadow throw — the two stretching apart is the depth) +
-       GROW (the 1.08 board scale, JS-owned while the sun is live because
-       pull rides the same inline transform; rises with lift's ease, drains
-       fast like the .3s CSS shrink). Shadow totals: ~11 ref-px near the
-       board, ~17.5 mid-card (the old fixed hover), 24 at a corner graze;
-       pull tops out at 6 against that 24. */
-    const SUN = { lift: 7, minL: 2, maxL: 17, pull: 6, grow: 1.08, duck: 6,
-                  aDark: .48, aFaint: .17, aPow: .7,
-                  ease: .14, liftEase: .045, settle: .15 };
+    /* ================== SUN TUNING LEGEND ==================
+       All lengths are REF-PX (the 232-card space — they scale with the
+       card). Every channel is a per-frame lerp; CSS re-owns the shadow
+       the moment the tracker settles and releases.
+
+       SHADOW THROW — direction away from the cursor, through the board
+         minL   2   throw floor next to the board (the pool sliver)
+         maxL  17   directional throw at a full rim graze
+         lift   7   depth pop while hovered — rises slow (with the board
+                    grow), drains fast; total graze = maxL + lift = 24
+         duck   6   below this much directional length the lift ramps
+                    out, so a center-cross slides the shadow UNDER the
+                    board; raise it much and the whip comes back
+
+       GRAVITY — the board pulls toward the cursor (two springs, both
+       always chasing; there is NO park detector — the creep is the slow
+       spring's lag, which is why it has no on/off seam)
+         pull   8   fast arrive spring: the around-the-cursor feel
+         drift  6   slow spring: parked, it closes the last distance
+                    (the creep); moving, it trails and reads as weight
+         gPow 1.7   distance ramp d^gPow — higher pushes gravity further
+                    out to the rim and calms the middle
+         ground .85 fraction of the pull subtracted from the shadow
+                    offset so the shadow stays PLANTED while the board
+                    slides over it (1 = nailed down, 0 = shadow rides
+                    the board and the drift reads flat)
+         grow 1.08  board scale while hovered (JS-owned: the pull rides
+                    the same inline transform)
+
+       INK — shadow opacity by cursor distance (not by length: the lift
+       floors the length and would cap the dark)
+         aDark  .53  dense contact pool at the overhead vanish
+         aFaint .19  faint end at a full graze
+         aPow   .7   <1 pins the dark pool tight to the board; raise
+                     toward 1 to spread the darkening out to mid-card
+
+       TEMPO
+         ease      .14   fast channels: throw, arrive, ink, all drains
+         driftEase .01   the creep's breath (~4s to close)
+         liftEase  .045  lift + grow rise (~the old .94s hover pace)
+         settle    .15   post-leave release threshold (ref-px)
+       ======================================================== */
+    const SUN = { lift: 7, minL: 2, maxL: 17, pull: 8, drift: 6, gPow: 1.7, ground: .85,
+                  grow: 1.08, duck: 6,
+                  aDark: .53, aFaint: .19, aPow: .7,
+                  ease: .14, driftEase: .01, liftEase: .045, settle: .15 };
     let sunRaf = 0, sunOn = false, sunS = 1, sunX = 7, sunY = 9, sunTX = 7, sunTY = 9,
-        sunLift = 0, sunPX = 0, sunPY = 0, sunPTX = 0, sunPTY = 0, sunSc = 1, sunA = .3, sunAT = .3;
+        sunLift = 0, sunSc = 1, sunA = .3, sunAT = .3,
+        sunP1X = 0, sunP1Y = 0, sunP2X = 0, sunP2Y = 0, sunUX = 0, sunUY = 0, sunD = 0;
     function sunFrame() {
       sunX += (sunTX - sunX) * SUN.ease;
       sunY += (sunTY - sunY) * SUN.ease;
-      sunPX += (sunPTX - sunPX) * SUN.ease;
-      sunPY += (sunPTY - sunPY) * SUN.ease;
+      /* GRAVITY: two always-on springs, no park detection — a fast ARRIVE
+         and a slow DRIFT both chase the cursor, targets ramped by d^gPow
+         (gentle mid-card, steep at the rim). In motion the drift trails
+         far behind and reads as weight; parked, it keeps closing the last
+         distance — the creep IS the lag, so there is no on/off seam.
+         Both drain at the fast ease once the cursor leaves. */
+      const g = sunOn ? Math.pow(sunD, SUN.gPow) : 0;
+      sunP1X += (sunUX * SUN.pull * g - sunP1X) * SUN.ease;
+      sunP1Y += (sunUY * SUN.pull * g - sunP1Y) * SUN.ease;
+      sunP2X += (sunUX * SUN.drift * g - sunP2X) * (sunOn ? SUN.driftEase : SUN.ease);
+      sunP2Y += (sunUY * SUN.drift * g - sunP2Y) * (sunOn ? SUN.driftEase : SUN.ease);
+      const pullX = sunP1X + sunP2X, pullY = sunP1Y + sunP2Y;
       /* lift + grow rise slow (with the board), drain fast (the .3s shrink) */
       sunLift += ((sunOn ? SUN.lift : 0) - sunLift) * (sunOn ? SUN.liftEase : SUN.ease);
       sunSc += ((sunOn ? SUN.grow : 1) - sunSc) * (sunOn ? SUN.liftEase : SUN.ease);
@@ -2623,15 +2666,22 @@
       const f = len > .01 ? (len + sunLift * Math.min(1, len / SUN.duck)) / len : 0;
       sunA += (sunAT - sunA) * SUN.ease;
       if (!sunOn && Math.abs(sunTX - sunX) < SUN.settle && Math.abs(sunTY - sunY) < SUN.settle
-          && sunLift < SUN.settle && Math.abs(sunPX) < SUN.settle && Math.abs(sunPY) < SUN.settle
+          && sunLift < SUN.settle && Math.abs(pullX) < SUN.settle && Math.abs(pullY) < SUN.settle
           && Math.abs(sunSc - 1) < .002 && Math.abs(sunA - .3) < .01) { sunRelease(); return; }
-      lbBig.style.filter = "drop-shadow(" + (sunX * f * sunS).toFixed(2) + "px " + (sunY * f * sunS).toFixed(2) + "px 0 rgba(0,0,0," + sunA.toFixed(3) + "))";
-      lbBig.style.transform = "translate(" + (sunPX * sunS).toFixed(2) + "px," + (sunPY * sunS).toFixed(2) + "px) scale(" + sunSc.toFixed(4) + ")";
+      /* GROUND: the drop-shadow rides the img's translate, so the pull
+         would drag the shadow with the board — subtract most of the pull
+         from the shadow offset and it stays planted while the board
+         slides over it (the drift becomes board-vs-shadow parallax).
+         ground < 1 leaves a whisper of follow so they stay related. */
+      lbBig.style.filter = "drop-shadow(" + ((sunX * f - pullX * SUN.ground) * sunS).toFixed(2) + "px "
+        + ((sunY * f - pullY * SUN.ground) * sunS).toFixed(2) + "px 0 rgba(0,0,0," + sunA.toFixed(3) + "))";
+      lbBig.style.transform = "translate(" + (pullX * sunS).toFixed(2) + "px," + (pullY * sunS).toFixed(2) + "px) scale(" + sunSc.toFixed(4) + ")";
       sunRaf = requestAnimationFrame(sunFrame);
     }
     function sunRelease() {
       if (sunRaf) cancelAnimationFrame(sunRaf);
-      sunRaf = 0; sunOn = false; sunLift = 0; sunPX = 0; sunPY = 0; sunSc = 1; sunA = .3; sunAT = .3;
+      sunRaf = 0; sunOn = false; sunLift = 0; sunSc = 1; sunA = .3; sunAT = .3;
+      sunP1X = 0; sunP1Y = 0; sunP2X = 0; sunP2Y = 0; sunD = 0;
       lbBig.style.filter = "";
       lbBig.style.transform = "";
       lbCard.classList.remove("suntrack");
@@ -2653,7 +2703,7 @@
           sunX = m ? +m[1] / sunS : 7; sunY = m ? +m[2] / sunS : 9;
           const t = getComputedStyle(lbBig).transform;
           const mx = new DOMMatrix(t === "none" ? undefined : t);
-          sunSc = mx.a || 1; sunPX = mx.e / sunS; sunPY = mx.f / sunS;
+          sunSc = mx.a || 1; sunP1X = mx.e / sunS; sunP1Y = mx.f / sunS; sunP2X = 0; sunP2Y = 0;
           lbCard.classList.add("suntrack");
           sunRaf = requestAnimationFrame(sunFrame);
         }
@@ -2664,8 +2714,10 @@
         const d = Math.min(1, len / (Math.hypot(pr.width, pr.height) / 2));
         const L = SUN.minL + (SUN.maxL - SUN.minL) * d;
         sunTX = dx / len * L; sunTY = dy / len * L;
-        /* gravity: toward the cursor — the minus of the throw direction */
-        sunPTX = -dx / len * SUN.pull * d; sunPTY = -dy / len * SUN.pull * d;
+        /* gravity: toward the cursor — the minus of the throw direction.
+           Only the unit + distance are stored; sunFrame builds the pull
+           each frame so the parked crawl can keep growing it. */
+        sunUX = -dx / len; sunUY = -dy / len; sunD = d;
         /* FADE: alpha follows the CURSOR's distance, not the drawn length
            (the lift floors the length, which capped the dark) — overhead
            light = dense contact pool, a graze = faint stretch. aPow < 1
@@ -2675,9 +2727,8 @@
       });
       lbCard.addEventListener("pointerleave", () => {
         if (!sunOn) return;
-        sunOn = false;
+        sunOn = false;             /* gravity + crawl let go via the sunOn gate */
         sunTX = 7; sunTY = 9;      /* home = the house diagonal */
-        sunPTX = 0; sunPTY = 0;    /* gravity lets go */
         sunAT = .3;                /* back to the stock ink */
       });
     }
