@@ -452,16 +452,17 @@
      pinned to viewport center — short phones (12 mini) can reach the buttons */
   @media (max-width: 720px) {
     .lb { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-    /* 100lvh: fixed+inset:0 tracks the SMALL viewport on iOS, leaving an
-       undimmed strip behind the collapsed address bar — size to the large
-       viewport instead (over-constrained bottom is ignored) */
-    .lb-scrim { position: fixed; height: 100lvh; }
-    /* mobile fade = site content to 0 over the DEFAULT page ground, not a
-       dark tint: iOS renders its bar chrome with a backdrop tint that reads
-       as a lighter band over any translucent dark scrim — over the page's
-       own background color the band is invisible (ids outrank the
-       body.light scrim override below) */
-    #lb-scrim, #vlb-scrim { background: var(--bg); }
+    /* mobile fade = the site content itself goes to 0 over the page's own
+       ground — no overlay at all. Every scrim variant banded at the iOS bar
+       (fixed-inside-a-scroller mispins while the sheet scrolls; translucent
+       tints read lighter behind the bar chrome). With the content invisible
+       and the ground just being the page background, there is nothing to
+       cover. The scrim element stays as an invisible tap-to-close target
+       spanning the sheet's full scroll height (ids outrank the body.light
+       scrim override below). */
+    #lb-scrim, #vlb-scrim { position: absolute; inset: 0; height: auto; min-height: 100lvh; background: transparent; }
+    .topbar, #home, #colpage { transition: opacity .45s ease; }
+    body.lb-fade .topbar, body.lb-fade #home, body.lb-fade #colpage { opacity: 0; pointer-events: none; }
     .lb-card {
       position: relative; left: auto; top: auto; translate: none; z-index: 1;
       margin: 72px auto calc(52px + env(safe-area-inset-bottom));
@@ -1968,6 +1969,7 @@
     function openVlb() {
       const srcRect = reduced ? null : vid.getBoundingClientRect();
       vlb.hidden = false;
+      document.body.classList.add("lb-fade");
       document.body.style.overflow = "hidden";
       vlbShow("cover");
       if (srcRect) {
@@ -1986,6 +1988,7 @@
     }
     function closeVlb(instant) {
       vlb.classList.remove("in");
+      document.body.classList.remove("lb-fade");
       setTimeout(() => {
         vlb.hidden = true;
         document.body.style.overflow = "";
@@ -2392,6 +2395,7 @@
     function openLb(ci, k, sourceEl) {
       populate(ci, k);
       lb.hidden = false;
+      document.body.classList.add("lb-fade");
       document.body.style.overflow = "hidden";
       /* .stage first: the j-cards' square image area is the true counterpart
          of the lb's square .frame — matching frame↔panel centers landed the
@@ -2418,6 +2422,7 @@
         : onSrc ? lbSrc.el.querySelector(".stage, .frame") : sourceFrame();
       lb.classList.remove("in");
       lbCard.classList.remove("tset");
+      document.body.classList.remove("lb-fade");   /* grid fades back in under the returning card */
       if (back) {
         const sr = back.getBoundingClientRect();
         const fr = lbCard.querySelector(".frame").getBoundingClientRect();
