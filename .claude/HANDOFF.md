@@ -1,68 +1,49 @@
-# Handoff — avrg-site — 2026-07-21 (late)
+# Handoff — avrg-site — 2026-07-21 (late night)
 
 ## Where we are
-Canva cleanup, classics collection: DONE end to end. The "name" sheet
-(now renamed **classics**, design DAHQEEiHqT4) holds all 54 boards with
-correct top/bottom pairing, names cl1–cl54, Bulk Create generated 54 card
-designs titled `(Bulk N) classics`, and the full export→slice pipeline ran:
-**107 pre-named bg-removed cutouts committed at
-`redesign/card-lab/canva/cl<N>-top.png` / `cl<N>-bottom.png`.**
-The full recipe lives in CLAUDE.md's Canva bullet (Open threads).
-
-Why the sheet needed surgery (so nobody re-derives it): IMG_5355 was an
-accidental feet photo — Dylan re-shot board 12's top, so from board 12 on
-the odd=top/even=bottom parity INVERTS (5356=top, 5357=bottom, …). Canva's
-bulk upload dropped the junk frame, slid the top column up a row, and
-padded with a duplicate. Fixed cell-by-cell via keyboard copy/paste.
-Board 54 (teal) has NO bottom photo — 5441 is already the first shaped
-board. Desktop `backgroundremovalcanva/classic/top|bottom/` folders were
-re-sorted to the true parity (feet photo quarantined in `stray/`).
+Canva shaped batch: DONE and committed. 48 cutouts at
+`redesign/card-lab/canva/hs<N>-top/bottom.png` (24 boards: hs1–hs21,
+hs22.5, hs23, hs24). Sheets duplicated a row AGAIN (hs22 ≡ hs13, caught
+by pixel-hash); fix landed as hs22.5. Full recipe + gotchas updated in
+CLAUDE.md's Canva bullet. Also removed four dead desk-buddy hooks from
+`~/.claude/settings.json` (project folder was renamed, script path 404'd).
 
 ## Next task
-**Repeat the pipeline for the next batch (shaped collection).** Photos are
-at `~/Desktop/backgroundremovalcanva/shaped/` (starts IMG_5441). Steps:
-verify pairing/parity of the photos FIRST (learn from classics: check for
-junk frames before assuming odd/even), Dylan bg-removes + builds the sheet
-(or reuse flow), Bulk Create with `classics-card-template` (or a clone),
-export + slice with the same script. "Done" = `sh<N>-top/bottom.png` (or
-whatever prefix Dylan wants) in `redesign/card-lab/canva/`.
+**Mobile card work** (Dylan's words: "mobile card work" — the mobile
+polish sprint from CLAUDE.md's mobile bullet). Open design questions
+queued from mobile pass 1, in `redesign/k-home-dual.html`:
+- Name-over-board legibility on busy cutouts (top-bold / bottom-bold
+  are the fallback variants).
+- Collection-card decode flourish (name → "N BOARDS AVAILABLE") touch
+  trigger: scroll-into-view once, idle cycle like taglines, or
+  on-tap-before-navigate.
+- General mobile polish — mobile is what most visitors see.
+Serve from repo root (`avrg-root`, :8123); k-home-dual loads
+`../site/data.js`.
 
 ## Read these, skip the rest
-- CLAUDE.md — the Canva bullet in Open threads (the full step-by-step recipe).
-- redesign/card-lab/canva/ — ls it to see the output naming convention.
-- The slice script pattern: slice card L/R halves, scipy ndimage.label,
-  keep largest alpha component, crop to bbox (was in session scratchpad —
-  trivial to rewrite from the CLAUDE.md description).
-
-Everything else in the repo is NOT needed. The dock/bay/animation code is
-untouched this session.
+- CLAUDE.md — the k-home-dual bullet (Layout) + the "Mobile pass 1" and
+  "Mobile deck (the dock)" bullets (Open threads).
+- redesign/k-home-dual.html — only the mobile-scoped sections (search
+  `940px`, `renderColPage`, `.picon`, `dockAdd`).
 
 ## Context that isn't in the code
-- Template gotcha: the bulk-create template must have NO text layer —
-  text bakes into exports and can't be cleanly stripped when it overlaps
-  the deck. Names live in the design titles + row order instead.
-- Cell-level Canva sheet editing that works: select via keyboard only
-  (arrow keys — clicking image cells opens a popup that steals ⌘C context
-  and pastes become floating objects), then ⌘C / arrows / ⌘V. Range
-  selection (shift-click, shift+arrows) does NOT work in Canva Sheets.
-- search-designs caps at 25/call; paginate with the continuation token.
-  Design titles come from the SHEET's name — rename the sheet before
-  regenerating to keep batches distinguishable.
-- Housekeeping owed in Canva (optional): trash the 54 obsolete
-  `(Bulk N) name` designs (v1, text-bearing) and one stray upload (a
-  bg-removed cutout of the feet photo).
-- Cutout resolution is ~300×850px (limited by image size on the 2000×1500
-  template). Fine for cards; if bigger is ever needed, re-export with
-  `width`/`height` params on export-design, or scale the template up.
+- Dylan is prepping MORE image batches for the Canva flow ("the canva
+  blender") in parallel — expect another collection soon; the by-hand
+  flow (sheet → bulk create → manual zip download → local slice +
+  hash-check) is now the canonical cheap path, no browser automation.
+- Slice script lives in session scratchpads only — trivially rewritten
+  from the CLAUDE.md recipe (L/R halves, scipy largest alpha component,
+  bbox crop). Needs a venv with pillow/scipy (no system python has PIL).
+- Export zips stay on Dylan's Desktop (`shaped background removed/`) —
+  don't need them once cutouts are committed.
 
 ## Parked / later
-- **cl54 bottom re-shoot** — teal classic, underside photo doesn't exist.
-  After shooting: drop into sheet D55, regenerate row (or just Bulk Create
-  again — dedupe by title), re-export that one card.
-- **Canva vs Vision cutout decision** — edge-compare.html, now trivially
-  possible since both sets exist named. This gates which cutouts feed the
-  site cards.
-- Sizes column in the sheet (waits on calipering) → PH_DIMS.
-- Everything from the previous handoff's parked list (seat variant pick,
-  dock path pick, mobile polish, bay drag-and-drop, header cleanup,
-  home-logo motion) — unchanged, still behind the card image work.
+- 52 photos in `~/Desktop/backgroundremovalcanva/shaped/` vs 24 boards
+  in the sheet — 4 photos unaccounted; check sheet vs folder next Canva
+  session (junk frames or up to 2 missed boards).
+- cl54 bottom re-shoot (teal classic, photo never taken).
+- Canva vs Vision cutout decision (edge-compare.html) — gates which
+  cutouts feed the site cards; now possible for shaped too.
+- Seat variant pick, dock path pick, bay drag-and-drop, header cleanup,
+  home-logo motion — unchanged, behind the card image + mobile work.
