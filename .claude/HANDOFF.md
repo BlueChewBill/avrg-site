@@ -1,77 +1,73 @@
-# Handoff — avrg-site — 2026-07-22 (evening)
+# Handoff — avrg-site — 2026-07-22 (late)
 
 ## Where we are
-Card sprint, going well. This session shipped the ONE CARD SPEC: `.d7f` is
-authored once in cqw (CSS container units), so belt slots, shelf grids, and
-the fv3 lightbox render the same card at different sizes by construction —
-aspects locked ~1.51 everywhere, the lightbox IS the grid card blown up, and
-the open/close flight anchors whole-panel-to-panel so every edge lands (the
-mobile bottom-off landing and the desktop double-frame are gone). Desktop got
-the lift-out + site-fade (empty slot stays visible; no scrim on the card lb
-anywhere). Three follow-up fixes landed same-session after Dylan's phone/
-desktop checks: the `#lb[hidden]` display bug (empty lb shell floated over
-every page), the scrollbar-vanish reflow (grid re-columned 3→4 on open), and
-desktop de-lock + bar-less sheet. All pushed through 174dde3, live on Pages,
-Dylan confirmed.
+Two things shipped and PUSHED (through 75e4b64, plus the wrap commit after):
+the mobile chip-seam fix (1px frame tuck, see the black-on-black gotcha in
+CLAUDE.md) and **the lb sun** — cursor-as-light-source physics on the desktop
+fv3 lightbox board. Shadow throws away from the cursor, ducks under the board
+on a center-cross, darkens to a contact pool near the overhead vanish, fades
+at a graze; the board pulls toward the cursor on two always-on springs (the
+slow one's lag IS the parked creep — no on/off seam) and 85% of the pull is
+subtracted from the shadow so it stays planted while the board slides over
+it. Dylan's read: "looks and feels great", and the session ended with the
+site reframed as **portfolio material** — it "reads like someones thing".
 
-## Next task
-**More slight card tweaks — Dylan opens the next chat with specifics**, same
-pattern as this session (he leads with what to tweak, often with frame
-grabs). Done = looks right on his phone via Pages + desktop. Card tweaks now
-go in ONE place: the base `.d7f` block in k-home-dual.html — each dimension
-is a px-fallback line + a cqw line; keep BOTH in sync (N px at the 232
-reference = N × 0.431034cqw).
+## Next tasks — Dylan's own queue, dictated end of session
+1. **Card shadow behavior.** Design law he stated, now also in the sprint-3
+   stage-2 amendment in CLAUDE.md: card/panel shadows may move/grow for
+   depth but get NO fade/ink dynamics — "the board is the only real physical
+   thing, it gets the real shadow physics." Work = define what card shadows
+   DO do (depth without sun physics), grid cards included.
+2. **Deck/bay CLOSE choreography, desktop + mobile.** The open/creep-in is
+   "stellar" — the shut is the gap. Desktop: inner-arrow quick-shut and the
+   slow drain exist but haven't had a design pass. Mobile: the dock has no
+   real close (the full takeover case is still unbuilt). See the reordered
+   NEXT in CLAUDE.md sprint item 2.
+3. **Buttons.** "Fine enough placeholders but need to go." Reaction session:
+   build variants speaking the card language (rail draws, chip wipes,
+   decodes) against his collected references. Show options, don't ask for
+   a spec.
+4. **Shaped board dimensions.** His caliper numbers are MEASURED and READY —
+   pure type-in session, he dictates. Land them where the fv3 name→dims
+   decode reads (`jmeta`/`b.dims` in k-home-dual), permanent home
+   build_site.py → data.js per the inventory-ID plumbing thread.
+
+(4 is a 15-minute warm-up; 3 needs his references in hand; 1 and 2 are
+design/build. Let him pick the order.)
 
 ## Read these, skip the rest
-- CLAUDE.md — the k-home-dual bullet's ONE CARD SPEC passage (how the spec,
-  flight, lock, and hidden-rule work now) + the universal-scrim-fade gotcha.
-- redesign/k-home-dual.html — only what the tweak touches. Anchors:
-  `.d7f {` (the cqw spec block), `#lb.fv3` (lightbox-only remainder: ambient
-  shadow, nav, height guard), `anchors(` / `flipFrom` / `openLb` / `closeLb`
-  (flight + lift-out), `lockScroll` (scroll lock), `lockCardScale` (grid
-  downscale — unchanged).
-
-Everything else in the repo is NOT needed. Don't re-derive the cqw math —
-the comment at `.d7f {` states the formula.
+- CLAUDE.md — the k-home-dual bullet (ONE CARD SPEC + lb sun passages), the
+  sprint list (items 2 and 3 carry the new amendments), and the
+  black-on-black overlap gotcha.
+- redesign/k-home-dual.html — **the SUN TUNING LEGEND banner at the `SUN`
+  const**: every knob, unit (ref-px, 232 space), and which way to turn it.
+  Any shadow/feel work starts there. Bay work: `BAY_TUNE` + the bay comment
+  block; dock: `DOCK_TUNE` / `dockAdd()`.
 
 ## Context that isn't in the code
-- **Tweak mechanics:** edit the base `.d7f` cqw block once — belt, grid, and
-  lightbox all follow. fv3-lb-only chrome (nav seat/arrows) is cqw at a 430
-  reference (N px at 430 = N × 0.232558cqw). Always update the px fallback
-  beside each cqw line (pre-2022 Safari path).
-- **Dylan hasn't reacted to the enlarged lb chrome yet.** The lightbox card
-  is a true enlargement now — name ~21px at 430, chips proportionally
-  bigger than the old hand-tuned (smaller) look. If he says it reads loud,
-  decide spec-wide vs lb-only before touching numbers.
-- **Desktop lb width guard:** `max(300px, min(430px, (100dvh − tbh −
-  120px)/1.53))` — short windows shrink the whole card (cqw scales it);
-  the sheet scrolls for thumbs/desc below.
-- **Don't re-add a page-scroll lock on desktop.** The vanishing scrollbar
-  is what re-columned Dylan's grid; it took two rounds to settle
-  (scrollbar-gutter: stable tried and reverted — spec limitation). Lock is
-  `dockActive()`-only; `#vlb` still locks unconditionally on purpose.
-- **`#lb` display rules:** must not outgun `#lb[hidden] { display: none }`
-  — the id-vs-class miss shipped an invisible-to-assertions, fully visible
-  empty shell over the site. Lesson applied session-wide: screenshot END
-  STATES (closed lb, post-close page); `hidden: true` was true while the
-  thing was on screen.
+- **How to tune with Dylan:** he gives feel-words ("nervous", "reads as
+  on/off", "room to crawl at the edges") — each one maps to a mechanical
+  cause; find it, change the physics, show a numeric trace as receipt.
+  This loop worked all session; repeat it.
+- The sun is desktop-only by gate (hover:hover + >940px + not reduced-motion)
+  — phone checks via Pages won't show it; verify sun work in a desktop
+  browser.
+- Shadow-alpha knobs (aDark .53 / aFaint .19) were flagged lower-confidence
+  than the rest — if he reacts to shadow ink, those move first (or aPow to
+  re-shape where the darkening lives).
 - **Pane workflow:** the Edit hook re-fronts a `file://` tab after every
-  edit — measurements on the backgrounded HTTP tab return garbage (frozen
-  viewport/media queries). Close stray tabs + front the HTTP tab before
-  measuring. Synthetic hover can't drive `:hover` choreography — verify via
-  `.tset` or rect math. Port 8123 may be held by another session's static
-  server — just navigate to it. (Also saved to Claude's memory.)
-- Ground/card localStorage values are `black|white` / `photo|framev3|paper|
-  zoned`; same-URL hash navigation doesn't reload — use location.reload().
+  edit — close it and re-front the HTTP tab (:8123, another session's server
+  may hold the port; just navigate). Synthetic hover can't drive `:hover`
+  choreography — the sun is testable because it's pointer-EVENT-driven
+  (dispatch PointerEvents); CSS hover states are not. Screenshot END states.
+- Ground/card localStorage: `avrg-k-ground` = black|white, `avrg-k-card` =
+  photo|framev3|paper|zoned; same-URL hash nav doesn't reload.
 
 ## Parked / later
-- Decode flourish touch trigger + name-over-board legibility variants
-  (queued from mobile pass 1).
-- Dock behavior, page header, buttons — Dylan named these as next after the
-  card tweaks (header reveals not designed; buttons = reaction session,
-  show variants against his collected references).
-- Belt `.d5`/`.paper` furniture pass still hand-tuned (only d7f retired).
-- Cutout payload / pre-scaled srcset (mobile perf); mobile scroll-shadow
-  motion (vibes not yet described — ask, then build behind the touch gate).
-- j-cards-black/white still carry the raw %-max-height iOS pattern — fix
-  when porting.
+- Sun → grid cards port (sprint 3 stage 1: lean + aim-assist + the ducked
+  sun at grid scale) — after the queue above.
+- Seat-variant pick (drop/skid/seatdraw switcher) still awaiting reaction.
+- Decode flourish touch trigger + name-over-board legibility variants.
+- Cutout payload / pre-scaled srcset (mobile perf).
+- j-cards-black/white: stale flush-chip geometry + raw %-max-height iOS
+  pattern — fix only when porting.
