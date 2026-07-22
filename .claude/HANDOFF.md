@@ -1,80 +1,77 @@
-# Handoff — avrg-site — 2026-07-22
+# Handoff — avrg-site — 2026-07-22 (evening)
 
 ## Where we are
-Mobile card sprint, mid-stride and going well — Dylan is "really stoked on
-how it's coming together." This session: (1) Canva cutouts mapped to site
-boards and wired into k-home-dual's cards (pixel-match + sheet-order;
-`CANVA` map in the JS), with the cl/hs sheet numbers becoming the CANONICAL
-card refs (classic-01 = CL 3, non-contiguous on purpose); (2) proportion
-lock — mobile grid cards are scale()-reductions of the 232px desktop card;
-(3) two real-iPhone bugs fixed (iOS ignores %-max-height in aspect-ratio
-boxes; sticky :hover fired chip wipes on tap — all card :hover CSS now
-gated `(hover:hover)`); (4) mobile inspection reworked: decoded arrival,
-lift-out card with empty slot + aligned return, no scrim (site content
-fades over its own ground), card-is-the-hero (no text below), sheet
-centered under a still-live topbar; (5) fv3 card got top room so the board
-sits optically centered. All committed (through 9f415d1), pushed, and live
-on GitHub Pages (bluechewbill.github.io/avrg-site — Pages serves main).
+Card sprint, going well. This session shipped the ONE CARD SPEC: `.d7f` is
+authored once in cqw (CSS container units), so belt slots, shelf grids, and
+the fv3 lightbox render the same card at different sizes by construction —
+aspects locked ~1.51 everywhere, the lightbox IS the grid card blown up, and
+the open/close flight anchors whole-panel-to-panel so every edge lands (the
+mobile bottom-off landing and the desktop double-frame are gone). Desktop got
+the lift-out + site-fade (empty slot stays visible; no scrim on the card lb
+anywhere). Three follow-up fixes landed same-session after Dylan's phone/
+desktop checks: the `#lb[hidden]` display bug (empty lb shell floated over
+every page), the scrollbar-vanish reflow (grid re-columned 3→4 on open), and
+desktop de-lock + bar-less sheet. All pushed through 174dde3, live on Pages,
+Dylan confirmed.
 
 ## Next task
-**More slight card tweaks — Dylan's words, specifics inbound in the next
-chat.** He'll open with what to tweak; expect fv3 geometry/behavior polish
-in k-home-dual, verified on his phone via Pages. Done = he says it looks
-right on the phone. Still queued from the mobile sprint after that:
-collection-card decode flourish touch trigger (scroll-into-view once vs
-idle cycle vs on-tap) and name-over-board legibility variants.
+**More slight card tweaks — Dylan opens the next chat with specifics**, same
+pattern as this session (he leads with what to tweak, often with frame
+grabs). Done = looks right on his phone via Pages + desktop. Card tweaks now
+go in ONE place: the base `.d7f` block in k-home-dual.html — each dimension
+is a px-fallback line + a cqw line; keep BOTH in sync (N px at the 232
+reference = N × 0.431034cqw).
 
 ## Read these, skip the rest
-- CLAUDE.md — Layout: k-home-dual bullet (the two DONE 2026-07-22 blocks +
-  proportion lock); Gotchas: the three new iOS/scrim/push entries.
-- redesign/k-home-dual.html — only the sections the tweak touches; search
-  anchors: `CANVA` (map + refs), `lockCardScale`, `.tset`, `lb-fade`,
-  `--tbh`, `padding-top: 52px` (card top room), `openLb`/`closeLb`.
+- CLAUDE.md — the k-home-dual bullet's ONE CARD SPEC passage (how the spec,
+  flight, lock, and hidden-rule work now) + the universal-scrim-fade gotcha.
+- redesign/k-home-dual.html — only what the tweak touches. Anchors:
+  `.d7f {` (the cqw spec block), `#lb.fv3` (lightbox-only remainder: ambient
+  shadow, nav, height guard), `anchors(` / `flipFrom` / `openLb` / `closeLb`
+  (flight + lift-out), `lockScroll` (scroll lock), `lockCardScale` (grid
+  downscale — unchanged).
 
-Everything else in the repo is NOT needed. Do not re-derive the Canva
-mapping — receipts live at redesign/card-lab/canva-review.html.
+Everything else in the repo is NOT needed. Don't re-derive the cqw math —
+the comment at `.d7f {` states the formula.
 
 ## Context that isn't in the code
-- **Verify on the real phone via Pages, not just the browser pane.** Two
-  bugs this session were invisible in the pane (desktop engine): the
-  %-max-height failure and the hover-on-tap. Workflow that worked: edit →
-  verify what's verifiable in the pane → commit → push → background
-  `until curl | grep` watcher on the Pages URL → Dylan checks his phone.
-  Pushes: repo git config pins HTTP/1.1 + 150MB postBuffer (large PNG
-  batches timed out on HTTP/2) — already set, don't re-derive.
-- **Architecture decision, settled and internalized by Dylan: no separate
-  mobile build.** Divergent mobile behavior is intentional and lives
-  behind capability gates (`hover:none`/`hover:hover`, ≤940 `dockActive`,
-  ≤720 sheet block). He gets it and likes it — frame new mobile asks in
-  this pattern.
-- **Numbering:** the Canva sheet numbering (cl1–54, hs1–24) is the one
-  true inventory ID; site-ordinal refs in data.js are fallback only.
-  Cards changing numbers was explicitly blessed. Permanent home for the
-  mapping is build_site.py → data.js at production-port time (open
-  thread in CLAUDE.md).
-- **Mobile contact path is lisst-only now** (product/DM box hidden ≤720).
-  Dylan hasn't objected; if he ever wants per-board DM back on mobile
-  it's one display rule.
-- **Card geometry couplings** (will matter for the incoming tweaks): the
-  ref chip is anchored INSIDE .stage, so panel top-room changes need the
-  chip's negative-top compensated (-40 grid/-30 belt) — or better, move
-  the chip to the panel in the renderer if geometry keeps iterating. The
-  proportion lock renders at 232px then scales, so grid-card spec changes
-  propagate everywhere; the belt pass is still hand-scaled numbers
-  (candidate to retire onto lockCardScale, parked).
-- Originals have NO canva cutouts (no ol* batch was ever made) — they
-  keep Vision cuts and OG refs; that's correct, not a bug.
+- **Tweak mechanics:** edit the base `.d7f` cqw block once — belt, grid, and
+  lightbox all follow. fv3-lb-only chrome (nav seat/arrows) is cqw at a 430
+  reference (N px at 430 = N × 0.232558cqw). Always update the px fallback
+  beside each cqw line (pre-2022 Safari path).
+- **Dylan hasn't reacted to the enlarged lb chrome yet.** The lightbox card
+  is a true enlargement now — name ~21px at 430, chips proportionally
+  bigger than the old hand-tuned (smaller) look. If he says it reads loud,
+  decide spec-wide vs lb-only before touching numbers.
+- **Desktop lb width guard:** `max(300px, min(430px, (100dvh − tbh −
+  120px)/1.53))` — short windows shrink the whole card (cqw scales it);
+  the sheet scrolls for thumbs/desc below.
+- **Don't re-add a page-scroll lock on desktop.** The vanishing scrollbar
+  is what re-columned Dylan's grid; it took two rounds to settle
+  (scrollbar-gutter: stable tried and reverted — spec limitation). Lock is
+  `dockActive()`-only; `#vlb` still locks unconditionally on purpose.
+- **`#lb` display rules:** must not outgun `#lb[hidden] { display: none }`
+  — the id-vs-class miss shipped an invisible-to-assertions, fully visible
+  empty shell over the site. Lesson applied session-wide: screenshot END
+  STATES (closed lb, post-close page); `hidden: true` was true while the
+  thing was on screen.
+- **Pane workflow:** the Edit hook re-fronts a `file://` tab after every
+  edit — measurements on the backgrounded HTTP tab return garbage (frozen
+  viewport/media queries). Close stray tabs + front the HTTP tab before
+  measuring. Synthetic hover can't drive `:hover` choreography — verify via
+  `.tset` or rect math. Port 8123 may be held by another session's static
+  server — just navigate to it. (Also saved to Claude's memory.)
+- Ground/card localStorage values are `black|white` / `photo|framev3|paper|
+  zoned`; same-URL hash navigation doesn't reload — use location.reload().
 
 ## Parked / later
-- Cutout payload: mobile downloads full-res canva PNGs; pre-scaled set /
-  srcset queued as part of mobile perf (idea surfaced, not banked).
-- Mobile scroll shadow behavior — Dylan wants some shadow motion on
-  mobile scroll; vision not yet described. Ask for the vibes, build
-  behind the touch gate.
-- Decode flourish trigger + name legibility variants (from mobile pass 1).
-- Belt proportion pass → lockCardScale unification.
-- Canva loose ends: 4 unaccounted photos in ~/Desktop shaped folder;
-  cl54-bottom re-shoot; Canva-vs-Vision edge decision formally unmade
-  (cards now just use Canva).
-- Big board on desktop k-home-dual j-cards pages still carry the raw
-  %-max-height pattern — fix when porting (noted in CLAUDE.md).
+- Decode flourish touch trigger + name-over-board legibility variants
+  (queued from mobile pass 1).
+- Dock behavior, page header, buttons — Dylan named these as next after the
+  card tweaks (header reveals not designed; buttons = reaction session,
+  show variants against his collected references).
+- Belt `.d5`/`.paper` furniture pass still hand-tuned (only d7f retired).
+- Cutout payload / pre-scaled srcset (mobile perf); mobile scroll-shadow
+  motion (vibes not yet described — ask, then build behind the touch gate).
+- j-cards-black/white still carry the raw %-max-height iOS pattern — fix
+  when porting.
