@@ -463,6 +463,10 @@
     #lb-scrim, #vlb-scrim { position: absolute; inset: 0; height: auto; min-height: 100lvh; background: transparent; }
     .topbar, #home, #colpage { transition: opacity .45s ease; }
     body.lb-fade .topbar, body.lb-fade #home, body.lb-fade #colpage { opacity: 0; pointer-events: none; }
+    /* the card is the hero on mobile — no text under it. Thumbs stay (photo
+       nav); the corner chip's n/N decode already does the wayfinding the
+       bottom count did. DM path on mobile = add to lisst -> #my-lisst. */
+    .lb-desc, .lb-product, .lb-count { display: none; }
     .lb-card {
       position: relative; left: auto; top: auto; translate: none; z-index: 1;
       margin: 72px auto calc(52px + env(safe-area-inset-bottom));
