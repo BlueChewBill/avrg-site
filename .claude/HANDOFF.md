@@ -1,69 +1,75 @@
-# Handoff — avrg-site — 2026-07-21
+# Handoff — avrg-site — 2026-07-21 (evening)
 
 ## Where we are
-Bay seating sprint SHIPPED in k-home-dual: the +List flight into the desktop
-drawer is now a rAF arc that lands on the shelf item's measured rect (no
-crossfade seam, count holds until touchdown, landing answered by shelf thunk /
-rack recoil / count bump), with THREE seat variants on a temporary SEAT row in
-the dev switcher — drop / skid / seatdraw. Mobile side: the dock add-animation
-timing toy exists at redesign/dock-add-lab.html (the 1.5s wind-up S-curve with
-knobs). Separately, the Canva mass-export blocker is DEAD — solved via the
-Canva MCP connector; batch 1 (12 boards) is trimmed and sitting in
-redesign/card-lab/canva/ awaiting names. Everything committed.
+Dock add-animation session SHIPPED and DEPLOYED: dock-add-lab.html now has
+THREE path variants (ramp = Dylan's drawn beats / toss / swoop) with per-path
+saved knob presets, a landing press + shadow compression + synth thunk, and a
+scrub-p slider; the whole thing was then ported into k-home-dual as the mobile
+**dock-lite** (`dockAdd()`, `DOCK_TUNE`, receipt icon in the topbar, Dock
+switcher row) and is live on GitHub Pages for phone checks:
+https://bluechewbill.github.io/avrg-site/redesign/k-home-dual.html
+Everything committed (f05fdd4) and pushed; Pages serves repo root off main,
+so push = deploy.
 
 ## Next task
-**Seat-variant reaction session.** Dylan flips the SEAT row on :8123
-(k-home-dual, Frame v3 card, open the drawer, add boards) and reacts; you tune
-the winner's numbers (SEAT_TUNE + the keyframes) live, then retire the loser
-variants and the SEAT switcher row. "Done" = one seating, tuned, switcher row
-gone, and the choice logged in CLAUDE.md. If reactions run fast, same session
-can continue into dock-add-lab knob tuning (that's a pick-numbers session, not
-a build).
+**Canva background-removal image cleanup pipeline.** Dylan's call: the cards
+need the image tune-up BEFORE the mobile tweak lot, so this comes first.
+Concretely, in rough order:
+1. Name batch 1: open redesign/card-lab/batch-review.html, rename
+   `canva/batch1-pNN.png` → `<site-name>.png` per its pixel-matcher guesses
+   (STRONG guesses near-certain; p04≈p05 are the same board).
+2. Export the remaining Canva designs as Dylan finishes bg-dropping them —
+   recipe is in CLAUDE.md's Canva bullet (search-designs → export-design with
+   transparent_background → curl → `swift trim.swift` → drop in canva/).
+   CONFIRM the possible duplicate 13-page design DAHP73pk2x4 before exporting
+   (avoid double batches).
+3. When Dylan's ready: the hand-holding Sheet→Bulk Create walkthrough
+   ("like im 90") — guided clicks, budget patience. Name column in the sheet
+   makes page order = row order so future batch names automate.
+"Done" = batch 1 named and feeding edge-compare.html, remaining designs
+exported+trimmed, and a decision on which cutout source (Canva vs Vision)
+wins per board.
 
 ## Read these, skip the rest
-- CLAUDE.md — sprint item 2's "SEATING REWORKED" paragraph (what each variant
-  does + where the knobs live). Read first, it's dense and current.
-- redesign/k-home-dual.html — ONLY the bay flight region: search `SEAT_TUNE`
-  (flight knobs + bayFlight driver + flyToBay), and the seat CSS: search
-  `seatDrop` (keyframes for drop/skid/seatline/thunk/recoil/bump). The SEAT
-  switcher wiring is at search `SEAT_KEY`.
-- redesign/dock-add-lab.html — only if the session gets to mobile tuning.
+- CLAUDE.md — the Canva bullet in Open threads (full export recipe + state)
+  and the card-lab lines in Layout (where cuts/ and canva/ live).
+- redesign/card-lab/batch-review.html — the naming contact sheet (serve from
+  repo root :8123 like everything else).
+- redesign/card-lab/edge-compare.html — only when comparing named Canva cuts
+  against the Vision cuts.
 
-Everything else in the repo is NOT needed. Do not explore beyond this list.
+Everything else in the repo is NOT needed. The dock/bay/animation code does
+NOT need to be read for this task.
 
 ## Context that isn't in the code
-- Preview: `avrg-root` (:8123), never file://. The belt moves — clicking card
-  chips by screenshot coordinates misses; dispatch clicks on `.fc-list` nodes
-  or use the lightbox chip. Clear localStorage for a clean lisst.
-- Flight design decisions (don't re-litigate): the real item renders hidden
-  (.preseat) BEFORE the flight so the landing rect is measured, never guessed;
-  the clone becomes the item in the same frame; the count chip waits for
-  touchdown (pendingSeat set). Variant offsets are matched pairs — the flight
-  END equals the seat animation's FROM (drop: -9px y; skid: +19px x, 2deg),
-  so if you retune one side, retune both.
-- The closed-drawer add rides the same bayFlight to the resting dot — it's not
-  a variant, it stays regardless of the pick.
-- Seatdraw's line lives in the shelf and is wiped by any renderBay — fine at
-  normal click rates, known cosmetic loss under rapid-fire adds.
-- Canva pipeline (parked but primed): recipe in CLAUDE.md's Canva bullet.
-  batch1-pNN naming is a 1-minute human step via card-lab/batch-review.html
-  (STRONG guesses near-certain; p04≈p05 same board). Next batches: Dylan adds
-  a NAME COLUMN to the Canva sheet → page order = row order → names automate.
-  Dylan wants a hand-holding walkthrough of Sheet→Bulk Create when he's ready
-  ("like im 90") — that's a guided-clicks session, budget patience.
-- Desktop photo folder ~/Desktop/backgroundremovalcanva deduped this session
-  (33 exact copies → Trash, 237 unique remain). Nothing left to do there.
-- Tone check for tuning: the bar is "doesn't corrupt the clean cards" —
-  landings should read quiet-but-physical, not bouncy.
+- Preview: `avrg-root` (:8123), never file://. NOTE 2026-07-21: another
+  session's server may already hold :8123 — if preview_start errors, just
+  open a browser tab straight at localhost:8123 (it's the same static
+  server); don't fight over the port.
+- Canva MCP connector is the export path — no Canva UI needed. Batch 1
+  (design DAHP8HCfS4o, 12 boards) already exported/trimmed in
+  redesign/card-lab/canva/.
+- Dock decisions this session (don't re-litigate): paths live as key arrays
+  in one spline engine (new path = ~5 lines of dots); site reads BAKED
+  numbers (`DOCK_TUNE` in k-home-dual) — tuning loop is lab → re-bake, no
+  live knobs on the site. Landing press is p-domain (slow-mo safe), squashed
+  about the card's bottom edge. Receipt icon sits UNDER the lightbox scrim
+  (z1000 vs lb 5000) — known, acceptable for now; drawer+thunk are the
+  confirmation mid-lightbox.
+- Dylan's sequencing call (2026-07-21): animations are solid; the pending
+  "whole lot of tweaks" waits until the card images are tuned up. Canva
+  cleanup is the gate.
+- Tone bar unchanged: quiet-but-physical, "doesn't corrupt the clean cards."
 
 ## Parked / later
-- Retiring the SEAT switcher is part of THIS next task; the ground/card rows stay.
-- Dock build proper (mobile) — after the toy's numbers feel right.
-- Bay drag-and-drop (proximity + drag release), cursor-gravity board physics
-  (sprint item 3), header cleanup, home-logo motion, buttons reaction session.
-- Mobile polish list from the 2026-07-20 handoff (legibility variants,
-  collection-card decode trigger) — superseded in priority by the seat pick,
-  still open.
-- Canva: export remaining designs once Dylan bulk-removes them (one MCP call);
-  possible duplicate 13-page design DAHP73pk2x4 in his account — confirm
-  before exporting to avoid double batches.
+- **Seat-variant reaction session** (drop/skid/seatdraw, SEAT row in the
+  switcher) — was queued last handoff, superseded by the dock session; still
+  unpicked, switcher row still live.
+- **Dock path pick** (ramp/toss/swoop, Dock row) — all three live on mobile;
+  pick + row retirement later. Full dock display-case takeover build after.
+- Mobile polish list (legibility variants, collection-card decode trigger) —
+  explicitly BEHIND the card image tune-up now.
+- Receipt icon empty-state escalation (red 0 decode, annoyed shake) — specced
+  in CLAUDE.md's dock scoping, not built.
+- Bay drag-and-drop, cursor-gravity physics, header cleanup, home-logo
+  motion, buttons reaction session — unchanged from before.
