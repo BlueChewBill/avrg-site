@@ -813,10 +813,14 @@
   } }
   .d7f .corner {
     /* panel-anchored — the grid template and the lb card both put .corner
-       directly in .panel now, 12px (at reference) from the panel corner.
+       directly in .panel now. 11px, not 12: the chip box tucks 1px (at
+       reference) UNDER the 2px frame line — exactly flush edges round to
+       different device pixels at fractional widths and leak a white seam
+       between fill and frame; chips paint above the frame, so the overlap
+       is invisible. fc-ref's padding puts the glyphs back at the 12px spot.
        (Stage-anchoring + negative-top compensation retired 2026-07-22.) */
-    position: absolute; top: 12px; left: 12px; z-index: 2;
-    top: 5.1724cqw; left: 5.1724cqw;
+    position: absolute; top: 11px; left: 11px; z-index: 2;
+    top: 4.7414cqw; left: 4.7414cqw;
     display: flex; align-items: center; gap: 7px; gap: 3.0172cqw;
   }
   .d7f .info { position: relative; z-index: 0; text-align: center; padding: 8px 28px 44px; padding: 3.4483cqw 12.069cqw 18.9655cqw; color: #000; }
@@ -838,11 +842,21 @@
   .d7f .fchip .ft { position: relative; z-index: 1; transition: color .2s ease .18s; }
   @media (hover: hover) { .d7f:hover .fchip .ft { color: #fff; } }
   button.d7f-cta { cursor: pointer; }
+  .d7f .fc-ref {
+    /* +1px top/left padding pairs with .corner's 1px frame tuck — the box
+       edge sits inside the frame line, the glyphs stay at the flush spot */
+    padding: 7px 9px 6px 10px;
+    padding: 3.0172cqw 3.8793cqw 2.5862cqw 4.3103cqw;
+  }
   .d7f .fc-ref::before { transform-origin: center top; }
   .d7f .fc-list {
-    position: absolute; bottom: 12px; right: 12px; z-index: 2;
-    bottom: 5.1724cqw; right: 5.1724cqw;
-    letter-spacing: .16em; padding: 7px 10px; padding: 3.0172cqw 4.3103cqw;
+    /* 11px = the same 1px frame tuck as .corner (seam seal); the extra
+       bottom/right padding holds the glyphs at the 12px flush spot */
+    position: absolute; bottom: 11px; right: 11px; z-index: 2;
+    bottom: 4.7414cqw; right: 4.7414cqw;
+    letter-spacing: .16em;
+    padding: 7px 11px 8px 10px;
+    padding: 3.0172cqw 4.7414cqw 3.4483cqw 4.3103cqw;
   }
   /* static fill size: the want-word decode swaps labels of different
      lengths — the chip box (and its black fill) must never resize.
