@@ -456,6 +456,12 @@
        undimmed strip behind the collapsed address bar — size to the large
        viewport instead (over-constrained bottom is ignored) */
     .lb-scrim { position: fixed; height: 100lvh; }
+    /* mobile fade = site content to 0 over the DEFAULT page ground, not a
+       dark tint: iOS renders its bar chrome with a backdrop tint that reads
+       as a lighter band over any translucent dark scrim — over the page's
+       own background color the band is invisible (ids outrank the
+       body.light scrim override below) */
+    #lb-scrim, #vlb-scrim { background: var(--bg); }
     .lb-card {
       position: relative; left: auto; top: auto; translate: none; z-index: 1;
       margin: 72px auto calc(52px + env(safe-area-inset-bottom));
@@ -2356,8 +2362,8 @@
       const sel = colpage.hidden ? ".card" : ".scard";
       const el = Array.from(view.querySelectorAll(sel)).find(n =>
         +n.dataset.k === cur.k && n.style.visibility !== "hidden");
-      /* j treatments have a .panel where the photo card has a .frame */
-      return el ? el.querySelector(".frame, .panel") : null;
+      /* j treatments anchor on their square .stage; the photo card on its .frame */
+      return el ? el.querySelector(".stage, .frame") : null;
     }
 
     function flipFrom(frameEl) {
@@ -2387,7 +2393,10 @@
       populate(ci, k);
       lb.hidden = false;
       document.body.style.overflow = "hidden";
-      if (!reduced) flipFrom(sourceEl ? sourceEl.querySelector(".frame, .panel") : null);
+      /* .stage first: the j-cards' square image area is the true counterpart
+         of the lb's square .frame — matching frame↔panel centers landed the
+         card low (the panel includes the caption zone; its center sits lower) */
+      if (!reduced) flipFrom(sourceEl ? sourceEl.querySelector(".stage, .frame") : null);
       if (dockActive() && sourceEl) {
         lbSrc = { el: sourceEl, ci, k };
         sourceEl.style.visibility = "hidden";   /* after flipFrom measured it */
@@ -2406,7 +2415,7 @@
          after a swipe moved us to a different board */
       const onSrc = lbSrc && cur && lbSrc.ci === cur.ci && lbSrc.k === cur.k;
       const back = (reduced || instant) ? null
-        : onSrc ? lbSrc.el.querySelector(".frame, .panel") : sourceFrame();
+        : onSrc ? lbSrc.el.querySelector(".stage, .frame") : sourceFrame();
       lb.classList.remove("in");
       lbCard.classList.remove("tset");
       if (back) {
