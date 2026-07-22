@@ -1,75 +1,68 @@
-# Handoff — avrg-site — 2026-07-21 (evening)
+# Handoff — avrg-site — 2026-07-21 (late)
 
 ## Where we are
-Dock add-animation session SHIPPED and DEPLOYED: dock-add-lab.html now has
-THREE path variants (ramp = Dylan's drawn beats / toss / swoop) with per-path
-saved knob presets, a landing press + shadow compression + synth thunk, and a
-scrub-p slider; the whole thing was then ported into k-home-dual as the mobile
-**dock-lite** (`dockAdd()`, `DOCK_TUNE`, receipt icon in the topbar, Dock
-switcher row) and is live on GitHub Pages for phone checks:
-https://bluechewbill.github.io/avrg-site/redesign/k-home-dual.html
-Everything committed (f05fdd4) and pushed; Pages serves repo root off main,
-so push = deploy.
+Canva cleanup, classics collection: DONE end to end. The "name" sheet
+(now renamed **classics**, design DAHQEEiHqT4) holds all 54 boards with
+correct top/bottom pairing, names cl1–cl54, Bulk Create generated 54 card
+designs titled `(Bulk N) classics`, and the full export→slice pipeline ran:
+**107 pre-named bg-removed cutouts committed at
+`redesign/card-lab/canva/cl<N>-top.png` / `cl<N>-bottom.png`.**
+The full recipe lives in CLAUDE.md's Canva bullet (Open threads).
+
+Why the sheet needed surgery (so nobody re-derives it): IMG_5355 was an
+accidental feet photo — Dylan re-shot board 12's top, so from board 12 on
+the odd=top/even=bottom parity INVERTS (5356=top, 5357=bottom, …). Canva's
+bulk upload dropped the junk frame, slid the top column up a row, and
+padded with a duplicate. Fixed cell-by-cell via keyboard copy/paste.
+Board 54 (teal) has NO bottom photo — 5441 is already the first shaped
+board. Desktop `backgroundremovalcanva/classic/top|bottom/` folders were
+re-sorted to the true parity (feet photo quarantined in `stray/`).
 
 ## Next task
-**Canva background-removal image cleanup pipeline.** Dylan's call: the cards
-need the image tune-up BEFORE the mobile tweak lot, so this comes first.
-Concretely, in rough order:
-1. Name batch 1: open redesign/card-lab/batch-review.html, rename
-   `canva/batch1-pNN.png` → `<site-name>.png` per its pixel-matcher guesses
-   (STRONG guesses near-certain; p04≈p05 are the same board).
-2. Export the remaining Canva designs as Dylan finishes bg-dropping them —
-   recipe is in CLAUDE.md's Canva bullet (search-designs → export-design with
-   transparent_background → curl → `swift trim.swift` → drop in canva/).
-   CONFIRM the possible duplicate 13-page design DAHP73pk2x4 before exporting
-   (avoid double batches).
-3. When Dylan's ready: the hand-holding Sheet→Bulk Create walkthrough
-   ("like im 90") — guided clicks, budget patience. Name column in the sheet
-   makes page order = row order so future batch names automate.
-"Done" = batch 1 named and feeding edge-compare.html, remaining designs
-exported+trimmed, and a decision on which cutout source (Canva vs Vision)
-wins per board.
+**Repeat the pipeline for the next batch (shaped collection).** Photos are
+at `~/Desktop/backgroundremovalcanva/shaped/` (starts IMG_5441). Steps:
+verify pairing/parity of the photos FIRST (learn from classics: check for
+junk frames before assuming odd/even), Dylan bg-removes + builds the sheet
+(or reuse flow), Bulk Create with `classics-card-template` (or a clone),
+export + slice with the same script. "Done" = `sh<N>-top/bottom.png` (or
+whatever prefix Dylan wants) in `redesign/card-lab/canva/`.
 
 ## Read these, skip the rest
-- CLAUDE.md — the Canva bullet in Open threads (full export recipe + state)
-  and the card-lab lines in Layout (where cuts/ and canva/ live).
-- redesign/card-lab/batch-review.html — the naming contact sheet (serve from
-  repo root :8123 like everything else).
-- redesign/card-lab/edge-compare.html — only when comparing named Canva cuts
-  against the Vision cuts.
+- CLAUDE.md — the Canva bullet in Open threads (the full step-by-step recipe).
+- redesign/card-lab/canva/ — ls it to see the output naming convention.
+- The slice script pattern: slice card L/R halves, scipy ndimage.label,
+  keep largest alpha component, crop to bbox (was in session scratchpad —
+  trivial to rewrite from the CLAUDE.md description).
 
-Everything else in the repo is NOT needed. The dock/bay/animation code does
-NOT need to be read for this task.
+Everything else in the repo is NOT needed. The dock/bay/animation code is
+untouched this session.
 
 ## Context that isn't in the code
-- Preview: `avrg-root` (:8123), never file://. NOTE 2026-07-21: another
-  session's server may already hold :8123 — if preview_start errors, just
-  open a browser tab straight at localhost:8123 (it's the same static
-  server); don't fight over the port.
-- Canva MCP connector is the export path — no Canva UI needed. Batch 1
-  (design DAHP8HCfS4o, 12 boards) already exported/trimmed in
-  redesign/card-lab/canva/.
-- Dock decisions this session (don't re-litigate): paths live as key arrays
-  in one spline engine (new path = ~5 lines of dots); site reads BAKED
-  numbers (`DOCK_TUNE` in k-home-dual) — tuning loop is lab → re-bake, no
-  live knobs on the site. Landing press is p-domain (slow-mo safe), squashed
-  about the card's bottom edge. Receipt icon sits UNDER the lightbox scrim
-  (z1000 vs lb 5000) — known, acceptable for now; drawer+thunk are the
-  confirmation mid-lightbox.
-- Dylan's sequencing call (2026-07-21): animations are solid; the pending
-  "whole lot of tweaks" waits until the card images are tuned up. Canva
-  cleanup is the gate.
-- Tone bar unchanged: quiet-but-physical, "doesn't corrupt the clean cards."
+- Template gotcha: the bulk-create template must have NO text layer —
+  text bakes into exports and can't be cleanly stripped when it overlaps
+  the deck. Names live in the design titles + row order instead.
+- Cell-level Canva sheet editing that works: select via keyboard only
+  (arrow keys — clicking image cells opens a popup that steals ⌘C context
+  and pastes become floating objects), then ⌘C / arrows / ⌘V. Range
+  selection (shift-click, shift+arrows) does NOT work in Canva Sheets.
+- search-designs caps at 25/call; paginate with the continuation token.
+  Design titles come from the SHEET's name — rename the sheet before
+  regenerating to keep batches distinguishable.
+- Housekeeping owed in Canva (optional): trash the 54 obsolete
+  `(Bulk N) name` designs (v1, text-bearing) and one stray upload (a
+  bg-removed cutout of the feet photo).
+- Cutout resolution is ~300×850px (limited by image size on the 2000×1500
+  template). Fine for cards; if bigger is ever needed, re-export with
+  `width`/`height` params on export-design, or scale the template up.
 
 ## Parked / later
-- **Seat-variant reaction session** (drop/skid/seatdraw, SEAT row in the
-  switcher) — was queued last handoff, superseded by the dock session; still
-  unpicked, switcher row still live.
-- **Dock path pick** (ramp/toss/swoop, Dock row) — all three live on mobile;
-  pick + row retirement later. Full dock display-case takeover build after.
-- Mobile polish list (legibility variants, collection-card decode trigger) —
-  explicitly BEHIND the card image tune-up now.
-- Receipt icon empty-state escalation (red 0 decode, annoyed shake) — specced
-  in CLAUDE.md's dock scoping, not built.
-- Bay drag-and-drop, cursor-gravity physics, header cleanup, home-logo
-  motion, buttons reaction session — unchanged from before.
+- **cl54 bottom re-shoot** — teal classic, underside photo doesn't exist.
+  After shooting: drop into sheet D55, regenerate row (or just Bulk Create
+  again — dedupe by title), re-export that one card.
+- **Canva vs Vision cutout decision** — edge-compare.html, now trivially
+  possible since both sets exist named. This gates which cutouts feed the
+  site cards.
+- Sizes column in the sheet (waits on calipering) → PH_DIMS.
+- Everything from the previous handoff's parked list (seat variant pick,
+  dock path pick, mobile polish, bay drag-and-drop, header cleanup,
+  home-logo motion) — unchanged, still behind the card image work.
