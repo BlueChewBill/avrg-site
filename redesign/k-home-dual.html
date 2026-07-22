@@ -452,7 +452,10 @@
      pinned to viewport center — short phones (12 mini) can reach the buttons */
   @media (max-width: 720px) {
     .lb { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-    .lb-scrim { position: fixed; }
+    /* 100lvh: fixed+inset:0 tracks the SMALL viewport on iOS, leaving an
+       undimmed strip behind the collapsed address bar — size to the large
+       viewport instead (over-constrained bottom is ignored) */
+    .lb-scrim { position: fixed; height: 100lvh; }
     .lb-card {
       position: relative; left: auto; top: auto; translate: none; z-index: 1;
       margin: 72px auto calc(52px + env(safe-area-inset-bottom));
@@ -898,6 +901,13 @@
   #lb.fv3 .lb-card:hover .lb-fv3nav .ft { color: #fff; transition: color .2s ease .78s; }
   #lb.fv3 .lb-card.left .lb-fv3nav.prev::before { transform-origin: center top; animation: chipdrop .36s ease; }
   #lb.fv3 .lb-card.left .lb-fv3nav.next::before { transform-origin: center bottom; animation: chipdrop .36s ease; }
+  /* touch arrival (.tset, applied by openLb under the dock gate): the tap IS
+     the hover — chip fills wipe in and the rails close while the card zooms,
+     so it settles into the decoded state instead of arriving unfilled */
+  #lb.fv3 .lb-card.tset .fc-ref::before { transform-origin: left center; animation: chipwipe .44s ease .22s forwards; }
+  #lb.fv3 .lb-card.tset .fc-list::before { transform-origin: right center; animation: chipwipe .44s ease .22s forwards; }
+  #lb.fv3 .lb-card.tset .fchip .ft { color: #fff; transition: color .2s ease .44s; }
+  #lb.fv3 .lb-card.tset .inframe::before, #lb.fv3 .lb-card.tset .inframe::after { height: calc(50% - 6px); }
   #lb.fv3 .lb-card .lb-fv3nav:hover { opacity: 1; box-shadow: inset 0 0 0 1.5px #000; }
   #lb.fv3 .lb-card .lb-fv3nav:hover::before { background: #fff; }
   #lb.fv3 .lb-card .lb-fv3nav:hover .ft { color: #000; transition: color .1s ease; }
@@ -2309,6 +2319,7 @@
       lb.classList.toggle("fv3", fv3);
       lbCard.classList.toggle("d7f", fv3);
       lbCard.classList.remove("left");
+      if (!fv3) lbCard.classList.remove("tset");
       if (fv3) {
         const jm = jmeta(c, b, k);
         const rft = document.getElementById("lb-fv3-ref");
@@ -2368,17 +2379,36 @@
       lbCard.style.transform = "none";
     }
 
+    /* mobile: the tapped card lifts out of the grid — its slot stays empty
+       until the card flies back into it on close (the "hole" is the proof
+       the big card IS that card, and the return can't land misaligned) */
+    let lbSrc = null;
     function openLb(ci, k, sourceEl) {
       populate(ci, k);
       lb.hidden = false;
       document.body.style.overflow = "hidden";
       if (!reduced) flipFrom(sourceEl ? sourceEl.querySelector(".frame, .panel") : null);
+      if (dockActive() && sourceEl) {
+        lbSrc = { el: sourceEl, ci, k };
+        sourceEl.style.visibility = "hidden";   /* after flipFrom measured it */
+      }
+      if (dockActive() && CARD === "framev3") {
+        lbCard.classList.add("tset");           /* fills land as the zoom settles */
+        const stx = document.getElementById("lb-fv3-sttxt");
+        if (stx.dataset.txt) { if (reduced) stx.textContent = stx.dataset.txt; else decodeInto(stx, stx.dataset.txt); }
+      }
       requestAnimationFrame(() => lb.classList.add("in"));
     }
 
     function closeLb(instant) {
-      const back = (reduced || instant) ? null : sourceFrame();
+      /* return target: the lifted card's own (hidden) slot while we're still
+         on that board — sourceFrame() skips hidden cards, so ask it only
+         after a swipe moved us to a different board */
+      const onSrc = lbSrc && cur && lbSrc.ci === cur.ci && lbSrc.k === cur.k;
+      const back = (reduced || instant) ? null
+        : onSrc ? lbSrc.el.querySelector(".frame, .panel") : sourceFrame();
       lb.classList.remove("in");
+      lbCard.classList.remove("tset");
       if (back) {
         const sr = back.getBoundingClientRect();
         const fr = lbCard.querySelector(".frame").getBoundingClientRect();
@@ -2392,6 +2422,7 @@
         lbCard.style.transform = "none";
         document.body.style.overflow = "";
         cur = null;
+        if (lbSrc) { lbSrc.el.style.visibility = ""; lbSrc = null; }
         /* lisst membership may have changed while the lightbox was open */
         if (location.hash.replace(/^#/, "") === "my-lisst") renderLisst();
       }, (reduced || instant) ? 0 : 430);
