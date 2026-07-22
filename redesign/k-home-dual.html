@@ -327,6 +327,8 @@
   .lb-card .frame img { pointer-events: auto; cursor: pointer; object-fit: contain; }
   .lb-rest { opacity: 0; transition: opacity .4s ease .18s; }
   .lb.in .lb-rest { opacity: 1; }
+  /* closing: the card flies home — thumbs/rest must not ride along */
+  .lb:not(.in) .lb-rest { transition: opacity .1s ease; }
   .lb-thumbs { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
   .lb-thumbs:empty { display: none; }
   .lb-thumbs img {
@@ -756,7 +758,9 @@
     filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .3));
   } }
   .d7f .corner {
-    position: absolute; top: 12px; left: 12px; z-index: 2;
+    /* anchored to .stage, which now starts 52px down (panel top room) —
+       -40px puts the chip back 12px from the PANEL top */
+    position: absolute; top: -40px; left: 12px; z-index: 2;
     display: flex; align-items: center; gap: 7px;
   }
   .d7f .info { position: relative; z-index: 0; text-align: center; padding: 8px 28px 44px; color: #000; }
@@ -835,6 +839,7 @@
   .card .d5 .dims, .card .paper .dims { font-size: 6px; margin-top: 4px; }
   .card .d5 .r2, .card .paper .r2 { margin-top: 8px; }
   .card .d5 .corner, .card .paper .corner, .card .d7f .corner { top: 8px; left: 8px; gap: 5px; }
+  .card .d7f .corner { top: -30px; }   /* 8px from panel top over the belt's 38px top room */
   .card .d6z .plate .nm { padding-bottom: 10px; }
   .card .d7f .panel { padding-top: 38px; }   /* 52px scaled to the belt's 172px slot */
   .card .d7f .inframe { inset: 7px; }
