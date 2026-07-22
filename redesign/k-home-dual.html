@@ -338,6 +338,12 @@
     margin: auto; padding: 24px 0;
   }
   #lb-scrim { position: absolute; inset: 0; height: auto; min-height: 100lvh; background: transparent; }
+  @media (min-width: 721px) {
+    /* the sheet still wheels and key-scrolls, but bar-less — its floating
+       thumb over the faded page read as debris (topbar precedent) */
+    #lb { scrollbar-width: none; }
+    #lb::-webkit-scrollbar { display: none; }
+  }
   #lb .lb-close { position: fixed; top: calc(var(--tbh, 0px) + 12px); right: 16px; z-index: 3; }
   #lb .lb-count { position: fixed; bottom: 12px; pointer-events: none; }
   .topbar, #home, #colpage { transition: opacity .45s ease; }
@@ -2503,7 +2509,11 @@
       populate(ci, k);
       lb.hidden = false;
       document.body.classList.add("lb-fade");
-      lockScroll();
+      /* touch/mobile only: desktop keeps its page scrollbar in place (the
+         vanishing bar read as a glitch next to the sheet's own). The sheet's
+         overscroll-behavior contains wheel; the faded page scrolling via
+         keyboard is harmless — the close flight targets live rects. */
+      if (dockActive()) lockScroll();
       if (!reduced) flipFrom(sourceEl || null);
       if (sourceEl) {
         lbSrc = { el: sourceEl, ci, k };
