@@ -1020,6 +1020,12 @@
     filter: drop-shadow(4.7414cqw 6.0345cqw 0 rgba(0, 0, 0, .3));
     transition: transform .94s ease, filter .94s ease;
   } }
+  /* while the lb sun is live it owns the img's WHOLE pose — shadow (filter)
+     AND transform (the gravity pull composes with the 1.08 grow, and a
+     transition restarted every pointermove trails the hand) — so nothing
+     transitions; the JS lerps do all easing. The :hover grow above still
+     serves reduced-motion and the pre-takeover instant. */
+  #lb.fv3 .lb-card.suntrack .frame img { transition-property: none; }
 
   /* ================= cart bay (sprint item 2) =================
      A card bay docked to the right screen edge, speaking fv3. At REST
@@ -2542,6 +2548,7 @@
     }
 
     function closeLb(instant) {
+      sunRelease();   /* shadow back to CSS before the return flight */
       /* return target: the lifted card's own (hidden) slot while we're still
          on that board — sourceFrame() skips hidden cards, so ask it only
          after a swipe moved us to a different board */
@@ -2569,6 +2576,110 @@
         /* lisst membership may have changed while the lightbox was open */
         if (location.hash.replace(/^#/, "") === "my-lisst") renderLisst();
       }, (reduced || instant) ? 0 : 430);
+    }
+
+    /* ---- the lb sun: cursor-as-light-source for the desktop fv3 board.
+       The cursor is the light: the board's hard shadow throws away from it
+       through the board — short when the light stands overhead (cursor on
+       the board), long when it grazes in from a card corner. Lightbox half
+       of the drag-announce spec's "mini invisible sun"; the grid cards get
+       the lean+gravity half later. Mechanics: the FIRST pointermove over
+       the card seeds from the computed shadow (so taking over mid-.94s
+       hover grow is seamless), then a rAF lerp chases the cursor's target
+       so the light has weight; pointerleave eases home to the house
+       diagonal (7,9) and hands the shadow back to CSS. Lerp math runs in
+       ref-px (the 232 spec space) — one tune, every card size. */
+    /* four channels: DIRECTION (minL..maxL by cursor distance, fast ease —
+       the light angle snaps to the hand) + LIFT (a flat length bonus that
+       swells in on its own slow ease, pacing the board grow — the board
+       rises and its shadow throws further, the old hover's depth cue) +
+       PULL (gravity: the board strains toward the cursor, pull×d ref-px,
+       opposite the shadow throw — the two stretching apart is the depth) +
+       GROW (the 1.08 board scale, JS-owned while the sun is live because
+       pull rides the same inline transform; rises with lift's ease, drains
+       fast like the .3s CSS shrink). Shadow totals: ~11 ref-px near the
+       board, ~17.5 mid-card (the old fixed hover), 24 at a corner graze;
+       pull tops out at 6 against that 24. */
+    const SUN = { lift: 7, minL: 2, maxL: 17, pull: 6, grow: 1.08, duck: 6,
+                  aDark: .48, aFaint: .17, aPow: .7,
+                  ease: .14, liftEase: .045, settle: .15 };
+    let sunRaf = 0, sunOn = false, sunS = 1, sunX = 7, sunY = 9, sunTX = 7, sunTY = 9,
+        sunLift = 0, sunPX = 0, sunPY = 0, sunPTX = 0, sunPTY = 0, sunSc = 1, sunA = .3, sunAT = .3;
+    function sunFrame() {
+      sunX += (sunTX - sunX) * SUN.ease;
+      sunY += (sunTY - sunY) * SUN.ease;
+      sunPX += (sunPTX - sunPX) * SUN.ease;
+      sunPY += (sunPTY - sunPY) * SUN.ease;
+      /* lift + grow rise slow (with the board), drain fast (the .3s shrink) */
+      sunLift += ((sunOn ? SUN.lift : 0) - sunLift) * (sunOn ? SUN.liftEase : SUN.ease);
+      sunSc += ((sunOn ? SUN.grow : 1) - sunSc) * (sunOn ? SUN.liftEase : SUN.ease);
+      /* lift stretches the drawn vector along its current direction; at
+         dead center there is no direction — the overhead vanish stays.
+         The lift DUCKS with the direction (ramps out below `duck` ref-px):
+         crossing center the directional vector shrinks through zero, and
+         a flat lift would pin the shadow at ~7 ref-px and whip it AROUND
+         the board — ducked, it slides UNDER and re-emerges opposite */
+      const len = Math.hypot(sunX, sunY);
+      const f = len > .01 ? (len + sunLift * Math.min(1, len / SUN.duck)) / len : 0;
+      sunA += (sunAT - sunA) * SUN.ease;
+      if (!sunOn && Math.abs(sunTX - sunX) < SUN.settle && Math.abs(sunTY - sunY) < SUN.settle
+          && sunLift < SUN.settle && Math.abs(sunPX) < SUN.settle && Math.abs(sunPY) < SUN.settle
+          && Math.abs(sunSc - 1) < .002 && Math.abs(sunA - .3) < .01) { sunRelease(); return; }
+      lbBig.style.filter = "drop-shadow(" + (sunX * f * sunS).toFixed(2) + "px " + (sunY * f * sunS).toFixed(2) + "px 0 rgba(0,0,0," + sunA.toFixed(3) + "))";
+      lbBig.style.transform = "translate(" + (sunPX * sunS).toFixed(2) + "px," + (sunPY * sunS).toFixed(2) + "px) scale(" + sunSc.toFixed(4) + ")";
+      sunRaf = requestAnimationFrame(sunFrame);
+    }
+    function sunRelease() {
+      if (sunRaf) cancelAnimationFrame(sunRaf);
+      sunRaf = 0; sunOn = false; sunLift = 0; sunPX = 0; sunPY = 0; sunSc = 1; sunA = .3; sunAT = .3;
+      lbBig.style.filter = "";
+      lbBig.style.transform = "";
+      lbCard.classList.remove("suntrack");
+    }
+    if (canHover && !reduced) {
+      lbCard.addEventListener("pointermove", e => {
+        if (e.pointerType === "touch") return;
+        if (!lb.classList.contains("fv3") || dockActive()) return;
+        const fr = lbCard.querySelector(".frame").getBoundingClientRect();
+        const pr = lbCard.querySelector(".panel").getBoundingClientRect();
+        if (!pr.width) return;
+        if (!sunRaf) {
+          /* fresh takeover: seed shadow AND pose from wherever CSS has them
+             right now (mid-.94s-grow included), so nothing jumps */
+          sunS = pr.width / 232;
+          /* computed format puts the color first — lazy-scan to the first
+             "Npx Npx" pair (color channels are unitless, no false match) */
+          const m = /drop-shadow\(.*?(-?[\d.]+)px\s+(-?[\d.]+)px/.exec(getComputedStyle(lbBig).filter);
+          sunX = m ? +m[1] / sunS : 7; sunY = m ? +m[2] / sunS : 9;
+          const t = getComputedStyle(lbBig).transform;
+          const mx = new DOMMatrix(t === "none" ? undefined : t);
+          sunSc = mx.a || 1; sunPX = mx.e / sunS; sunPY = mx.f / sunS;
+          lbCard.classList.add("suntrack");
+          sunRaf = requestAnimationFrame(sunFrame);
+        }
+        sunOn = true;
+        const cx = fr.left + fr.width / 2, cy = fr.top + fr.height / 2;
+        const dx = cx - e.clientX, dy = cy - e.clientY;
+        const len = Math.hypot(dx, dy) || 1;
+        const d = Math.min(1, len / (Math.hypot(pr.width, pr.height) / 2));
+        const L = SUN.minL + (SUN.maxL - SUN.minL) * d;
+        sunTX = dx / len * L; sunTY = dy / len * L;
+        /* gravity: toward the cursor — the minus of the throw direction */
+        sunPTX = -dx / len * SUN.pull * d; sunPTY = -dy / len * SUN.pull * d;
+        /* FADE: alpha follows the CURSOR's distance, not the drawn length
+           (the lift floors the length, which capped the dark) — overhead
+           light = dense contact pool, a graze = faint stretch. aPow < 1
+           makes the pool a near-board phenomenon: mid-card sits at the
+           stock .3, the darkening arrives as you close on the board */
+        sunAT = SUN.aDark - (SUN.aDark - SUN.aFaint) * Math.pow(d, SUN.aPow);
+      });
+      lbCard.addEventListener("pointerleave", () => {
+        if (!sunOn) return;
+        sunOn = false;
+        sunTX = 7; sunTY = 9;      /* home = the house diagonal */
+        sunPTX = 0; sunPTY = 0;    /* gravity lets go */
+        sunAT = .3;                /* back to the stock ink */
+      });
     }
 
     function step(dir) {
