@@ -329,6 +329,10 @@
     overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     display: flex; flex-direction: column;
   }
+  /* the display:flex above outguns .lb[hidden]'s display:none (id beats
+     class+attr), which left the empty lb shell floating over every page —
+     restate hidden at id strength */
+  #lb[hidden] { display: none; }
   #lb .lb-card {
     position: relative; left: auto; top: auto; translate: none; z-index: 1;
     margin: auto; padding: 24px 0;
