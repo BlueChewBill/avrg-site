@@ -267,7 +267,11 @@
     cursor: pointer; -webkit-tap-highlight-color: transparent;
     transition: transform .18s ease;
   }
-  .scard:hover { transform: translateY(-4px); }
+  /* card hover choreography is pointer-only: iOS applies sticky :hover on
+     tap, which fired the chip wipes as a truncated prelude to the lightbox.
+     Every card :hover rule below sits in an (hover:hover) gate — touch gets
+     its own scripts (lightbox n/N decode, dock flight) instead. */
+  @media (hover: hover) { .scard:hover { transform: translateY(-4px); } }
   .restock {
     max-width: 420px; margin: 38px auto 0; padding: 40px 20px;
     border: 2.5px dashed var(--bone); border-radius: 14px; opacity: .5;
@@ -566,7 +570,7 @@
     padding: 5px 8px;
   }
   button.wchip { cursor: pointer; letter-spacing: .16em; padding: 6px 10px; transition: background .15s ease, color .15s ease; }
-  button.wchip:hover { background: #000; color: #fff; box-shadow: 0 0 0 1.5px #fff; }
+  @media (hover: hover) { button.wchip:hover { background: #000; color: #fff; box-shadow: 0 0 0 1.5px #fff; } }
   .bchip {
     display: inline-block;
     font-family: var(--mono); font-size: 8.5px; font-weight: 700;
@@ -575,7 +579,7 @@
     padding: 5px 8px;
   }
   button.bchip { cursor: pointer; letter-spacing: .16em; padding: 6px 10px; transition: background .15s ease, color .15s ease; }
-  button.bchip:hover { background: #fff; color: #000; box-shadow: 0 0 0 1.5px #000; }
+  @media (hover: hover) { button.bchip:hover { background: #fff; color: #000; box-shadow: 0 0 0 1.5px #000; } }
   .st {
     display: inline-flex; align-items: center; gap: 6px;
     font-family: var(--mono); font-size: 8.5px; font-weight: 700;
@@ -598,7 +602,7 @@
     box-shadow: 7px 9px 0 -1px rgba(255, 255, 255, .07), 7px 9px 0 0 rgba(0, 0, 0, .9);
     transition: box-shadow .22s ease;
   }
-  .d5:hover .panel { box-shadow: 12px 15px 0 -1px rgba(255, 255, 255, .09), 12px 15px 0 0 rgba(0, 0, 0, .9); }
+  @media (hover: hover) { .d5:hover .panel { box-shadow: 12px 15px 0 -1px rgba(255, 255, 255, .09), 12px 15px 0 0 rgba(0, 0, 0, .9); } }
   .d5 .stage {
     position: relative; height: auto; aspect-ratio: 1;
     display: flex; align-items: center; justify-content: center;
@@ -609,10 +613,10 @@
     filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .6));
     transition: transform .22s ease, filter .22s ease;
   }
-  .d5:hover .stage img {
+  @media (hover: hover) { .d5:hover .stage img {
     transform: scale(1.07);
     filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .6));
-  }
+  } }
   .d5 .info { padding: 11px 13px 13px; color: #fff; }
   .d5 .nm { font-size: 11.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
   .d5 .dims {
@@ -634,7 +638,7 @@
   .d6z .plate { background: #a49d92; }
   .d6z .plate .nm { display: block; text-align: center; color: #16120e; padding-bottom: 15px; letter-spacing: .13em; }
   .d6z .plate .stage img { filter: drop-shadow(7px 9px 0 rgba(22, 18, 14, .45)); }
-  .d6z:hover .plate .stage img { filter: drop-shadow(11px 14px 0 rgba(22, 18, 14, .45)); }
+  @media (hover: hover) { .d6z:hover .plate .stage img { filter: drop-shadow(11px 14px 0 rgba(22, 18, 14, .45)); } }
   .d6z.sold .plate .stage img { filter: grayscale(.7) drop-shadow(7px 9px 0 rgba(22, 18, 14, .3)); }
   .d6z .info { padding-top: 12px; }
   .d6z .corner .wchip { box-shadow: 0 0 0 1.5px #16120e; }
@@ -650,7 +654,7 @@
     box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .85);
     transition: box-shadow .22s ease;
   }
-  .paper:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .85); }
+  @media (hover: hover) { .paper:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .85); } }
   .paper .stage {
     position: relative; height: auto; aspect-ratio: 1;
     display: flex; align-items: center; justify-content: center;
@@ -661,10 +665,10 @@
     filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .3));
     transition: transform .22s ease, filter .22s ease;
   }
-  .paper:hover .stage img {
+  @media (hover: hover) { .paper:hover .stage img {
     transform: scale(1.07);
     filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .3));
-  }
+  } }
   .paper .corner {
     position: absolute; top: 12px; left: 12px; z-index: 2;
     display: flex; align-items: center; gap: 7px;
@@ -689,7 +693,7 @@
     box-shadow: 7px 9px 0 -1px rgba(0, 0, 0, .85);
     transition: box-shadow .44s ease;
   }
-  .d7f:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .85); }
+  @media (hover: hover) { .d7f:hover .panel { box-shadow: 12px 15px 0 -1px rgba(0, 0, 0, .85); } }
   .d7f .inframe { position: absolute; inset: 10px; z-index: 1; pointer-events: none; }
   .d7f .inframe::before, .d7f .inframe::after {
     content: ""; position: absolute; left: 0; width: calc(100% - 4px);
@@ -698,7 +702,7 @@
   }
   .d7f .inframe::before { top: 0; border-bottom: 0; }
   .d7f .inframe::after { bottom: 0; border-top: 0; }
-  .d7f:hover .inframe::before, .d7f:hover .inframe::after { height: calc(50% - 6px); }
+  @media (hover: hover) { .d7f:hover .inframe::before, .d7f:hover .inframe::after { height: calc(50% - 6px); } }
   .d7f .dgl, .d7f .dgr {
     position: absolute; top: 50%; width: 5px; height: 5px; border-radius: 50%;
     background: #000; transform: translateY(-50%);
@@ -721,10 +725,10 @@
     filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .3));
     transition: transform .44s ease, filter .44s ease;
   }
-  .d7f:hover .stage img {
+  @media (hover: hover) { .d7f:hover .stage img {
     transform: scale(1.07);
     filter: drop-shadow(11px 14px 0 rgba(0, 0, 0, .3));
-  }
+  } }
   .d7f .corner {
     position: absolute; top: 12px; left: 12px; z-index: 2;
     display: flex; align-items: center; gap: 7px;
@@ -744,7 +748,7 @@
     transform: scaleY(0);
   }
   .d7f .fchip .ft { position: relative; z-index: 1; transition: color .2s ease .18s; }
-  .d7f:hover .fchip .ft { color: #fff; }
+  @media (hover: hover) { .d7f:hover .fchip .ft { color: #fff; } }
   button.d7f-cta { cursor: pointer; }
   .d7f .fc-ref::before { transform-origin: center top; }
   .d7f .fc-list {
@@ -758,8 +762,10 @@
   .d7f .fc-list .ft { display: inline-block; min-width: calc(6ch + .96em); text-align: center; }
   .d7f .fc-list::before { transform-origin: center bottom; }
   .d7f.left .fchip::before { animation: chipdrop .36s ease; }
-  .d7f:hover .fc-ref::before { transform-origin: left center; animation: chipwipe .44s ease forwards; }
-  .d7f:hover .fc-list::before { transform-origin: right center; animation: chipwipe .44s ease forwards; }
+  @media (hover: hover) {
+    .d7f:hover .fc-ref::before { transform-origin: left center; animation: chipwipe .44s ease forwards; }
+    .d7f:hover .fc-list::before { transform-origin: right center; animation: chipwipe .44s ease forwards; }
+  }
   @keyframes chipwipe {
     from { transform: scaleX(0) scaleY(1); }
     to   { transform: scale(1, 1); }
@@ -898,11 +904,11 @@
   #lb.fv3 .lb-prev, #lb.fv3 .lb-next { display: none; }
   @media (hover: none), (max-width: 720px) { #lb.fv3 .lb-fv3nav, #lb.fv3 .navfx { display: none; } }
   #lb.fv3 .lb-card .frame img { transition: transform .3s ease, filter .3s ease; }
-  #lb.fv3 .lb-card:hover .frame img {
+  @media (hover: hover) { #lb.fv3 .lb-card:hover .frame img {
     transform: scale(1.08);
     filter: drop-shadow(13px 16px 0 rgba(0, 0, 0, .3));
     transition: transform .94s ease, filter .94s ease;
-  }
+  } }
 
   /* ================= cart bay (sprint item 2) =================
      A card bay docked to the right screen edge, speaking fv3. At REST
