@@ -31,6 +31,8 @@ Static site for AVRG handmade fingerboards. No framework, no npm — plain HTML/
 - Blackout palette: bg `#000`, bone `#ddd1b6`, ink `#201a15`; per-collection accents orange `#d8511f`, blue `#1f6fb8`, gold `#c98a12`, purple `#6d4fa3`. Fonts: Bricolage Grotesque (display), Space Mono (labels).
 - The blackout draft references `../site/` and `../videos/web/` — when porting it to production `site/`, copy those assets in or fix the paths.
 - Previewing via `file://` shows stale snapshots in the Claude Code browser pane — always serve over HTTP (`avrg-root`, :8123).
+- **iOS Safari ignores `max-height: N%` (with `height:auto`) on in-flow children of `aspect-ratio`-sized boxes** — the image renders intrinsic-size and blows out the card; desktop Chrome resolves it fine, so the browser pane will NOT catch it. Fix: `position:absolute; inset:0; margin:auto` on the child (percentages then resolve against the laid-out box). Definite `height: N%` (like `.frame img`'s 100%) is fine. k-home-dual's stage/tile imgs are fixed; j-cards-black/white still carry the raw pattern — re-check when porting.
+- Pushing image batches over HTTPS used to time out ("Recv failure") — repo git config now pins `http.version HTTP/1.1` + 150MB `http.postBuffer`; keep that if the remote ever changes.
 - Board dimensions are deliberately unlisted for launch — don't add specs unprompted.
 - Accent color on the lightbox selected states (`.lb-list-btn.on`, thumb highlight border) is kept deliberately — ask before removing.
 - Reusable snippets/fonts/palettes live outside the repo in `~/Projects/web-assets` (see its README index).

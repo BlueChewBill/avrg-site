@@ -511,6 +511,7 @@
       border: 1.5px solid #000; pointer-events: none;
     }
     .tile .tcard img {
+      position: absolute; inset: 0; margin: auto;   /* iOS: see .d7f .stage img */
       width: 58%; height: 72%; object-fit: contain;
       filter: drop-shadow(5px 7px 5px rgba(0, 0, 0, .38));
     }
@@ -603,6 +604,7 @@
     display: flex; align-items: center; justify-content: center;
   }
   .d5 .stage img {
+    position: absolute; inset: 0; margin: auto;   /* iOS: see .d7f .stage img */
     max-height: 84%; max-width: 86%; width: auto; height: auto;
     filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .6));
     transition: transform .22s ease, filter .22s ease;
@@ -654,6 +656,7 @@
     display: flex; align-items: center; justify-content: center;
   }
   .paper .stage img {
+    position: absolute; inset: 0; margin: auto;   /* iOS: see .d7f .stage img */
     max-height: 84%; max-width: 86%; width: auto; height: auto;
     filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .3));
     transition: transform .22s ease, filter .22s ease;
@@ -710,6 +713,10 @@
     display: flex; align-items: center; justify-content: center;
   }
   .d7f .stage img {
+    /* absolute + inset/margin centering: iOS Safari ignores %-max-height
+       against an aspect-ratio (indefinite) height on in-flow children —
+       abs-positioned children resolve % against the laid-out box instead */
+    position: absolute; inset: 0; margin: auto;
     max-height: 79%; max-width: 78%; width: auto; height: auto;
     filter: drop-shadow(7px 9px 0 rgba(0, 0, 0, .3));
     transition: transform .44s ease, filter .44s ease;
