@@ -2040,11 +2040,30 @@
       const id = e.target.dataset && e.target.dataset.v;
       if (id) vlbShow(id);
     });
+    /* scroll lock that doesn't reflow the page: body overflow:hidden
+       drops the scrollbar and widens the content ~15px — enough to
+       re-column the shelf grids (3→4 and back) at some window widths,
+       and to shift the ground under the return flight's landing. Pad
+       the body by the vanished bar's width for the lock's duration
+       (the sticky topbar rides body sizing, so it stays put too).
+       Overlay-scrollbar platforms (iOS, macOS default) measure 0 → no-op.
+       (scrollbar-gutter: stable was tried first — the spec only reserves
+       the gutter for overflow scroll/auto, not hidden, so it can't
+       cover a scroll lock.) */
+    function lockScroll() {
+      const sbw = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = "hidden";
+      if (sbw > 0) document.body.style.paddingRight = sbw + "px";
+    }
+    function unlockScroll() {
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+    }
     function openVlb() {
       const srcRect = reduced ? null : vid.getBoundingClientRect();
       vlb.hidden = false;
       document.body.classList.add("lb-fade");
-      document.body.style.overflow = "hidden";
+      lockScroll();
       vlbShow("cover");
       if (srcRect) {
         const fr = vlbFrame.getBoundingClientRect();
@@ -2065,7 +2084,7 @@
       document.body.classList.remove("lb-fade");
       setTimeout(() => {
         vlb.hidden = true;
-        document.body.style.overflow = "";
+        unlockScroll();
         Object.values(clipEls).forEach(x => { if (x !== vid) x.pause(); });
         vid.controls = false; vid.muted = true; vid.style.display = "";
         placeVideo();   /* the cover video rides home, still playing */
@@ -2484,7 +2503,7 @@
       populate(ci, k);
       lb.hidden = false;
       document.body.classList.add("lb-fade");
-      document.body.style.overflow = "hidden";
+      lockScroll();
       if (!reduced) flipFrom(sourceEl || null);
       if (sourceEl) {
         lbSrc = { el: sourceEl, ci, k };
@@ -2520,7 +2539,7 @@
       setTimeout(() => {
         lb.hidden = true;
         lbCard.style.transform = "none";
-        document.body.style.overflow = "";
+        unlockScroll();
         cur = null;
         if (lbSrc) { lbSrc.el.style.visibility = ""; lbSrc = null; }
         /* lisst membership may have changed while the lightbox was open */
