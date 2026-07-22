@@ -539,9 +539,11 @@
     body.light .tile .tcard { box-shadow: 6px 8px 0 -1px rgba(32, 26, 21, .18); }
     .pitch { max-width: 44ch; }
 
-    /* collection pages: boards surface two across instead of one */
+    /* collection pages: boards surface two across instead of one.
+       minmax(0,1fr): the proportion-locked card renders at 232px before its
+       scale-down, and an auto-min track would balloon to that width */
     .shelfgrid {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 30px 14px;
       padding-left: 16px; padding-right: 16px;
     }
@@ -2009,7 +2011,32 @@
           : '<div class="restock label">Restocking — check back</div>');
     }
 
+    /* proportion lock: shelf-grid cards render at the desktop reference width
+       (232px — the j-card spec) and scale down to their slot, so a narrow-grid
+       card is a photographic reduction of the desktop card instead of the
+       desktop chrome squeezed onto a smaller footprint. Desktop slots are
+       232px, so this is a no-op there — no breakpoint, one continuous law.
+       Photo cards keep their fluid layout (designed that way). */
+    const CARD_REF_W = 232;
+    function lockCardScale() {
+      document.querySelectorAll(".shelfgrid .scard").forEach(sc => {
+        const inner = sc.querySelector(":scope > .d7f, :scope > .paper, :scope > .d6z, :scope > .d5");
+        if (!inner) return;
+        const w = sc.clientWidth;
+        if (!w) return;               /* grid hidden (route() re-runs us once it shows) */
+        if (w >= CARD_REF_W - 1) {
+          inner.style.width = inner.style.transform = sc.style.height = "";
+          return;
+        }
+        const s = w / CARD_REF_W;
+        inner.style.width = CARD_REF_W + "px";
+        inner.style.transformOrigin = "0 0";
+        inner.style.transform = "scale(" + s + ")";
+        sc.style.height = inner.offsetHeight * s + "px";
+      });
+    }
     function bindScards() {
+      lockCardScale();
       colpage.querySelectorAll("section[data-col]").forEach(sec => {
         const i = +sec.dataset.col;
         sec.querySelectorAll(".scard").forEach(s => {
@@ -2108,6 +2135,7 @@
           '</div>' +
           colnavHtml(-1, true) +
         '</section>';
+      lockCardScale();
       colpage.querySelectorAll(".lisst-remove").forEach(btn => {
         btn.addEventListener("click", e => {
           e.stopPropagation();
@@ -2172,6 +2200,7 @@
         colpage.hidden = true; home.hidden = false;
         const p = vid.play(); if (p && p.catch) p.catch(() => {});
       }
+      lockCardScale();   /* after visibility settles — hidden grids measure 0 */
       window.scrollTo(0, 0);
     }
     window.addEventListener("hashchange", route);
@@ -2529,6 +2558,7 @@
     addEventListener("resize", () => {
       clearTimeout(beltResizeT);
       beltResizeT = setTimeout(() => {
+        lockCardScale();
         rails.forEach(rail => {
           const cw = parseFloat(getComputedStyle(rail.belt).getPropertyValue("--cardW")) || 172;
           if (cw + 44 !== rail.spacing || innerWidth + (cw + 44) * 4 > rail.total) buildBelt(rail);
