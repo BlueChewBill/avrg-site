@@ -1,0 +1,75 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>AVRG · Canva pass review — proposed card mapping</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#0c0c0c; color:#ddd1b6;
+         font:14px/1.5 "Space Mono", ui-monospace, monospace; padding:26px 30px 80px; }
+  h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:#9a8f76; font-weight:400; }
+  .note { color:#6a6155; max-width:74ch; margin:0 0 8px; }
+  .legend { color:#6a6155; font-size:11px; margin-bottom:22px; }
+  .conf-STRONG { color:#7dba6a; } .conf-ok { color:#c98a12; } .conf-WEAK { color:#d8511f; }
+  .col-h { display:grid; grid-template-columns:170px 1fr 1fr 1fr; gap:18px; color:#6a6155;
+           font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding-bottom:4px;
+           position:sticky; top:0; background:#0c0c0c; padding-top:8px; }
+  .row { display:grid; grid-template-columns:170px 1fr 1fr 1fr; gap:18px; align-items:center;
+         border-top:1px solid #1c1a17; padding:18px 0; }
+  .lbl b { color:#ddd1b6; font-size:15px; display:block; }
+  .lbl small { color:#6a6155; display:block; margin-top:4px; }
+  .cell { display:flex; justify-content:center; align-items:center; min-height:230px;
+          background: conic-gradient(#141414 25%, #191919 0 50%, #141414 0 75%, #191919 0) 0 0/18px 18px; }
+  .cell img { max-width:150px; max-height:220px;
+              filter: drop-shadow(7px 9px 0 rgba(0,0,0,.55)); }
+  .cell.pick { outline:2px solid #2c2820; }
+  .sec { margin-top:46px; color:#9a8f76; font-size:13px; letter-spacing:.14em; text-transform:uppercase; }
+  .missing { color:#4d453a; font-size:12px; }
+</style>
+<h1>Canva bg-remove pass → proposed card mapping</h1>
+<p class="note">One row per site board: the current Vision cutout the cards use today, then both faces of
+the matched Canva board. The outlined face is what the cards would switch to (the face that pixel-matched
+the current thumb). Originals aren't in this pass — no <code>ol*</code> batch exists — so those 6 keep
+their Vision cuts.</p>
+<p class="legend">Match confidence: <span class="conf-STRONG">STRONG</span> ·
+<span class="conf-ok">ok</span> · <span class="conf-WEAK">WEAK — eyeball me</span>.
+Classics follow sheet order (site classic-N interleaved with inventory boards), which pins the weak
+pixel matches; shaped order is jumbled so weak rows there lean on pixels alone.</p>
+<div class="col-h"><div>board</div><div>current (Vision)</div><div>canva — proposed face</div><div>canva — other face</div></div>
+<div id="rows"></div>
+<script>
+// site board -> [canva board, face used by the card, confidence]
+const MAP = [
+  ["classic-01","cl3","top","ok"], ["classic-02","cl4","top","ok"],
+  ["classic-03","cl5","top","WEAK"], ["classic-04","cl6","top","WEAK"],
+  ["classic-05","cl7","top","WEAK"], ["classic-06","cl8","top","WEAK"],
+  ["classic-07","cl11","top","ok"], ["classic-08","cl12","top","WEAK"],
+  ["classic-09","cl14","top","ok"], ["classic-10","cl15","top","ok"],
+  ["classic-11","cl16","top","ok"], ["classic-12","cl18","top","ok"],
+  ["classic-13","cl19","top","WEAK"], ["classic-14","cl21","top","ok"],
+  ["classic-15","cl22","top","STRONG"], ["classic-16","cl23","top","WEAK"],
+  ["classic-17","cl24","top","ok"], ["classic-18","cl26","top","ok"],
+  ["classic-19","cl27","top","WEAK"],
+  ["hand-shaped-01","hs1","top","ok"], ["hand-shaped-02","hs2","bottom","STRONG"],
+  ["hand-shaped-03","hs3","bottom","STRONG"], ["hand-shaped-04","hs4","bottom","STRONG"],
+  ["hand-shaped-05","hs10","top","WEAK"], ["hand-shaped-06","hs14","top","WEAK"],
+  ["hand-shaped-07","hs9","top","WEAK"], ["hand-shaped-08","hs15","top","ok"],
+  ["hand-shaped-09","hs16","top","ok"], ["hand-shaped-10","hs6","top","WEAK"],
+  ["hand-shaped-11","hs17","top","ok"], ["hand-shaped-12","hs7","top","ok"],
+  ["hand-shaped-13","hs18","top","WEAK"], ["hand-shaped-14","hs8","top","WEAK"],
+];
+const rows = document.getElementById("rows");
+let sec = "";
+for (const [site, cv, face, conf] of MAP){
+  const s = site.startsWith("classic") ? "classics (routed)" : "hand shaped";
+  if (s !== sec){ sec = s; rows.insertAdjacentHTML("beforeend", `<div class="sec">${s}</div>`); }
+  const other = face === "top" ? "bottom" : "top";
+  rows.insertAdjacentHTML("beforeend", `<div class="row">
+    <div class="lbl"><b>${site}</b><small>→ ${cv}-${face} <span class="conf-${conf}">[${conf}]</span></small>
+      <small>card ref: ${cv.replace(/^([a-z]+)/, (_, p) => p.toUpperCase() + " ")}</small></div>
+    <div class="cell"><img loading="lazy" src="cuts/${site}-1-cut.png"></div>
+    <div class="cell pick"><img loading="lazy" src="canva/${cv}-${face}.png"
+         onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'missing',textContent:'missing ${cv}-${face}.png'}))"></div>
+    <div class="cell"><img loading="lazy" src="canva/${cv}-${other}.png"
+         onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'missing',textContent:'missing ${cv}-${other}.png'}))"></div>
+  </div>`);
+}
+</script>

@@ -1701,7 +1701,31 @@
       resale: "pre-owned, still proper"
     };
     const accOf = c => ACC[c.id] || c.accent;
-    const refOf = (b, k) => b.ref || "#" + String(k + 1).padStart(2, "0");
+    /* Canva bg-remove pass (2026-07-21): site board -> canva cutout file. The cl/hs sheet
+       numbering is the CANONICAL inventory ID (covers all boards, not just the site subset),
+       so card refs are derived from it below — data.js's site-ordinal refs are the fallback.
+       Face = the one that pixel-matched the current thumb, so the swap changes edge quality,
+       not the look. Mapping derivation + confidence per row: card-lab/canva-review.html.
+       Originals have no canva batch — they fall through to Vision cuts + data.js refs. */
+    const CANVA = {
+      "classic-01":"cl3-top","classic-02":"cl4-top","classic-03":"cl5-top","classic-04":"cl6-top",
+      "classic-05":"cl7-top","classic-06":"cl8-top","classic-07":"cl11-top","classic-08":"cl12-top",
+      "classic-09":"cl14-top","classic-10":"cl15-top","classic-11":"cl16-top","classic-12":"cl18-top",
+      "classic-13":"cl19-top","classic-14":"cl21-top","classic-15":"cl22-top","classic-16":"cl23-top",
+      "classic-17":"cl24-top","classic-18":"cl26-top","classic-19":"cl27-top",
+      "hand-shaped-01":"hs1-top","hand-shaped-02":"hs2-bottom","hand-shaped-03":"hs3-bottom",
+      "hand-shaped-04":"hs4-bottom","hand-shaped-05":"hs10-top","hand-shaped-06":"hs14-top",
+      "hand-shaped-07":"hs9-top","hand-shaped-08":"hs15-top","hand-shaped-09":"hs16-top",
+      "hand-shaped-10":"hs6-top","hand-shaped-11":"hs17-top","hand-shaped-12":"hs7-top",
+      "hand-shaped-13":"hs18-top","hand-shaped-14":"hs8-top",
+    };
+    const STEM = b => b.thumb.split("/").pop().replace(/\.jpg$/, "").replace(/-\d+$/, "");
+    /* inventory ref from the canva file name: "cl3-top" -> "CL 3" */
+    const INVREF = b => {
+      const m = (CANVA[STEM(b)] || "").match(/^([a-z]+)([\d.]+)-/);
+      return m ? m[1].toUpperCase() + " " + m[2] : null;
+    };
+    const refOf = (b, k) => INVREF(b) || b.ref || "#" + String(k + 1).padStart(2, "0");
     /* display title: no "Completes" suffix, dashes flattened */
     const dispTitle = c => c.title.replace(/\s*-\s*Completes/i, "").replace(/ - /g, " ");
     const titleHtml = c => {
@@ -1714,7 +1738,11 @@
 
     /* ---- j-card treatments: meta + renderers (from j-cards-white/black).
        Demo states and placeholder dims ride along, same as the j pages. */
-    const CUT = b => "card-lab/cuts/" + b.thumb.split("/").pop().replace(/\.jpg$/, "") + "-cut.png";
+    const CUT = b => {
+      const cv = CANVA[STEM(b)];
+      return cv ? "card-lab/canva/" + cv + ".png"
+                : "card-lab/cuts/" + b.thumb.split("/").pop().replace(/\.jpg$/, "") + "-cut.png";
+    };
     const CARDNM = { originals: "Original", "hand-shaped": "Shaped", classic: "Classic", resale: "Resale" };
     const JDIMS = {
       originals: "ORIGINAL · ONE OF ONE",
@@ -1722,11 +1750,13 @@
       classic: "33.5 × 96 MM · MED KICK",
       resale: "PRE-OWNED · STILL PROPER"
     };
-    const JSPARK = { "CL 5": 1, "OG 1": 1 };
+    const JSPARK = { "CL 7": 1, "OG 1": 1 };
     const JPEND = { "HS 2": 1 };
-    const JGONE = { "CL 3": 1 };
+    const JGONE = { "CL 5": 1 };
     const PH_DIMS = { "OG 1": "33.5 × 97.5 MM", "HS 1": "33.5 × 97.5 MM" };
     const jref = (c, b, k) => {
+      const iv = INVREF(b);
+      if (iv) return iv;
       const m = String(b.ref || "").match(/\d+/);
       return (PREFIX[c.id] || "#") + " " + (m ? +m[0] : k + 1);
     };
