@@ -1008,6 +1008,53 @@
   #lb.fv3 .lb-card.tset .fc-list::before { transform-origin: right center; animation: chipwipe .44s ease .22s forwards; }
   #lb.fv3 .lb-card.tset .fchip .ft { color: #fff; transition: color .2s ease .44s; }
   #lb.fv3 .lb-card.tset .inframe::before, #lb.fv3 .lb-card.tset .inframe::after { height: calc(50% - 6px); height: calc(50% - 2.5862cqw); }
+  /* flight hold (.hold, applied by closeLb): an Esc/scrim close with the
+     pointer still on the card would un-match :hover mid-flight and snap
+     the chrome off in the air. These rules MIRROR the :hover values
+     VERBATIM — gaining .hold while still hovered changes no computed
+     value, so nothing restarts (a different animation shorthand, even
+     just a delay, would blink the fills). */
+  @media (hover: hover) {
+    #lb.fv3 .lb-card.hold .fc-ref::before { transform-origin: left center; animation: chipwipe .44s ease forwards; }
+    #lb.fv3 .lb-card.hold .fc-list::before { transform-origin: right center; animation: chipwipe .44s ease forwards; }
+    #lb.fv3 .lb-card.hold .fchip .ft { color: #fff; }
+    #lb.fv3 .lb-card.hold .inframe::before, #lb.fv3 .lb-card.hold .inframe::after { height: calc(50% - 6px); height: calc(50% - 2.5862cqw); }
+  }
+
+  /* the landing (LAND switcher row, comparison chrome): the close flight
+     ends like a button press. .landpress rides the panel/frame so card,
+     board, and BOTH shadows compress in one transform — depth motion
+     only, no ink dynamics (the card-shadow law). The flourishes are
+     fixed-position one-shots so grid/belt overflow can't clip them. */
+  @keyframes landpress {
+    0% { transform: scale(1); }
+    38% { transform: scale(.965); }
+    100% { transform: scale(1); }
+  }
+  .landpress { animation: landpress .22s cubic-bezier(.33, 0, .36, 1); }
+  .landfx-pad {
+    position: fixed; z-index: 60; height: 2px; pointer-events: none;
+    background: var(--bone); transform-origin: center;
+    animation: landpad .34s ease-out forwards;
+  }
+  body.light .landfx-pad { background: #000; }
+  @keyframes landpad {
+    0% { transform: scaleX(.2); opacity: 0; }
+    30% { opacity: .9; }
+    100% { transform: scaleX(1.12); opacity: 0; }
+  }
+  .landfx-flash { position: fixed; z-index: 60; pointer-events: none; }
+  .landfx-flash rect {
+    fill: none; stroke: var(--bone); stroke-width: 2;
+    stroke-dasharray: 100 100;   /* rect carries pathLength="100" */
+    animation: landflash .3s ease-out forwards;
+  }
+  body.light .landfx-flash rect { stroke: #000; }
+  @keyframes landflash {
+    0% { stroke-dashoffset: 100; opacity: 1; }
+    70% { stroke-dashoffset: 0; opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
   #lb.fv3 .lb-card .lb-fv3nav:hover { opacity: 1; box-shadow: inset 0 0 0 1.5px #000; }
   #lb.fv3 .lb-card .lb-fv3nav:hover::before { background: #fff; }
   #lb.fv3 .lb-card .lb-fv3nav:hover .ft { color: #000; transition: color .1s ease; }
@@ -1063,8 +1110,13 @@
     --inner-slide: 46px;   /* how far the inner frame rides toward center */
     --rp: 0;               /* rail-converge progress, written by the driver */
     --fp: 0;               /* face-draw progress, written by the driver */
-    position: fixed; top: 50%; right: 0; height: 74vh; width: var(--bayW);
-    transform: translateY(-50%); z-index: 5500; pointer-events: none;
+    /* full-column case (2026-07-22, Dylan annotation): top tucked under
+       the live topbar, bottom 12px off the page edge — same width as
+       before, so the taller drawer reads proportionally slimmer.
+       (Was: top 50% / height 74vh / translateY(-50%).) */
+    position: fixed; top: calc(var(--tbh, 0px) + 12px); bottom: 12px;
+    right: 0; width: var(--bayW);
+    z-index: 5500; pointer-events: none;
   }
   body:not([data-card="framev3"]) .bay { display: none; }
   @media (hover: none), (max-width: 940px) { .bay { display: none; } }
@@ -1190,7 +1242,7 @@
     position: absolute; left: 96px; right: 16px; top: 6%; bottom: 6%;
     display: grid; grid-template-rows: repeat(4, 1fr);
   }
-  .bay-shelf { position: relative; display: flex; align-items: flex-end; gap: 10px; padding: 0 6px 6px; }
+  .bay-shelf { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 10px; padding: 0 6px 6px; }
   .bay-shelf::after {
     content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
     background: #000;
@@ -1200,20 +1252,51 @@
     box-shadow: 3px 4px 0 rgba(0, 0, 0, .15);
     transition-delay: calc(var(--i, 0) * .1s);
   }
+  /* deck-held boards: ONE card per board — in the deck OR in the shop,
+     never both. The shop slot becomes a hole (the lightbox lift-out
+     idiom made persistent). Class-based on purpose: the lb close
+     restores INLINE visibility, which must not resurrect a deck hole. */
+  .card.indeck, .scard.indeck { visibility: hidden; }
   .bay-item {
-    height: 52px; width: auto; cursor: pointer;
-    filter: drop-shadow(3px 4px 0 rgba(0, 0, 0, .25));
+    /* a CARD slot now (2026-07-22), not a cutout: the deck is a display
+       case for the cards. ONE per shelf, centered — Dylan sized it by
+       hand (~62% of the shelf width); overflow items past four pile on
+       the last shelf and flex-shrink compresses them (the cqw spec
+       keeps any width a true card). The dvh cap keeps card height
+       inside the shelf row on short viewports (row = 88dvh/4, minus
+       shelf padding, / aspect). If this still reads small: 3 shelves
+       instead of 4 (grid rows + the /4 here + the shelf index in
+       renderBay). */
+    /* the width basis asks big; the max-width is the real fit — one
+       shelf row of the full-column drawer (drawer = 100dvh − tbh − 24,
+       shelves 88% of it, /4 rows, −14 shelf padding+air, /aspect), so
+       cards grow with the drawer and can never poke past their shelf. */
+    flex: 0 1 84%; min-width: 0;
+    max-width: calc(((100dvh - var(--tbh, 0px) - 24px) * .22 - 14px) / 1.513);
+    cursor: pointer;
     transition: transform .2s ease;
   }
-  .bay-item:hover { transform: translateY(-3px) scale(1.06); }
-  /* the flight: a cloned cutout riding from the card to the bay. Posed
-     per-frame by the flight driver (position, scale, rotation, shadow all
-     ride one progress value — same one-master-p lesson as the drawer);
-     no transitions here on purpose. */
+  .bay-item .d7f { width: 100%; }
+  .bay-item:hover { transform: translateY(-3px); }
+  /* the flight: a fresh card from the one template riding from the
+     source card to the shelf. Posed per-frame by the flight driver
+     (position, scale, rotation ride one progress value — same
+     one-master-p lesson as the drawer); no transitions here on purpose.
+     NO posed shadow: the card carries its own board + panel shadows. */
   .bay-fly {
     position: fixed; z-index: 6500; pointer-events: none;
-    will-change: transform, filter;
+    will-change: transform;
   }
+  /* held fills for the fly: the source card is hovered when its chip is
+     clicked, so the fly launches with the landed chrome — the -.44s
+     delay renders the wipe already finished from frame one. Mid-flight
+     the fly gets .left and the fills drain in the air (the card settles
+     for shelf life as it descends), so touchdown state = rest = the
+     hidden shelf item it becomes. */
+  .bay-fly.held .fc-ref::before { transform-origin: left center; animation: chipwipe .44s ease -.44s forwards; }
+  .bay-fly.held .fc-list::before { transform-origin: right center; animation: chipwipe .44s ease -.44s forwards; }
+  .bay-fly.held .fchip .ft { color: #fff; transition: none; }
+  .bay-fly.held .inframe::before, .bay-fly.held .inframe::after { height: calc(50% - 6px); height: calc(50% - 2.5862cqw); }
   /* seating: the real shelf item exists (hidden) from the moment the
      flight launches — the flight lands on its measured rect, then the
      item takes over in the same frame. No crossfade seam. */
@@ -1610,6 +1693,17 @@
       <button class="swbtn" type="button" data-dock="toss">Toss</button>
       <button class="swbtn" type="button" data-dock="swoop">Swoop</button>
     </div>
+    <span class="swhead label" style="margin-top:6px">Land</span>
+    <div class="swrow">
+      <button class="swbtn" type="button" data-land="pad">Pad</button>
+      <button class="swbtn" type="button" data-land="flash">Flash</button>
+      <button class="swbtn" type="button" data-land="none">None</button>
+    </div>
+    <span class="swhead label" style="margin-top:6px">Snd</span>
+    <div class="swrow">
+      <button class="swbtn" type="button" data-snd="on">On</button>
+      <button class="swbtn" type="button" data-snd="off">Off</button>
+    </div>
   </div>
 
   <!-- mobile dock-lite: receives the add flight; the full display case comes later -->
@@ -1773,6 +1867,7 @@
       document.addEventListener("pointerover", e => {
         const card = e.target.closest && e.target.closest(".d7f");
         if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return;
+        if (lbFlying && card === lbCard) return;   /* frozen for the return flight */
         card.classList.remove("left");
         const ref = card.querySelector(".fc-ref .ft");
         const stx = card.querySelector(".sttxt");
@@ -1794,6 +1889,7 @@
       document.addEventListener("pointerout", e => {
         const card = e.target.closest && e.target.closest(".d7f");
         if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return;
+        if (lbFlying && card === lbCard) return;   /* the card leaves the cursor mid-flight — that's not a hover exit */
         card.classList.add("left");
         const ref = card.querySelector(".fc-ref .ft");
         const stx = card.querySelector(".sttxt");
@@ -2352,6 +2448,7 @@
         const p = vid.play(); if (p && p.catch) p.catch(() => {});
       }
       lockCardScale();   /* after visibility settles — hidden grids measure 0 */
+      applyDeckHoles();  /* fresh renders don't know which boards the deck holds */
       window.scrollTo(0, 0);
     }
     window.addEventListener("hashchange", route);
@@ -2483,7 +2580,8 @@
       if (!view) return null;
       const sel = colpage.hidden ? ".card" : ".scard";
       return Array.from(view.querySelectorAll(sel)).find(n =>
-        +n.dataset.k === cur.k && n.style.visibility !== "hidden") || null;
+        +n.dataset.k === cur.k && n.style.visibility !== "hidden" &&
+        !n.classList.contains("indeck")) || null;   /* deck holes can't receive the close flight */
     }
 
     /* flight anchors: in fv3 the lb card and the source card are the SAME
@@ -2525,6 +2623,7 @@
        into it on close (the "hole" is the proof the big card IS that
        card, and the return can't land misaligned) */
     let lbSrc = null;
+    let lbFlying = false;   /* true for the 430ms return flight: decode handlers hold their fire */
     function openLb(ci, k, sourceEl) {
       populate(ci, k);
       lb.hidden = false;
@@ -2556,9 +2655,15 @@
       const backCard = (reduced || instant) ? null
         : onSrc ? lbSrc.el : sourceFrame();
       lb.classList.remove("in");
-      lbCard.classList.remove("tset");
       document.body.classList.remove("lb-fade");   /* grid fades back in under the returning card */
       if (backCard) {
+        /* the card flies home INTACT (2026-07-22): whatever chrome is up
+           stays up. tset (the touch arrival) rides until the lb hides;
+           .hold pins the hover-landed fills when the pointer was still on
+           the card (Esc close); lbFlying keeps the decode handlers from
+           re-firing as the card slides out from under the cursor. */
+        lbFlying = true;
+        if (canHover && lbCard.matches(":hover")) lbCard.classList.add("hold");
         const { src, dst } = anchors(backCard);
         const sr = src.getBoundingClientRect();
         const fr = dst.getBoundingClientRect();
@@ -2566,13 +2671,18 @@
         const dx = (sr.left + sr.width / 2) - (fr.left + fr.width / 2);
         const dy = (sr.top + sr.height / 2) - (fr.top + fr.height / 2);
         lbCard.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
+      } else {
+        lbCard.classList.remove("tset");
       }
       setTimeout(() => {
         lb.hidden = true;
         lbCard.style.transform = "none";
+        lbCard.classList.remove("tset", "hold");
+        lbFlying = false;
         unlockScroll();
         cur = null;
         if (lbSrc) { lbSrc.el.style.visibility = ""; lbSrc = null; }
+        if (backCard) landBeat(backCard);   /* touchdown: press + click + flourish */
         /* lisst membership may have changed while the lightbox was open */
         if (location.hash.replace(/^#/, "") === "my-lisst") renderLisst();
       }, (reduced || instant) ? 0 : 430);
@@ -2790,8 +2900,17 @@
       document.querySelectorAll('.fc-list[data-id="' + id + '"] .ft').forEach(t => {
         t.textContent = inLisst(id) ? "✓ Lisst" : "+ List";
       });
-      if (adding) { if (dockActive()) dockAdd(id, lbCard); else flyToBay(lbCard, id); }
-      else renderBay();
+      if (adding) {
+        if (dockActive()) dockAdd(id, lbCard);
+        else {
+          /* the card leaves your hands for the case: fly lb → deck, and
+             the lb releases with NO return flight — the shop slot stays
+             a hole (flyToBay's renderBay classes it .indeck before the
+             lb's inline-visibility restore runs) */
+          flyToBay(lbCard, id);
+          closeLb(true);
+        }
+      } else renderBay();
     });
     document.getElementById("lb-close").addEventListener("click", () => closeLb());
     lbScrim.addEventListener("click", () => closeLb());
@@ -2918,6 +3037,7 @@
           const cw = parseFloat(getComputedStyle(rail.belt).getPropertyValue("--cardW")) || 172;
           if (cw + 44 !== rail.spacing || innerWidth + (cw + 44) * 4 > rail.total) buildBelt(rail);
         });
+        applyDeckHoles();   /* rebuilt belts come back with every card visible */
       }, 180);
     });
 
@@ -3031,6 +3151,66 @@
           x.classList.toggle("on", x.dataset.dock === DOCK));
       });
     });
+
+    /* ---- the landing (2026-07-22): the close flight ends like a button
+       press. The slot card's panel presses in and releases (one transform
+       = card + board + both shadows compress together), a click answers,
+       and the LAND flourish marks the spot — comparison row until one
+       wins: pad = a line flashes under the slot, flash = the panel border
+       redraws once. Measured off live rects at touchdown, fixed-position
+       so no grid/belt overflow can clip them. ---- */
+    const LAND_KEY = "avrg-k-land";
+    let LAND = "pad";
+    try { LAND = localStorage.getItem(LAND_KEY) || "pad"; } catch (e) {}
+    document.querySelectorAll(".swbtn[data-land]").forEach(b => {
+      b.classList.toggle("on", b.dataset.land === LAND);
+      b.addEventListener("click", () => {
+        LAND = b.dataset.land;
+        try { localStorage.setItem(LAND_KEY, LAND); } catch (e) {}
+        document.querySelectorAll(".swbtn[data-land]").forEach(x =>
+          x.classList.toggle("on", x.dataset.land === LAND));
+      });
+    });
+    function landBeat(card) {
+      if (reduced) return;
+      const el = card.querySelector(".panel, .frame") || card;
+      el.classList.remove("landpress");
+      void el.offsetWidth;   /* restart-safe on rapid open/close */
+      el.classList.add("landpress");
+      /* animationend + timeout fallback: a tab hidden at the landing
+         frame freezes the animation and would strand the class/element */
+      el.addEventListener("animationend", () => el.classList.remove("landpress"), { once: true });
+      setTimeout(() => el.classList.remove("landpress"), 600);
+      kclick();
+      if (LAND === "none") return;
+      const r = el.getBoundingClientRect();   /* pre-press: the animation hasn't advanced yet */
+      if (LAND === "pad") {
+        const pad = document.createElement("i");
+        pad.className = "landfx-pad";
+        pad.style.left = r.left + "px";
+        pad.style.top = (r.bottom + 5) + "px";
+        pad.style.width = r.width + "px";
+        document.body.appendChild(pad);
+        pad.addEventListener("animationend", () => pad.remove(), { once: true });
+        setTimeout(() => pad.remove(), 900);
+      } else {
+        const rad = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
+        const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        s.setAttribute("class", "landfx-flash");
+        s.style.left = (r.left - 2) + "px"; s.style.top = (r.top - 2) + "px";
+        s.style.width = (r.width + 4) + "px"; s.style.height = (r.height + 4) + "px";
+        s.setAttribute("viewBox", "0 0 " + (r.width + 4) + " " + (r.height + 4));
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", 1); rect.setAttribute("y", 1);
+        rect.setAttribute("width", r.width + 2); rect.setAttribute("height", r.height + 2);
+        rect.setAttribute("rx", rad);
+        rect.setAttribute("pathLength", "100");
+        s.appendChild(rect);
+        document.body.appendChild(s);
+        rect.addEventListener("animationend", () => s.remove(), { once: true });
+        setTimeout(() => s.remove(), 900);
+      }
+    }
     const DOCK_TUNE = {
       ramp:  { dur: 1.9, dip: 0.70, crest: 1.25, side: 0.20, lead: 0.60 },
       toss:  { dur: 1.9, dip: 0.85, crest: 1.25, side: 0.20, lead: 0.60 },
@@ -3055,21 +3235,69 @@
       return { x: h(k0.x, k1.x, k2.x, k3.x), y: h(k0.y, k1.y, k2.y, k3.y),
                s: h(k0.s, k1.s, k2.s, k3.s), r: h(k0.r, k1.r, k2.r, k3.r) };
     }
-    /* landing thunk: low sine drop, synthesized — no asset */
+    /* ---- sound kit: one shared context, tiny synthesized voices, no
+       assets. The SND row gates every voice (placeholder mute — the real
+       audio pass, incl. per-ground sound sets, is parked in CLAUDE.md
+       open threads). Voices fire outside the click's gesture window
+       (setTimeout / rAF), so resume() rides on sticky activation. ---- */
+    const SND_KEY = "avrg-k-snd";
+    let SNDON = "on";
+    try { SNDON = localStorage.getItem(SND_KEY) || "on"; } catch (e) {}
+    document.querySelectorAll(".swbtn[data-snd]").forEach(b => {
+      b.classList.toggle("on", b.dataset.snd === SNDON);
+      b.addEventListener("click", () => {
+        SNDON = b.dataset.snd;
+        try { localStorage.setItem(SND_KEY, SNDON); } catch (e) {}
+        document.querySelectorAll(".swbtn[data-snd]").forEach(x =>
+          x.classList.toggle("on", x.dataset.snd === SNDON));
+      });
+    });
     let kactx = null;
+    function kctx() {
+      kactx = kactx || new (window.AudioContext || window.webkitAudioContext)();
+      if (kactx.state === "suspended") kactx.resume();
+      return kactx;
+    }
+    /* landing thunk: low sine drop — the dock seat */
     function kthunk() {
+      if (SNDON !== "on") return;
       try {
-        kactx = kactx || new (window.AudioContext || window.webkitAudioContext)();
-        const t = kactx.currentTime;
-        const o = kactx.createOscillator(), g = kactx.createGain();
+        const c = kctx(), t = c.currentTime;
+        const o = c.createOscillator(), g = c.createGain();
         o.type = "sine";
         o.frequency.setValueAtTime(150, t);
         o.frequency.exponentialRampToValueAtTime(52, t + .09);
         g.gain.setValueAtTime(.18, t);
         g.gain.exponentialRampToValueAtTime(.001, t + .13);
-        o.connect(g).connect(kactx.destination);
+        o.connect(g).connect(c.destination);
         o.start(t); o.stop(t + .14);
       } catch (e) { /* no audio — land silently */ }
+    }
+    /* landing click: a button press, not an object drop — a 10ms filtered
+       noise tick (the snap) over a small triangle pitch-drop (the body) */
+    function kclick() {
+      if (SNDON !== "on") return;
+      try {
+        const c = kctx(), t = c.currentTime;
+        const len = Math.round(c.sampleRate * .01);
+        const buf = c.createBuffer(1, len, c.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+        const n = c.createBufferSource(); n.buffer = buf;
+        const bp = c.createBiquadFilter();
+        bp.type = "bandpass"; bp.frequency.value = 2300; bp.Q.value = 1.1;
+        const ng = c.createGain(); ng.gain.setValueAtTime(.10, t);
+        n.connect(bp).connect(ng).connect(c.destination);
+        n.start(t);
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = "triangle";
+        o.frequency.setValueAtTime(430, t);
+        o.frequency.exponentialRampToValueAtTime(210, t + .045);
+        g.gain.setValueAtTime(.07, t);
+        g.gain.exponentialRampToValueAtTime(.001, t + .06);
+        o.connect(g).connect(c.destination);
+        o.start(t); o.stop(t + .07);
+      } catch (e) { /* silent press */ }
     }
     function dockPing() {
       const pc = document.getElementById("pcnt"), pi = document.getElementById("picon");
@@ -3185,14 +3413,72 @@
       bayShelves.forEach(s => { s.innerHTML = ""; });
       myLisst.forEach((id, n) => {
         const { ci, b, k } = BOARD_INDEX[id];
-        const img = document.createElement("img");
-        img.className = "bay-item";
-        if (pendingSeat.has(id)) img.classList.add("preseat");
-        img.dataset.id = id;
-        img.src = CUT(b);
-        img.alt = img.title = lisstLabel(id);
-        img.addEventListener("click", () => openLb(ci, k));
-        bayShelves[Math.min(3, (n / 4) | 0)].appendChild(img);
+        /* the shelf holds the CARD (2026-07-22) — the fv3 template at
+           slot width, the cqw spec does the rest. Its ✓ Lisst chip stays
+           live: the capture-phase chip handler sees inLisst → toggles
+           OFF → re-render, so the chip doubles as the remove button. */
+        const item = document.createElement("div");
+        item.className = "bay-item";
+        if (pendingSeat.has(id)) item.classList.add("preseat");
+        item.dataset.id = id;
+        item.title = lisstLabel(id);
+        item.innerHTML = JCARDS.framev3(jmeta(COLLECTIONS[ci], b, k));
+        item.addEventListener("click", () => openLb(ci, k));
+        bayShelves[Math.min(3, n)].appendChild(item);   /* one card per shelf */
+      });
+      applyDeckHoles();   /* membership changed — the shop's holes follow */
+    }
+
+    /* deck holes (2026-07-22): one card per board — in the DECK or in the
+       SHOP, never both (the lightbox lift-out idiom made persistent).
+       Adds hide the shop slot behind the departing fly; removes keep the
+       hole (pendingHole) until the return flight lands. Desktop-bay only:
+       the mobile dock keeps cards in place until the takeover case is
+       designed. Lisst-page cards (.lisst-card) are exempt — that page IS
+       the deck's paper form. */
+    const pendingHole = new Set();
+    function applyDeckHoles() {
+      const on = !dockActive();
+      document.querySelectorAll(".fc-list[data-id]").forEach(ch => {
+        const slot = ch.closest(".card, .scard");
+        if (!slot || slot.classList.contains("lisst-card")) return;
+        slot.classList.toggle("indeck", on && (inLisst(ch.dataset.id) || pendingHole.has(ch.dataset.id)));
+      });
+    }
+    /* the visible page's shop slot for a board (the return address) */
+    function gridInstance(id) {
+      const page = home.hidden ? colpage : home;
+      const ch = page.querySelector('.fc-list[data-id="' + id + '"]');
+      const slot = ch && ch.closest(".card, .scard");
+      return (slot && !slot.classList.contains("lisst-card")) ? slot : null;
+    }
+    /* a card exits the deck: it flies back OUT to its shop slot. The hole
+       holds (pendingHole) until touchdown, then the slot takes its card
+       back with the same landing beat. getEnd re-measures per frame — the
+       conveyor may carry the slot mid-flight — and freezes on the last
+       good rect if a re-render pulls the slot out from under it. */
+    function flyFromBay(item, id) {
+      const slot = gridInstance(id);
+      const srcPanel = item.querySelector(".panel");
+      const meta = BOARD_INDEX[id];
+      if (reduced || !slot || !srcPanel || !meta) { renderBay(); return; }
+      const sr = srcPanel.getBoundingClientRect();
+      const target = slot.querySelector(".panel") || slot;
+      let lastEnd = null;
+      const getEnd = () => {
+        const r = target.getBoundingClientRect();
+        if (r.height > 0) lastEnd = { x: r.left + r.width / 2, y: r.top + r.height / 2, h: r.height };
+        return lastEnd;
+      };
+      if (!getEnd()) { renderBay(); return; }
+      pendingHole.add(id);
+      renderBay();   /* the case re-stacks; the fly IS the card now */
+      const fly = document.createElement("div");
+      fly.innerHTML = JCARDS.framev3(jmeta(COLLECTIONS[meta.ci], meta.b, meta.k));
+      bayFlight(fly, sr, getEnd, { dur: SEAT_TUNE.dur }, () => {
+        pendingHole.delete(id);
+        applyDeckHoles();   /* the slot takes its card back */
+        landBeat(slot);
       });
     }
 
@@ -3269,10 +3555,22 @@
       bay.classList.toggle("fullish", bayP >= BAY_TUNE.at.fullish);
       bay.classList.toggle("locked", bayLocked);
     }
+    /* the vertical trigger band = the bay's own extent (it spans the
+       full column now, not a centered 74vh strip). Re-measured every
+       ~2s of ticks + on resize — cheap, and self-heals after the
+       card-mode toggle re-shows the bay. */
+    let bayBand = { t: 0, b: 0 }, bayBandTick = 0;
+    function bayMeasure() {
+      const r = bay.getBoundingClientRect();
+      bayBand = { t: r.top, b: r.bottom };
+    }
+    addEventListener("resize", bayMeasure);
+    bayMeasure();
     let bayLast = performance.now();
     function bayTick(now) {
       const dt = Math.min(.05, (now - bayLast) / 1000);
       bayLast = now;
+      if (++bayBandTick >= 120 || bayBand.b <= bayBand.t) { bayBandTick = 0; bayMeasure(); }
       let rate;
       if (bayLocked) rate = 1 / BAY_TUNE.durSnap;
       else if (bayClosing) rate = -1 / BAY_TUNE.durClose;
@@ -3280,7 +3578,7 @@
         let near = false, closeness = 0;
         if (bayPtr) {
           const dist = innerWidth - bayPtr.x;
-          near = dist < BAY_TUNE.trigger && bayPtr.y > innerHeight * .13 && bayPtr.y < innerHeight * .87;
+          near = dist < BAY_TUNE.trigger && bayPtr.y > bayBand.t && bayPtr.y < bayBand.b;
           if (near) closeness = 1 - Math.max(0, dist) / BAY_TUNE.trigger;
         }
         /* speed ramp: linear across the first 3/4 of the zone, then a
@@ -3318,14 +3616,16 @@
       if (e.key === "Escape" && bayP > 0 && lb.hidden && vlb.hidden) closeBay();
     });
 
-    /* the flight: clone the board cutout and ride it into the bay on a
-       rAF-driven arc — position, scale, rotation, and shadow all posed
-       from one progress value (the drawer's own lesson: one master p,
-       no seams). Open drawer: the real shelf item renders first (hidden,
-       .preseat) and the flight lands on its MEASURED rect, so the clone
-       becomes the item in the same frame — no crossfade, no guessed
-       coordinates. The count chip holds until touchdown. Closed drawer:
-       same arc to the resting dot, answered by the dot pulse.
+    /* the flight (2026-07-22, card payload): the WHOLE CARD flies — a
+       fresh card off the one template, its own board + panel shadows,
+       chip fills held from the pluck, drained mid-air (.left) so it
+       touches down at rest — and the hidden shelf item it lands on IS
+       that rest state, no crossfade seam. Position/scale/rotation ride
+       one progress value; the TARGET is re-measured every frame because
+       every add now OPENS the deck (openBay + lock — it stays open
+       until the arrow/Esc shuts it), so the shelf is still sliding out
+       under the early flight. The count chip holds until touchdown.
+       The closed-drawer dot flight is gone with the always-open rule.
        Seat variants (SEAT switcher, avrg-k-seat):
          drop     — peak hangs over the slot, falls the last 9px, whisper of squash
          skid     — shallow arc, overshoots 19px, friction drags it home
@@ -3336,99 +3636,112 @@
       liftMax: 120,    /* arc height ceiling (lift scales with distance) */
       pickup: .07      /* early "picked up" grow, fades over the ride */
     };
-    function bayFlight(src, sr, end, opts, onLand) {
-      const fly = src.cloneNode();
-      fly.className = "bay-fly";
+    function bayFlight(fly, sr, getEnd, opts, onLand) {
+      fly.classList.add("bay-fly");
       fly.style.left = sr.left + "px"; fly.style.top = sr.top + "px";
-      fly.style.width = sr.width + "px"; fly.style.height = sr.height + "px";
+      fly.style.width = sr.width + "px";   /* height follows the card's own aspect */
       document.body.appendChild(fly);
       const sx = sr.left + sr.width / 2, sy = sr.top + sr.height / 2;
-      const dist = Math.hypot(end.x - sx, end.y - sy);
-      const lift = Math.min(SEAT_TUNE.liftMax, 40 + dist * .18) * (opts.shallow ? .5 : 1);
-      /* control point: shallow arcs peak mid-route; steep ones hang the
-         peak over the target so the last leg reads as a fall */
-      const cx = opts.shallow ? (sx + end.x) / 2 : sx * .3 + end.x * .7;
-      const cy = Math.min(sy, end.y) - lift;
-      const s1 = end.h / sr.height;
       const t0 = performance.now(), dur = opts.dur * 1000;
+      let drained = false;
       (function frame(now) {
         const t = Math.min(1, (now - t0) / dur);
         const e = 1 - Math.pow(1 - t, 2.6);   /* launched hard, arrives damped */
         const u = 1 - e;
+        /* target re-measured every frame — the drawer is still opening
+           under the early flight, and the bezier converges on wherever
+           the seat actually is */
+        const end = getEnd();
+        const lift = Math.min(SEAT_TUNE.liftMax, 40 + Math.hypot(end.x - sx, end.y - sy) * .18) * (opts.shallow ? .5 : 1);
+        /* control point: shallow arcs peak mid-route; steep ones hang the
+           peak over the target so the last leg reads as a fall */
+        const cx = opts.shallow ? (sx + end.x) / 2 : sx * .3 + end.x * .7;
+        const cy = Math.min(sy, end.y) - lift;
         const px = u * u * sx + 2 * u * e * cx + e * e * end.x;
         const py = u * u * sy + 2 * u * e * cy + e * e * end.y;
+        const s1 = end.h / sr.height;
         const sc = 1 + (s1 - 1) * e + SEAT_TUNE.pickup * Math.sin(Math.PI * Math.min(1, e / .5)) * u;
         const rot = 5 * Math.sin(Math.PI * e) + (opts.endRot || 0) * e;
-        const f = 4 * e * u;                  /* altitude: peaks mid-flight, 0 at both ends */
         fly.style.transform = "translate(" + (px - sx).toFixed(1) + "px," + (py - sy).toFixed(1) + "px) scale(" + sc.toFixed(3) + ") rotate(" + rot.toFixed(2) + "deg)";
-        fly.style.filter = "drop-shadow(" + (3 + 8 * f).toFixed(1) + "px " + (4 + 10 * f).toFixed(1) + "px 0 rgba(0,0,0," + (.3 - .08 * f).toFixed(3) + "))";
+        if (!drained && t >= .55 && opts.drain) { drained = true; opts.drain(); }
         if (t < 1) requestAnimationFrame(frame);
         else { fly.remove(); onLand(); }
       })(performance.now());
     }
     function flyToBay(cardEl, id) {
-      const src = cardEl && cardEl.querySelector(".stage img, .frame img");
-      if (reduced || !src) { renderBay(); return; }
-      const sr = src.getBoundingClientRect();
-      if (bayP <= .5) {
-        /* closed: arc to the resting dot; the dot answers */
-        const rr = bayDot.getBoundingClientRect();
-        bayFlight(src, sr,
-          { x: rr.left + rr.width / 2, y: rr.top + rr.height / 2, h: 18 },
-          { dur: SEAT_TUNE.durDot }, () => {
-            renderBay();
-            bayInner.classList.add("pulse");
-            bayInner.addEventListener("animationend", () => bayInner.classList.remove("pulse"), { once: true });
-          });
-        return;
-      }
+      /* an add opens the deck and LOCKS it — it stays open until the
+         arrow/Esc shuts it (bayLocked never drains) */
+      openBay();
+      const { ci, b, k } = BOARD_INDEX[id];
+      const srcPanel = cardEl && cardEl.querySelector(".panel, .frame");
+      if (reduced || !srcPanel) { renderBay(); return; }
+      const sr = srcPanel.getBoundingClientRect();
       pendingSeat.add(id);
       renderBay();   /* the item now exists, hidden — its rect is the target */
       const item = bay.querySelector('.bay-item.preseat[data-id="' + id + '"]');
       if (!item) { pendingSeat.delete(id); renderBay(); return; }
-      const launch = () => {
+      /* the fly: a fresh card off the one template — intact info, both
+         shadows its own. Text state is copied from the source card so a
+         mid-decode pluck is seamless (the source stays hovered under it). */
+      const fly = document.createElement("div");
+      fly.innerHTML = JCARDS.framev3(jmeta(COLLECTIONS[ci], b, k));
+      const flyCard = fly.firstChild;
+      [".fc-ref .ft", ".nmt", ".sttxt", ".fc-list .ft"].forEach(sel => {
+        const a = cardEl.querySelector(sel), f = fly.querySelector(sel);
+        if (a && f) f.textContent = a.textContent;
+      });
+      if (cardEl.matches(":hover") || cardEl.classList.contains("tset")) fly.classList.add("held");
+      const rest = () => {   /* the mid-air settle: fills drain, texts back to print */
+        fly.classList.remove("held");
+        flyCard.classList.add("left");
+        const m = jmeta(COLLECTIONS[ci], b, k);
+        const put = (sel, txt) => { const el = fly.querySelector(sel); if (el) el.textContent = txt; };
+        put(".fc-ref .ft", m.ref); put(".nmt", m.nm); put(".sttxt", "");
+        put(".fc-list .ft", inLisst(id) ? "✓ Lisst" : "+ List");
+      };
+      const skid = SEAT === "skid";
+      const seatClass = skid ? "seat-skid" : (SEAT === "seatdraw" ? "seat-set" : "seat-drop");
+      /* the flight ends exactly where the seat animation begins —
+         re-measured per frame while the drawer slides out */
+      const getEnd = () => {
         const tr = item.getBoundingClientRect();
-        const skid = SEAT === "skid";
-        const seatClass = skid ? "seat-skid" : (SEAT === "seatdraw" ? "seat-set" : "seat-drop");
-        /* the flight ends exactly where the seat animation begins */
-        const end = {
+        return {
           x: tr.left + tr.width / 2 + (skid ? 19 : 0),
           y: tr.top + tr.height / 2 + (skid ? 0 : -9),
           h: tr.height
         };
-        let seatline = null;
-        if (SEAT === "seatdraw") {
-          seatline = document.createElement("div");
-          seatline.className = "bay-seatline";
-          seatline.style.left = item.offsetLeft + "px";
-          seatline.style.width = tr.width.toFixed(1) + "px";
-          item.parentElement.appendChild(seatline);
-          setTimeout(() => seatline.classList.add("drawn"), Math.round(SEAT_TUNE.dur * 1000 * .35));
-        }
-        bayFlight(src, sr, end, { dur: SEAT_TUNE.dur, shallow: skid, endRot: skid ? 2 : 0 }, () => {
-          /* re-query: a renderBay may have rebuilt the shelves mid-flight */
-          const seated = bay.querySelector('.bay-item.preseat[data-id="' + id + '"]');
-          pendingSeat.delete(id);
-          if (!seated) { updateBayCount(); if (seatline) seatline.remove(); return; }
-          seated.classList.remove("preseat");
-          seated.classList.add(seatClass);
-          seated.addEventListener("animationend", () => seated.classList.remove(seatClass), { once: true });
-          const shelf = seated.parentElement;
-          shelf.classList.add("landed");
-          setTimeout(() => shelf.classList.remove("landed"), 500);
-          bayShelvesEl.classList.add("recoil");
-          setTimeout(() => bayShelvesEl.classList.remove("recoil"), 250);
-          updateBayCount();
-          bayRef.classList.add("bump");
-          setTimeout(() => bayRef.classList.remove("bump"), 350);
-          if (seatline) {
-            seatline.classList.add("done");
-            setTimeout(() => seatline.remove(), 900);
-          }
-        });
       };
-      if (item.complete && item.naturalWidth) launch();
-      else item.addEventListener("load", launch, { once: true });
+      let seatline = null;
+      if (SEAT === "seatdraw") {
+        seatline = document.createElement("div");
+        seatline.className = "bay-seatline";
+        seatline.style.left = item.offsetLeft + "px";
+        seatline.style.width = item.offsetWidth.toFixed(1) + "px";
+        item.parentElement.appendChild(seatline);
+        setTimeout(() => seatline.classList.add("drawn"), Math.round(SEAT_TUNE.dur * 1000 * .35));
+      }
+      bayFlight(fly, sr, getEnd, { dur: SEAT_TUNE.dur, shallow: skid, endRot: skid ? 2 : 0, drain: rest }, () => {
+        /* re-query: a renderBay may have rebuilt the shelves mid-flight */
+        const seated = bay.querySelector('.bay-item.preseat[data-id="' + id + '"]');
+        pendingSeat.delete(id);
+        if (!seated) { updateBayCount(); if (seatline) seatline.remove(); return; }
+        seated.classList.remove("preseat");
+        seated.classList.add(seatClass);
+        seated.addEventListener("animationend", () => seated.classList.remove(seatClass), { once: true });
+        const shelf = seated.parentElement;
+        shelf.classList.add("landed");
+        setTimeout(() => shelf.classList.remove("landed"), 500);
+        bayShelvesEl.classList.add("recoil");
+        setTimeout(() => bayShelvesEl.classList.remove("recoil"), 250);
+        updateBayCount();
+        bayRef.classList.add("bump");
+        setTimeout(() => bayRef.classList.remove("bump"), 350);
+        landBeat(seated);   /* the button press: panel press + click + LAND flourish */
+        if (seatline) {
+          seatline.classList.add("done");
+          setTimeout(() => seatline.remove(), 900);
+        }
+      });
     }
 
     /* +List on belt/grid fv3 cards: capture phase, so the card's own
@@ -3448,7 +3761,13 @@
       if (adding) {
         if (dockActive()) dockAdd(id, chip.closest(".d7f"));
         else flyToBay(chip.closest(".d7f"), id);
-      } else renderBay();
+      } else {
+        /* a shelf card's ✓ Lisst chip is its remove — the card flies
+           back OUT to its shop slot */
+        const bi = chip.closest(".bay-item");
+        if (bi && !dockActive()) flyFromBay(bi, id);
+        else renderBay();
+      }
     }, true);
 
     renderBay();
