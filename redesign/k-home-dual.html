@@ -347,7 +347,14 @@
   #lb .lb-close { position: fixed; top: calc(var(--tbh, 0px) + 12px); right: 16px; z-index: 3; }
   #lb .lb-count { position: fixed; bottom: 12px; pointer-events: none; }
   .topbar, #home, #colpage { transition: opacity .45s ease; }
-  body.lb-fade #home, body.lb-fade #colpage { opacity: 0; pointer-events: none; }
+  /* inspection fade (2026-07-22): desktop dims to FAINT — the shop keeps
+     moving behind the inspected card (the other belt rows keep drifting;
+     the tapped row freezes and holds its gap). Mobile keeps the full
+     white/black-out. The .22 is a knob. */
+  body.lb-fade #home, body.lb-fade #colpage { opacity: .22; pointer-events: none; }
+  @media (hover: none), (max-width: 940px) {
+    body.lb-fade #home, body.lb-fade #colpage { opacity: 0; }
+  }
   .lb-card {
     position: absolute; left: 50%; top: 50%;
     width: min(380px, 82vw);
@@ -1273,9 +1280,24 @@
        cards grow with the drawer and can never poke past their shelf. */
     flex: 0 1 84%; min-width: 0;
     max-width: calc(((100dvh - var(--tbh, 0px) - 24px) * .22 - 14px) / 1.513);
+    position: relative;   /* anchors the floating ✕ */
     cursor: pointer;
     transition: transform .2s ease;
   }
+  /* the floating ✕ (2026-07-22): clear a board from the case without
+     re-inspecting. Square chip in the card's angular language, floating
+     off the top-right corner; hover-revealed (the case is desktop-only). */
+  .bay-item .bay-x {
+    position: absolute; top: -8px; right: -8px; z-index: 3;
+    width: 22px; height: 22px; padding: 0;
+    display: grid; place-items: center;
+    background: #fff; color: #000;
+    border: 1.5px solid #000; border-radius: 0;
+    font: 700 11px/1 var(--mono, monospace);
+    cursor: pointer; opacity: 0; transition: opacity .15s ease;
+  }
+  .bay-item:hover .bay-x, .bay-x:focus-visible { opacity: 1; }
+  .bay-x:hover { background: #000; color: #fff; }
   .bay-item .d7f { width: 100%; }
   .bay-item:hover { transform: translateY(-3px); }
   /* the flight: a fresh card from the one template riding from the
@@ -2635,9 +2657,20 @@
       if (dockActive()) lockScroll();
       if (!reduced) flipFrom(sourceEl || null);
       if (sourceEl) {
+        /* the case stays live above the open lb (bay z 5500 > lb 5000),
+           so inspection can switch shelf→shelf: put the previous lifted
+           source back before taking the new one */
+        if (lbSrc && lbSrc.el !== sourceEl) lbSrc.el.style.visibility = "";
         lbSrc = { el: sourceEl, ci, k };
         sourceEl.style.visibility = "hidden";   /* after flipFrom measured it */
       }
+      /* the tapped row holds its line: freeze the source card's rail so
+         the gap sits still behind the inspection while the other rows
+         keep drifting (stale pointerX cleared so resume can't edge-boost) */
+      rails.forEach(r => {
+        r.frozen = !!(sourceEl && r.belt.contains(sourceEl));
+        if (r.frozen) r.pointerX = null;
+      });
       if (dockActive() && CARD === "framev3") {
         lbCard.classList.add("tset");           /* fills land as the zoom settles */
         const stx = document.getElementById("lb-fv3-sttxt");
@@ -2652,8 +2685,15 @@
          on that board — sourceFrame() skips hidden cards, so ask it only
          after a swipe moved us to a different board */
       const onSrc = lbSrc && cur && lbSrc.ci === cur.ci && lbSrc.k === cur.k;
-      const backCard = (reduced || instant) ? null
+      let backCard = (reduced || instant) ? null
         : onSrc ? lbSrc.el : sourceFrame();
+      /* a renderBay mid-inspection rebuilds the shelves and detaches a
+         shelf source: re-find it by id (fresh item, same seat), else
+         fall back to the shop slot — never fly at a detached rect */
+      if (backCard && !backCard.isConnected) {
+        backCard = (backCard.dataset.id &&
+          bay.querySelector('.bay-item[data-id="' + backCard.dataset.id + '"]:not(.preseat)')) || sourceFrame();
+      }
       lb.classList.remove("in");
       document.body.classList.remove("lb-fade");   /* grid fades back in under the returning card */
       if (backCard) {
@@ -2662,6 +2702,9 @@
            .hold pins the hover-landed fills when the pointer was still on
            the card (Esc close); lbFlying keeps the decode handlers from
            re-firing as the card slides out from under the cursor. */
+        /* the RECEIVING line holds still for the landing — a swiped close
+           lands on a belt that's been drifting under the inspection */
+        rails.forEach(r => { if (r.belt.contains(backCard)) { r.frozen = true; r.pointerX = null; } });
         lbFlying = true;
         if (canHover && lbCard.matches(":hover")) lbCard.classList.add("hold");
         const { src, dst } = anchors(backCard);
@@ -2683,6 +2726,7 @@
         cur = null;
         if (lbSrc) { lbSrc.el.style.visibility = ""; lbSrc = null; }
         if (backCard) landBeat(backCard);   /* touchdown: press + click + flourish */
+        rails.forEach(r => { r.frozen = false; });   /* the line moves on once the card is home */
         /* lisst membership may have changed while the lightbox was open */
         if (location.hash.replace(/^#/, "") === "my-lisst") renderLisst();
       }, (reduced || instant) ? 0 : 430);
@@ -3051,10 +3095,17 @@
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
-      if (!lb.hidden || !vlb.hidden) { requestAnimationFrame(frame); return; }
+      /* the video lb still pauses everything; the CARD lb doesn't (2026-07-22):
+         desktop inspection keeps the other rows drifting behind the faint
+         page — only the inspected card's own row freezes (rail.frozen),
+         holding its gap. A frozen rail skips its pose pass too, which is
+         what preserves the lifted card's inline-hidden hole (the recycler
+         would stomp it visible otherwise). On mobile the belts are
+         display:none (w=0) so the open lb costs nothing here. */
+      if (!vlb.hidden) { requestAnimationFrame(frame); return; }
 
       rails.forEach(rail => {
-        if (!rail.active) return;
+        if (!rail.active || rail.frozen) return;
         const w = rail.belt.clientWidth;
         if (!w) return;                            /* hidden on mobile */
         const cx = w / 2;
@@ -3079,7 +3130,9 @@
             card.style.visibility = "hidden";
             return;
           }
-          card.style.visibility = "visible";
+          /* deck holes must survive the recycler: inline "visible" would
+             beat the .indeck class every frame */
+          card.style.visibility = card.classList.contains("indeck") ? "hidden" : "visible";
           const center = x + rail.spacing / 2;
           const d = Math.abs(center - cx) / rail.spacing;
           const fall = smooth(0.62, 2.6, d);
@@ -3423,7 +3476,24 @@
         item.dataset.id = id;
         item.title = lisstLabel(id);
         item.innerHTML = JCARDS.framev3(jmeta(COLLECTIONS[ci], b, k));
-        item.addEventListener("click", () => openLb(ci, k));
+        /* inspecting from the case lifts the card OUT (sourceEl): the
+           shelf shows its gap — the card can't appear twice — and the
+           close flight lands it back on this shelf */
+        item.addEventListener("click", () => openLb(ci, k, item));
+        /* the floating ✕: clear without re-inspecting */
+        const x = document.createElement("button");
+        x.className = "bay-x"; x.type = "button";
+        x.setAttribute("aria-label", "Remove from lisst");
+        x.textContent = "✕";
+        x.addEventListener("click", e => {
+          e.stopPropagation();
+          toggleLisst(id);
+          document.querySelectorAll('.fc-list[data-id="' + id + '"] .ft').forEach(t => {
+            t.textContent = inLisst(id) ? "✓ Lisst" : "+ List";
+          });
+          if (dockActive()) renderBay(); else flyFromBay(item, id);
+        });
+        item.appendChild(x);
         bayShelves[Math.min(3, n)].appendChild(item);   /* one card per shelf */
       });
       applyDeckHoles();   /* membership changed — the shop's holes follow */
@@ -3463,6 +3533,33 @@
       const meta = BOARD_INDEX[id];
       if (reduced || !slot || !srcPanel || !meta) { renderBay(); return; }
       const sr = srcPanel.getBoundingClientRect();
+      const fly = document.createElement("div");
+      fly.innerHTML = JCARDS.framev3(jmeta(COLLECTIONS[meta.ci], meta.b, meta.k));
+      /* belt slots recycle around the loop: an off-stage hole's transform
+         can park it far LEFT over the spine, and chasing that overshoots
+         the page (Dylan, 2026-07-22). If the hole is off-stage or in the
+         edge fade, the card doesn't chase — it exits the case (up-left
+         pickup, opts.hook) and walks off stage RIGHT to rejoin its line
+         off-screen; the belt brings the slot back around on its own. */
+      const rail = rails.find(r => r.belt.contains(slot));
+      if (rail) {
+        const bb = rail.belt.getBoundingClientRect();
+        const rc = slot.getBoundingClientRect();
+        const scx = rc.left + rc.width / 2;
+        if (scx < bb.left + rail.spacing * .35 || scx > bb.right - rail.spacing * .35) {
+          pendingHole.add(id);
+          renderBay();   /* the case re-stacks; the fly IS the card now */
+          const ph = (slot.querySelector(".panel") || slot).getBoundingClientRect().height;
+          const end = { x: innerWidth + sr.width * .8, y: bb.top + bb.height / 2, h: ph > 0 ? ph : sr.height };
+          bayFlight(fly, sr, () => end, { dur: SEAT_TUNE.dur + .12, hook: 240, endRot: 3 }, () => {
+            pendingHole.delete(id);
+            applyDeckHoles();   /* the hole un-hides off-stage — no beat, nothing landed on screen */
+          });
+          return;
+        }
+        /* on-stage: the receiving line holds still for the landing */
+        rail.frozen = true; rail.pointerX = null;
+      }
       const target = slot.querySelector(".panel") || slot;
       let lastEnd = null;
       const getEnd = () => {
@@ -3470,15 +3567,14 @@
         if (r.height > 0) lastEnd = { x: r.left + r.width / 2, y: r.top + r.height / 2, h: r.height };
         return lastEnd;
       };
-      if (!getEnd()) { renderBay(); return; }
+      if (!getEnd()) { if (rail) rail.frozen = false; renderBay(); return; }
       pendingHole.add(id);
       renderBay();   /* the case re-stacks; the fly IS the card now */
-      const fly = document.createElement("div");
-      fly.innerHTML = JCARDS.framev3(jmeta(COLLECTIONS[meta.ci], meta.b, meta.k));
       bayFlight(fly, sr, getEnd, { dur: SEAT_TUNE.dur }, () => {
         pendingHole.delete(id);
         applyDeckHoles();   /* the slot takes its card back */
         landBeat(slot);
+        if (rail) rail.frozen = false;   /* the line moves on once the card is home */
       });
     }
 
@@ -3654,8 +3750,11 @@
         const end = getEnd();
         const lift = Math.min(SEAT_TUNE.liftMax, 40 + Math.hypot(end.x - sx, end.y - sy) * .18) * (opts.shallow ? .5 : 1);
         /* control point: shallow arcs peak mid-route; steep ones hang the
-           peak over the target so the last leg reads as a fall */
-        const cx = opts.shallow ? (sx + end.x) / 2 : sx * .3 + end.x * .7;
+           peak over the target so the last leg reads as a fall. opts.hook
+           pulls the control LEFT of the start instead — the off-stage
+           exit's pickup swing (up-left out of the case, then away). */
+        const cx = opts.hook ? sx - opts.hook
+          : opts.shallow ? (sx + end.x) / 2 : sx * .3 + end.x * .7;
         const cy = Math.min(sy, end.y) - lift;
         const px = u * u * sx + 2 * u * e * cx + e * e * end.x;
         const py = u * u * sy + 2 * u * e * cy + e * e * end.y;
@@ -3750,6 +3849,11 @@
     document.addEventListener("click", e => {
       const chip = e.target.closest && e.target.closest(".fc-list.d7f-cta");
       if (!chip || chip.id === "lb-fv3-list") return;
+      /* home-belt chips don't add (2026-07-22): ANY click on a belt card
+         inspects it — adds live in the lightbox. Fall through untouched
+         so the belt's own card→openLb click handler takes it. Grid
+         (.scard) and shelf (.bay-item) chips keep their jobs. */
+      if (chip.closest(".card")) return;
       const id = chip.dataset.id;
       if (!id) return;
       e.stopPropagation(); e.preventDefault();
